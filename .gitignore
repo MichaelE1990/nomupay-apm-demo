@@ -1,0 +1,13 @@
+# Node modules
+node_modules/
+
+# Local credential files
+.env
+.env.local
+.env*.local
+
+# Vercel directory
+.vercel/
+
+# macOS
+.DS_Store

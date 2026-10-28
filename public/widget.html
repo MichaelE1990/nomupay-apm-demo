@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>{{brandName}} widget · NomuPay APM Demo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+  <link rel="stylesheet" href="/app.css">
+  <style>
+    .widget-box { padding: 20px; }
+    .wpwl-container { margin: 0 auto; }
+  </style>
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js" crossorigin="anonymous"></script>
+  <script>
+    var wpwlOptions = {
+      style: "plain",
+      locale: "en",
+      onReady: function () {
+        // From the KB's MB WAY example: tidy the virtual account form
+        if ("{{brandCode}}" === "MBWAY" && window.jQuery) {
+          jQuery(".wpwl-group-customerEmail").remove();
+          jQuery('.wpwl-form-virtualAccount-MBWAY > .wpwl-label:contains("ou")').remove();
+        }
+      }
+    };
+  </script>
+  <script src="{{apiBase}}/v1/paymentWidgets.js?checkoutId={{checkoutId}}"{{integrityAttr}}></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a class="brandmark" href="/" style="text-decoration:none;color:inherit">
+        <span class="logo" aria-hidden="true">N</span>
+        <div>
+          <h1>NomuPay APM Demo</h1>
+          <div class="sub">COPYandPAY widget · {{brandName}}</div>
+        </div>
+      </a>
+      <div class="envbar"><span class="pill info"><span class="dot"></span>{{environment}}</span><span class="pill mono">{{brandCode}}</span></div>
+    </div>
+  </header>
+  <main class="result-wrap">
+    <section class="card">
+      <div class="card-head">
+        <div>
+          <h2>Pay with {{brandName}}</h2>
+          <p>The widget sends the shopper to {{brandName}} and returns them to the result page.</p>
+        </div>
+        <a class="secondary" href="/#{{brandCode}}">Back</a>
+      </div>
+      <div class="widget-box">
+        <form action="{{shopperResultUrl}}" class="paymentWidgets" data-brands="{{brandCode}}"></form>
+      </div>
+    </section>
+  </main>
+</body>
+</html>
