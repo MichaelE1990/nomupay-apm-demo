@@ -1,9 +1,10 @@
 import { Button } from '@/components/Button'
 import { HeroPattern } from '@/components/HeroPattern'
+import { Layout } from '@/components/Layout'
 
 export default function NotFound() {
   return (
-    <>
+    <Layout>
       <HeroPattern />
       <div className="mx-auto flex h-full max-w-xl flex-col items-center justify-center py-16 text-center">
         <p className="text-sm font-semibold text-zinc-900 dark:text-white">404</p>
@@ -13,6 +14,6 @@ export default function NotFound() {
           Back to the introduction
         </Button>
       </div>
-    </>
+    </Layout>
   )
 }

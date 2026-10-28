@@ -210,8 +210,8 @@ export function Navigation(props) {
           />
         ))}
         <li className="sticky bottom-0 z-10 mt-6 min-[416px]:hidden">
-          <Button href="/copyandpay" variant="filled" className="w-full">
-            Start testing
+          <Button href="/playground" variant="filled" className="w-full">
+            Open playground
           </Button>
         </li>
       </ul>

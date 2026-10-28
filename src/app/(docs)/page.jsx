@@ -25,11 +25,11 @@ export default function Home() {
         the test gateway, and use the response in the next step.
       </p>
       <div className="not-prose mt-6 mb-16 flex flex-wrap gap-3">
-        <Button href="/copyandpay" arrow="right">
-          Start with COPYandPAY
+        <Button href="/playground" arrow="right">
+          Open the checkout playground
         </Button>
-        <Button href="/server-to-server" variant="outline">
-          Server-to-server
+        <Button href="/copyandpay" variant="outline">
+          Step-by-step guides
         </Button>
       </div>
 

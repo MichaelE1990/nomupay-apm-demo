@@ -58,3 +58,53 @@
     display: none;
   }
 }
+
+/* Playground: request lines that changed since the previous checkout */
+.pg-added,
+.pg-removed {
+  display: inline-block;
+  min-width: calc(100% + 2rem);
+  margin: 0 -1rem;
+  padding: 0 1rem;
+}
+.pg-added {
+  background: rgb(52 211 153 / 0.1);
+  box-shadow: inset 2px 0 0 rgb(52 211 153);
+}
+.pg-removed {
+  background: rgb(251 113 133 / 0.08);
+  box-shadow: inset 2px 0 0 rgb(251 113 133 / 0.8);
+  color: rgb(253 164 175 / 0.8);
+  text-decoration: line-through;
+  text-decoration-color: rgb(253 164 175 / 0.5);
+}
+
+/* Playground: the COPYandPAY widget, nudged to match the demo shop (plain style) */
+.nomupay-widget .wpwl-container,
+.nomupay-widget .wpwl-form {
+  max-width: none;
+  margin: 0;
+  font-family: inherit;
+}
+.nomupay-widget .wpwl-label {
+  font-size: 0.875rem;
+  color: #3f3f46;
+}
+.nomupay-widget .wpwl-control {
+  border-radius: 0.375rem;
+  border-color: #d4d4d8;
+  min-height: 2.5rem;
+}
+.nomupay-widget .wpwl-button-pay {
+  width: 100%;
+  margin: 0.5rem 0 0;
+  border: 0;
+  border-radius: 0.375rem;
+  background: #18181b;
+  padding: 0.625rem 1rem;
+  font-weight: 600;
+  color: #fff;
+}
+.nomupay-widget .wpwl-button-pay:hover {
+  background: #3f3f46;
+}

@@ -2,6 +2,15 @@
 
 A test bench for the alternative payment methods (APMs) on the **NomuPay Wallets** integration, plus cards, on the ACI/OPPWA gateway. It's built to feel like a merchant integrating: every step shows the request on the right as you build it, sends it, shows the real response underneath, and the next step uses what came back.
 
+## Checkout playground (`/playground`)
+
+A Stripe-style checkout configurator. Settings on the left (shopper country, payment methods, customer details, line items, saved card details, integrity), the shop's checkout in the middle with the real COPYandPAY widget, and the API calls on the right:
+
+1. `POST /v1/checkouts`: recreated whenever a setting changes, with the request lines that changed marked
+2. The widget HTML for that checkout (reloaded with `wpwl.unload()` between checkouts)
+3. `GET /v1/checkouts/{id}/payment`: read on the return page after paying
+4. `POST /v1/registrations/{id}/payments`: "Buy again in one click" on the confirmation page when details were saved
+
 ## Guides
 
 **COPYandPAY** (`/copyandpay`)
@@ -69,6 +78,7 @@ Next.js, Tailwind CSS and Headless UI. The layout, navigation, code panels and b
 | Route | What it does |
 |---|---|
 | `/` | Introduction and environment |
+| `/playground`, `/playground/return` | Checkout playground; the return page is the widget's form action |
 | `/copyandpay`, `/copyandpay/return` | COPYandPAY guide; the return page is the widget's form action |
 | `/server-to-server`, `/server-to-server/return` | Server-to-server guide; the return page is the `shopperResultUrl` |
 | `/checkout/{checkoutId}` | Checkout page running `paymentWidgets.js` |

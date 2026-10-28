@@ -83,7 +83,7 @@ export const Header = forwardRef(function Header({ className, ...props }, ref) {
           <ThemeToggle />
         </div>
         <div className="hidden min-[416px]:contents">
-          <Button href="/copyandpay">Start testing</Button>
+          <Button href="/playground">Open playground</Button>
         </div>
       </div>
     </motion.div>

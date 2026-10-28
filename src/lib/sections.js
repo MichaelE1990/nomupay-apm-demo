@@ -4,6 +4,7 @@ export const navigation = [
     title: 'Guides',
     links: [
       { title: 'Introduction', href: '/' },
+      { title: 'Checkout playground', href: '/playground' },
       { title: 'COPYandPAY', href: '/copyandpay' },
       { title: 'Server-to-server', href: '/server-to-server' },
     ],

@@ -27,6 +27,8 @@ export function publicConfig() {
     configured: CONFIGURED,
     environment: IS_TEST ? 'TEST' : 'LIVE',
     apiHost: API_HOST,
+    // Where the browser loads paymentWidgets.js from (only differs from apiHost against a local mock)
+    widgetBase: API_BASE_URL,
     testMode: TEST_MODE,
     entities: {
       wallet: maskEntity(ENTITIES.wallet.id),

@@ -95,7 +95,7 @@ export function buildPaymentParams(input, env) {
   }
 
   if (extras.saveDetails) params.push(...SAVE_DETAILS_PARAMS)
-  if (input.flow === 'copyandpay') params.push(['integrity', 'true'])
+  if (input.flow === 'copyandpay' && extras.integrity !== false) params.push(['integrity', 'true'])
   if (input.flow === 's2s' && env.shopperResultUrl) params.push(['shopperResultUrl', env.shopperResultUrl])
   return params
 }

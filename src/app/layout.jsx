@@ -1,5 +1,4 @@
 import { Providers } from '@/app/providers'
-import { Layout } from '@/components/Layout'
 
 import '@/styles/tailwind.css'
 
@@ -17,9 +16,7 @@ export default function RootLayout({ children }) {
     <html lang="en" className="h-full" suppressHydrationWarning>
       <body className="flex min-h-full bg-white antialiased dark:bg-zinc-900">
         <Providers>
-          <div className="w-full">
-            <Layout>{children}</Layout>
-          </div>
+          <div className="w-full">{children}</div>
         </Providers>
       </body>
     </html>
