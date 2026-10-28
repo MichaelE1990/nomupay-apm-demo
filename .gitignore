@@ -11,3 +11,7 @@ node_modules/
 
 # macOS
 .DS_Store
+
+# Next.js build output
+.next/
+next-env.d.ts

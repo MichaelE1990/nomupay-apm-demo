@@ -1,9 +1,9 @@
-// NomuPay Wallets brand catalogue (EU & international).
+// Payment method catalogue: NomuPay Wallets brands (EU & international) and cards.
 // Source: Payment Knowledge Base, "NomuPay Wallets Brand details" and
 // "NomuPay Wallets integration sheet" (last updated 14 Oct 2026).
 // Requirement codes follow the KB: M = mandatory, O = optional, C = conditional.
 
-const FIELD_DEFS = {
+export const FIELD_DEFS = {
   "customer.givenName": { label: "Given name", sample: "Test" },
   "customer.surname": { label: "Surname", sample: "Shopper" },
   "customer.email": { label: "Email", sample: "test.shopper@example.com", type: "email" },
@@ -35,7 +35,7 @@ const FIELD_DEFS = {
 const EU = ["AT", "BE", "BG", "HR", "CY", "CZ", "DK", "EE", "FI", "FR", "DE", "GR", "HU", "IE", "IT", "LV", "LT", "LU", "MT", "NL", "PL", "PT", "RO", "SK", "ES", "SE"];
 
 // fields: [key, requirement, sample override, hint override]
-const BRANDS = [
+export const WALLET_BRANDS = [
   {
     code: "BCMC_VA", name: "Bancontact", region: "Europe", countries: ["BE"], currencies: ["EUR"], timeout: "1 hour", status: "Certified",
     fields: [["customer.givenName", "O"], ["descriptor", "O"], ["merchantInvoiceId", "O"]],
@@ -139,22 +139,27 @@ const BRANDS = [
   },
 ];
 
-// Fill defaults: billing.country requirement and per-field metadata
-for (const b of BRANDS) {
-  b.paymentMethod = b.paymentMethod || "VA";
-  b.countryRequirement = b.countryRequirement || "O";
-  b.fields = b.fields.map(([key, req, sample, hint]) => {
-    const def = FIELD_DEFS[key];
-    return {
-      key, req, label: def.label, type: def.type || "text",
-      hint: hint !== undefined ? hint : def.hint || "",
-      sample: sample !== undefined ? sample : def.sample,
-    };
-  });
+// Cards run through the COPYandPAY widget only, on the card entity
+export const CARD_BRANDS = [
+  { code: "VISA", name: "Visa", region: "Cards", countries: [], currencies: ["EUR", "GBP", "USD", "SEK", "DKK", "NOK", "PLN", "CHF", "CZK"], timeout: "", status: "Card", fields: [] },
+  { code: "MASTER", name: "Mastercard", region: "Cards", countries: [], currencies: ["EUR", "GBP", "USD", "SEK", "DKK", "NOK", "PLN", "CHF", "CZK"], timeout: "", status: "Card", fields: [] },
+  { code: "AMEX", name: "American Express", region: "Cards", countries: [], currencies: ["EUR", "GBP", "USD"], timeout: "", status: "Card", fields: [] },
+]
+
+function finalise(b, type) {
+  return {
+    ...b,
+    type,
+    paymentMethod: b.paymentMethod || (type === "card" ? "CC" : "VA"),
+    countryRequirement: b.countryRequirement || "O",
+    fields: b.fields.map(([key, req, sample, hint]) => {
+      const def = FIELD_DEFS[key]
+      return { key, req, label: def.label, type: def.type || "text", hint: hint !== undefined ? hint : def.hint || "", sample: sample !== undefined ? sample : def.sample }
+    }),
+  }
 }
 
-const BRAND_MAP = Object.fromEntries(BRANDS.map((b) => [b.code, b]));
-const getBrand = (code) => BRAND_MAP[String(code || "").toUpperCase()] || null;
-const FIELD_KEYS = new Set(Object.keys(FIELD_DEFS));
-
-module.exports = { BRANDS, FIELD_DEFS, FIELD_KEYS, getBrand };
+export const BRANDS = [...WALLET_BRANDS.map((b) => finalise(b, "wallet")), ...CARD_BRANDS.map((b) => finalise(b, "card"))]
+const BRAND_MAP = Object.fromEntries(BRANDS.map((b) => [b.code, b]))
+export const getBrand = (code) => BRAND_MAP[String(code || "").toUpperCase()] || null
+export const isCard = (code) => getBrand(code)?.type === "card"
