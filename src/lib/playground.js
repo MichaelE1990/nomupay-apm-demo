@@ -139,3 +139,45 @@ export function checkoutInput(config, merchantTransactionId) {
     cart: cart.map((p) => ({ name: p.name, quantity: String(p.quantity), price: p.price })),
   }
 }
+
+// Splits checkout parameters into the groups the settings switch on, so the
+// API panel can show what each setting adds to the request.
+export const GROUPS = [
+  { id: 'base', title: 'Every checkout', note: 'Which entity is charging, how much, and your order reference.' },
+  { id: 'methods', title: 'NomuPay Wallets methods', note: 'On the test system, testMode=EXTERNAL sends APMs to the PPRO simulator. Leave it out in production.' },
+  { id: 'contact', title: 'Name and email', note: 'Collected on your page before the checkout is created.' },
+  { id: 'billing', title: 'Billing address', note: 'Sent with the checkout; the widget doesn’t ask for it.' },
+  { id: 'shipping', title: 'Shipping address', note: 'Where the order goes. Some APMs and risk checks use it.' },
+  { id: 'lineItems', title: 'Line items', note: 'One set of cart.items[n] fields per product. The amount must equal their total.' },
+  { id: 'save', title: 'Save payment details', note: 'Stores the details and returns a registrationId with the result. The standing instruction marks this first payment as customer-initiated.' },
+  { id: 'integrity', title: 'Integrity check', note: 'The response then includes an integrity hash for the script tag (see step 2).' },
+]
+
+export function groupOf(key) {
+  if (key === 'testMode') return 'methods'
+  if (key.startsWith('customer.')) return 'contact'
+  if (key.startsWith('billing.')) return 'billing'
+  if (key.startsWith('shipping.')) return 'shipping'
+  if (key.startsWith('cart.')) return 'lineItems'
+  if (key === 'createRegistration' || key.startsWith('standingInstruction.')) return 'save'
+  if (key === 'integrity') return 'integrity'
+  return 'base'
+}
+
+export function groupParams(params) {
+  let byId = Object.fromEntries(GROUPS.map((g) => [g.id, []]))
+  for (let p of params) byId[groupOf(p[0])].push(p)
+  return GROUPS.map((g) => ({ ...g, params: byId[g.id] })).filter((g) => g.params.length)
+}
+
+// Which settings were switched on or off between two configs
+export function configChange(before, after) {
+  for (let id of ['contact', 'billing', 'shipping', 'lineItems', 'save', 'integrity']) {
+    if (before[id] !== after[id]) return { id, kind: after[id] ? 'added' : 'removed' }
+  }
+  if (before.country !== after.country) return { id: 'base', kind: 'changed' }
+  if (before.methods.join() !== after.methods.join()) return { id: 'brands', kind: 'changed' }
+  if (JSON.stringify(before.quantities) !== JSON.stringify(after.quantities)) return { id: after.lineItems ? 'lineItems' : 'base', kind: 'changed' }
+  // Typing in the shop's form updates values without jumping the panel around
+  return null
+}

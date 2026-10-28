@@ -9,12 +9,13 @@ import { EnvironmentBadges } from '@/components/EnvironmentBadges'
 import { Logo } from '@/components/Logo'
 import { CodeTabs, Spinner, StatusBadge, Step } from '@/components/playground/ApiPanel'
 import { CheckoutPreview } from '@/components/playground/CheckoutPreview'
+import { BrandsCard, IncludeGroups } from '@/components/playground/IncludePanel'
 import { CountrySelect, SettingsPanel } from '@/components/playground/SettingsPanel'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { getBrand } from '@/lib/brands'
 import { getJson, newMerchantTransactionId, postJson, usePersistentState } from '@/lib/flowState'
 import { buildCurl, curlDiff, highlightCurl, highlightHtml, highlightJson } from '@/lib/highlight'
-import { checkoutInput, customerFor, defaultMethods, initialConfig } from '@/lib/playground'
+import { checkoutInput, configChange, customerFor, defaultMethods, initialConfig, orderedMethods, requiredFields } from '@/lib/playground'
 import { REPEAT_PAYMENT_PARAMS, buildPaymentParams, usesCard } from '@/lib/request'
 import { useConfig } from '@/lib/useConfig'
 
@@ -54,10 +55,10 @@ function PaneTabs({ pane, setPane }) {
   let tabs = [
     ['settings', 'Settings'],
     ['checkout', 'Checkout'],
-    ['api', 'API calls'],
+    ['api', 'What to include'],
   ]
   return (
-    <div className="flex gap-1 rounded-lg bg-zinc-100 p-1 xl:hidden dark:bg-white/5">
+    <div className="flex gap-1 rounded-lg bg-zinc-100 p-1 lg:hidden dark:bg-white/5">
       {tabs.map(([id, label]) => (
         <button
           key={id}
@@ -104,7 +105,20 @@ export function Playground({ mode = 'start' }) {
 
   // Saved settings from an older version may miss newer keys
   let config = useMemo(() => ({ ...initialConfig(state.config?.country), ...state.config }), [state.config])
-  let setConfig = useCallback((next) => setState((s) => ({ ...s, config: next })), [setState])
+  let [focus, setFocus] = useState(null)
+  let setConfig = useCallback(
+    (next) => {
+      let change = configChange(config, next)
+      if (change) setFocus({ ...change, at: Date.now() })
+      setState((s) => ({ ...s, config: next }))
+    },
+    [config, setState],
+  )
+  useEffect(() => {
+    if (!focus) return
+    let t = setTimeout(() => setFocus(null), 4500)
+    return () => clearTimeout(t)
+  }, [focus])
   let changeCountry = (code) =>
     setConfig({ ...config, country: code, methods: defaultMethods(code), customer: customerFor(code) })
 
@@ -271,9 +285,10 @@ export function Playground({ mode = 'start' }) {
   let api = (
     <div>
       <div className="flex items-center justify-between gap-3">
-        <h2 className="text-sm font-semibold text-zinc-900 dark:text-white">API calls</h2>
+        <h2 className="text-sm font-semibold text-zinc-900 dark:text-white">What to include</h2>
         <span className="text-xs text-zinc-500 dark:text-zinc-400">COPYandPAY</span>
       </div>
+      <p className="mt-1 text-xs/5 text-zinc-500 dark:text-zinc-400">What your server sends and your page renders for the checkout in the middle.</p>
       <ol role="list" className="mt-6">
         <Step
           number={1}
@@ -291,16 +306,17 @@ export function Playground({ mode = 'start' }) {
             ) : null
           }
         >
-          <p>
-            Your server sends this when the shopper reaches checkout. Change anything on the left and a new checkout is created; the lines that
-            changed are marked.
-          </p>
-          {diffBase && (request.added > 0 || request.removed > 0) && (
-            <p className="flex gap-3 text-xs">
-              <span className="text-emerald-600 dark:text-emerald-400">+{request.added} added or changed</span>
-              <span className="text-rose-600 dark:text-rose-400">−{request.removed} removed</span>
-            </p>
-          )}
+          <p>Your server sends this when the shopper reaches checkout. Each setting you switch on adds its own parameters here.</p>
+          <IncludeGroups params={shownParams} base={diffBase} focus={focus} need={requiredFields(orderedMethods(config))} config={config} />
+          <div className="flex items-center justify-between gap-3 pt-2">
+            <h4 className="text-xs font-semibold text-zinc-900 dark:text-white">Full request</h4>
+            {diffBase && (request.added > 0 || request.removed > 0) && (
+              <p className="flex gap-3 text-xs">
+                <span className="text-emerald-600 dark:text-emerald-400">+{request.added}</span>
+                <span className="text-rose-600 dark:text-rose-400">−{request.removed}</span>
+              </p>
+            )}
+          </div>
           <CodeTabs
             tabs={[
               { name: 'Request', code: request.code, html: request.html },
@@ -322,9 +338,15 @@ export function Playground({ mode = 'start' }) {
           badge={step2State === 'done' ? <StatusBadge status="success">Rendered</StatusBadge> : checkoutId && mode === 'start' ? <Spinner label="Loading" /> : null}
         >
           <p>
-            The <code>id</code> from step 1 loads the widget. <code>data-brands</code> picks the methods, and the form&rsquo;s{' '}
+            Your page loads the widget with the <code>id</code> from step 1. <code>data-brands</code> picks the methods, and the form&rsquo;s{' '}
             <code>action</code> is where the shopper comes back to.
           </p>
+          <BrandsCard
+            brands={mode === 'return' ? checkout?.input?.brands || [] : input.brands}
+            flash={focus?.id === 'brands'}
+            integrity={config.integrity ? response?.integrity || 'from the step 1 response' : null}
+            action={action || '/playground/return'}
+          />
           <CodeTabs tabs={[{ name: 'HTML', code: widgetHtml, html: highlightHtml(widgetHtml), empty: 'Waiting for the checkout id from step 1.' }]} />
         </Step>
 
@@ -413,7 +435,7 @@ export function Playground({ mode = 'start' }) {
   )
 
   return (
-    <div className="flex min-h-screen flex-col xl:h-screen">
+    <div className="flex min-h-screen flex-col lg:h-screen lg:overflow-hidden">
       <header className="flex h-14 flex-none items-center justify-between gap-4 border-b border-zinc-900/10 px-4 sm:px-6 dark:border-white/10">
         <div className="flex min-w-0 items-center gap-4">
           <Link href="/" aria-label="Home">
@@ -444,22 +466,22 @@ export function Playground({ mode = 'start' }) {
         </div>
       </header>
 
-      <div className="px-4 pt-4 sm:px-6 xl:hidden">
+      <div className="sticky top-0 z-10 bg-white/90 px-4 py-3 backdrop-blur-sm sm:px-6 lg:hidden dark:bg-zinc-900/90">
         <PaneTabs pane={pane} setPane={setPane} />
       </div>
 
-      <div className="flex min-h-0 flex-auto flex-col xl:flex-row">
-        <aside className={clsx('px-5 py-6 xl:block xl:w-72 xl:flex-none xl:overflow-y-auto xl:border-r xl:border-zinc-900/10 xl:dark:border-white/10', pane === 'settings' ? 'block' : 'hidden')}>
+      <div className="flex min-h-0 flex-auto flex-col lg:flex-row">
+        <aside className={clsx('px-5 py-6 lg:block lg:w-64 lg:flex-none lg:overflow-y-auto lg:overscroll-contain lg:border-r lg:border-zinc-900/10 xl:w-72 lg:dark:border-white/10', pane === 'settings' ? 'block' : 'hidden')}>
           {settings}
         </aside>
 
         <main
           className={clsx(
-            'min-w-0 flex-auto flex-col bg-zinc-50 bg-[radial-gradient(var(--color-zinc-300)_1px,transparent_1px)] [background-size:16px_16px] xl:flex xl:overflow-hidden dark:bg-zinc-950 dark:bg-[radial-gradient(var(--color-zinc-800)_1px,transparent_1px)]',
+            'min-w-0 flex-auto flex-col bg-zinc-50 bg-[radial-gradient(var(--color-zinc-300)_1px,transparent_1px)] [background-size:16px_16px] lg:flex lg:overflow-hidden dark:bg-zinc-950 dark:bg-[radial-gradient(var(--color-zinc-800)_1px,transparent_1px)]',
             pane === 'checkout' ? 'flex' : 'hidden',
           )}
         >
-          <div className="flex-auto overflow-y-auto px-4 py-6 sm:px-6 xl:py-8">{preview}</div>
+          <div className="flex-auto overflow-y-auto overscroll-contain px-4 py-6 sm:px-6 lg:py-8">{preview}</div>
           <div className="flex flex-none items-center justify-center gap-3 border-t border-zinc-900/10 bg-white/80 px-4 py-3 backdrop-blur-sm dark:border-white/10 dark:bg-zinc-900/80">
             <DeviceToggle device={state.device} setDevice={(d) => setState((s) => ({ ...s, device: d }))} />
             {mode === 'start' && <CountrySelect value={config.country} onChange={changeCountry} className="w-56" />}
@@ -468,7 +490,7 @@ export function Playground({ mode = 'start' }) {
 
         <aside
           className={clsx(
-            'px-5 py-6 xl:block xl:w-[26rem] xl:flex-none xl:overflow-y-auto xl:border-l xl:border-zinc-900/10 2xl:w-[32rem] xl:dark:border-white/10',
+            'bg-zinc-50/50 px-5 py-6 lg:block lg:w-80 lg:flex-none lg:overflow-y-auto lg:overscroll-contain lg:border-l lg:border-zinc-900/10 xl:w-[26rem] 2xl:w-[30rem] lg:dark:border-white/10 dark:bg-transparent',
             pane === 'api' ? 'block' : 'hidden',
           )}
         >
