@@ -8,7 +8,7 @@ export const metadata = {
     default: 'NomuPay APM Demo',
   },
   description:
-    'Test NomuPay Wallets payment methods and cards the way a merchant integrates them: build the request, send it, and use the response in the next step.',
+    'Test payment brands and cards the way a merchant integrates them: build the request, send it, and use the response in the next step.',
 }
 
 export default function RootLayout({ children }) {

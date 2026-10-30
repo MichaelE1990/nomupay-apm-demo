@@ -61,30 +61,3 @@ export function highlightJs(code) {
     })
     .join('\n')
 }
-
-// cURL with the lines that changed since `base` marked: added/changed lines get
-// .pg-added, removed or replaced values are shown struck through (not copied).
-export function curlDiff({ method = 'POST', url, params, base, ignore = ['merchantTransactionId'] }) {
-  const code = buildCurl({ method, url, params })
-  const lines = highlightCurl(code).split('\n')
-  if (!base) return { code, html: lines.join('\n'), added: 0, removed: 0 }
-  const id = ([k, v]) => `${k}=${v}`
-  const counted = (list) => new Set(list.filter(([k]) => !ignore.includes(k)).map(id))
-  const before = counted(base)
-  const now = counted(params)
-  const gone = base.filter((p) => !ignore.includes(p[0]) && !now.has(id(p)))
-  const removedLine = (p) => `<span class="pg-removed">  -d "${esc(id(p))}"</span>`
-  const out = [lines[0], lines[1]]
-  let added = 0
-  params.forEach((p, i) => {
-    const line = lines[i + 2]
-    const replaced = gone.filter(([k]) => k === p[0])
-    replaced.forEach((r) => out.push(removedLine(r)))
-    if (!ignore.includes(p[0]) && !before.has(id(p))) {
-      added++
-      out.push(`<span class="pg-added">${line}</span>`)
-    } else out.push(line)
-  })
-  gone.filter(([k]) => !params.some(([pk]) => pk === k)).forEach((r) => out.push(removedLine(r)))
-  return { code, html: out.join('\n'), added, removed: gone.length }
-}

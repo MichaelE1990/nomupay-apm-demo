@@ -4,7 +4,6 @@ export const navigation = [
     title: 'Guides',
     links: [
       { title: 'Introduction', href: '/' },
-      { title: 'Checkout playground', href: '/playground' },
       { title: 'COPYandPAY', href: '/copyandpay' },
       { title: 'Server-to-server', href: '/server-to-server' },
     ],
@@ -25,20 +24,18 @@ export const allSections = {
     { id: 'reference', title: 'Reference' },
   ],
   '/copyandpay': [
-    { id: 'prepare-the-checkout', title: 'Prepare the checkout', tag: 'POST' },
-    { id: 'render-the-payment-form', title: 'Render the payment form' },
-    { id: 'get-the-payment-result', title: 'Get the payment result', tag: 'GET' },
-    { id: 'pay-again-with-saved-details', title: 'Pay again with saved details', tag: 'POST' },
+    { id: 'prepare-the-checkout', step: 1, title: 'Prepare the checkout', tag: 'POST' },
+    { id: 'render-the-payment-form', step: 2, title: 'Render the payment form' },
+    { id: 'get-the-payment-result', step: 3, title: 'Get the payment result', tag: 'GET' },
   ],
   '/server-to-server': [
-    { id: 'create-the-payment', title: 'Create the payment', tag: 'POST' },
-    { id: 'redirect-the-shopper', title: 'Redirect the shopper' },
-    { id: 'get-the-payment-result', title: 'Get the payment result', tag: 'GET' },
+    { id: 'create-the-payment', step: 1, title: 'Create the payment', tag: 'POST' },
+    { id: 'redirect-the-shopper', step: 2, title: 'Redirect the shopper' },
+    { id: 'get-the-payment-result', step: 3, title: 'Get the payment result', tag: 'GET' },
   ],
   '/payment-methods': [
+    { id: 'payment-brands', title: 'Payment brands' },
     { id: 'cards', title: 'Cards' },
-    { id: 'europe', title: 'Europe' },
-    { id: 'international', title: 'International' },
   ],
   '/result-codes': [],
 }

@@ -11,39 +11,18 @@ export const metadata = {
 
 const GROUPS = [
   {
+    id: 'payment-brands',
+    type: 'wallet',
+    title: 'Payment brands',
+    intro: 'Processed by PPRO. Send one as paymentBrand server-to-server, or list several in data-brands for COPYandPAY. On the test system they run against the PPRO simulator with testMode=EXTERNAL. Where billing.country is mandatory, it picks the market.',
+  },
+  {
     id: 'cards',
-    region: 'Cards',
+    type: 'card',
     title: 'Cards',
-    intro: 'Cards run through the COPYandPAY widget on the card entity (CARD_ENTITY_ID, or ENTITY_ID when that isn’t set). Turn on Save payment details to get a registrationId back.',
-  },
-  {
-    id: 'europe',
-    region: 'Europe',
-    title: 'Europe',
-    intro: 'NomuPay Wallets methods processed by PPRO. On the test system they run against the PPRO simulator with testMode=EXTERNAL.',
-  },
-  {
-    id: 'international',
-    region: 'International',
-    title: 'International',
-    intro: 'NomuPay Wallets methods outside the European schemes. Most need billing.country to pick the market.',
+    intro: 'Cards run through the COPYandPAY widget on the card entity (CARD_ENTITY_ID, or ENTITY_ID when that isn’t set).',
   },
 ]
-
-const statusStyles = {
-  Certified: 'bg-emerald-50 text-emerald-700 ring-emerald-600/20 dark:bg-emerald-400/10 dark:text-emerald-400 dark:ring-emerald-400/20',
-  Certification: 'bg-amber-50 text-amber-800 ring-amber-600/20 dark:bg-amber-400/10 dark:text-amber-400 dark:ring-amber-400/20',
-  Card: 'bg-sky-50 text-sky-700 ring-sky-600/20 dark:bg-sky-400/10 dark:text-sky-400 dark:ring-sky-400/20',
-}
-const statusText = { Certified: 'Certified', Certification: 'In certification', Card: 'Card' }
-
-function StatusPill({ status }) {
-  return (
-    <span className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium whitespace-nowrap ring-1 ring-inset ${statusStyles[status] || statusStyles.Card}`}>
-      {statusText[status] || status}
-    </span>
-  )
-}
 
 function list(values, max) {
   if (!values.length) return 'Any'
@@ -87,11 +66,8 @@ function MethodTable({ brands, isCards }) {
                 Timeout
               </th>
             )}
-            <th scope="col" className="px-3 py-3 font-semibold text-zinc-900 dark:text-white">
+            <th scope="col" className="py-3 pr-4 pl-3 font-semibold text-zinc-900 sm:pr-5 dark:text-white">
               {isCards ? 'Flow' : 'Fields'}
-            </th>
-            <th scope="col" className="hidden py-3 pr-4 pl-3 text-right font-semibold text-zinc-900 sm:table-cell sm:pr-5 dark:text-white">
-              <span className="sr-only">Status</span>
             </th>
           </tr>
         </thead>
@@ -102,10 +78,6 @@ function MethodTable({ brands, isCards }) {
                 <div className="font-medium text-zinc-900 dark:text-white">{b.name}</div>
                 <div className="mt-0.5 font-mono text-xs text-zinc-500 dark:text-zinc-400">{b.code}</div>
                 <dl className="mt-2 space-y-1 text-xs text-zinc-500 sm:hidden dark:text-zinc-400">
-                  <dt className="sr-only">Status</dt>
-                  <dd>
-                    <StatusPill status={b.status} />
-                  </dd>
                   <dt className="sr-only">Currencies</dt>
                   <dd className="font-mono">{list(b.currencies, 6)}</dd>
                   {!isCards && (
@@ -125,12 +97,9 @@ function MethodTable({ brands, isCards }) {
                 {list(b.currencies, 6)}
               </td>
               {!isCards && <td className="hidden px-3 py-4 align-top whitespace-nowrap text-zinc-600 md:table-cell dark:text-zinc-400">{b.timeout}</td>}
-              <td className="px-3 py-4 align-top text-zinc-600 dark:text-zinc-400">
+              <td className="py-4 pr-4 pl-3 align-top text-zinc-600 sm:pr-5 dark:text-zinc-400">
                 {isCards ? <span className="text-sm">COPYandPAY only</span> : <Fields brand={b} />}
                 {b.note && <p className="mt-2 max-w-xs text-xs text-zinc-500 dark:text-zinc-400">{b.note}</p>}
-              </td>
-              <td className="hidden py-4 pr-4 pl-3 text-right align-top sm:table-cell sm:pr-5">
-                <StatusPill status={b.status} />
               </td>
             </tr>
           ))}
@@ -149,18 +118,18 @@ export default function PaymentMethodsPage() {
         behind them.
       </p>
       <Note>
-        Methods marked <strong>In certification</strong> are still being certified with PPRO, so they may not be enabled on your entity yet.
-        A <code>600.200.500</code> or an instant <code>800.100.152</code> usually means the method isn&rsquo;t switched on for the merchant.
+        Every payment brand here is certified and in scope. If one comes back with <code>600.200.500</code> or an instant <code>800.100.152</code>,
+        it usually isn&rsquo;t switched on for the merchant&rsquo;s entity yet.
       </Note>
       {GROUPS.map((group) => {
-        let brands = BRANDS.filter((b) => b.region === group.region)
+        let brands = BRANDS.filter((b) => b.type === group.type)
         return (
           <section key={group.id}>
             <Heading level={2} id={group.id}>
               {group.title}
             </Heading>
             <p>{group.intro}</p>
-            <MethodTable brands={brands} isCards={group.region === 'Cards'} />
+            <MethodTable brands={brands} isCards={group.type === 'card'} />
           </section>
         )
       })}

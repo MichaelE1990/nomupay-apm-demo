@@ -76,7 +76,7 @@ export function Footer() {
       <PageNavigation />
       <div className="flex flex-col items-center justify-between gap-5 border-t border-zinc-900/5 pt-8 sm:flex-row dark:border-white/5">
         <p className="text-xs text-zinc-600 dark:text-zinc-400">
-          Test environment demo for NomuPay Wallets and cards on the ACI gateway. Field rules from the Payment Knowledge Base, 14 Oct 2026.
+          Test environment demo for payment brands and cards on the ACI gateway. Field rules from the Payment Knowledge Base, 14 Oct 2026.
         </p>
         <Link href={REPO_URL} className="group">
           <span className="sr-only">Source on GitHub</span>

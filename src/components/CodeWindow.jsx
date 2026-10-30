@@ -115,17 +115,23 @@ export function CodeWindow({ title, tag, label, code, html, empty, footer, statu
 }
 
 // Primary action inside a code panel footer: emerald so it reads on the dark panel in both themes
+const sendClass =
+  'inline-flex justify-center rounded-full bg-emerald-500 px-3 py-1 text-sm font-medium text-white transition hover:bg-emerald-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-400 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-emerald-500'
+
 export function SendButton({ className, children, ...props }) {
   return (
-    <button
-      type="button"
-      {...props}
-      className={clsx(
-        'inline-flex justify-center rounded-full bg-emerald-500 px-3 py-1 text-sm font-medium text-white transition hover:bg-emerald-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-400 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-emerald-500',
-        className,
-      )}
-    >
+    <button type="button" {...props} className={clsx(sendClass, className)}>
       {children}
     </button>
+  )
+}
+
+// Same look for a link, or a disabled-looking span when there's nowhere to go yet
+export function SendLink({ href, className, children }) {
+  if (!href) return <span className={clsx(sendClass, 'cursor-not-allowed opacity-40', className)}>{children}</span>
+  return (
+    <a href={href} className={clsx(sendClass, className)}>
+      {children}
+    </a>
   )
 }

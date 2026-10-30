@@ -21,15 +21,15 @@ export default function Home() {
       <HeroPattern />
       <h1>NomuPay APM Demo</h1>
       <p className="lead">
-        Test NomuPay Wallets payment methods and cards the way a merchant integrates them. Build a request, see exactly what gets sent, send it to
+        Test payment brands and cards the way a merchant integrates them. Build a request, see exactly what gets sent, send it to
         the test gateway, and use the response in the next step.
       </p>
       <div className="not-prose mt-6 mb-16 flex flex-wrap gap-3">
-        <Button href="/playground" arrow="right">
-          Open the checkout playground
+        <Button href="/server-to-server" arrow="right">
+          Server-to-server guide
         </Button>
         <Button href="/copyandpay" variant="outline">
-          Step-by-step guides
+          COPYandPAY guide
         </Button>
       </div>
 
@@ -56,14 +56,14 @@ export default function Home() {
         <Property name="testMode" type="string">
           {config.testMode ? (
             <>
-              <code>{config.testMode}</code>, sent with NomuPay Wallets requests so the PPRO simulator handles them.
+              <code>{config.testMode}</code>, sent with payment brand requests so the PPRO simulator handles them.
             </>
           ) : (
             'Not sent.'
           )}
         </Property>
         <Property name="ENTITY_ID" type="string" badge={<StatusBadge status={config.configured ? 'success' : 'failed'}>{config.configured ? 'Set' : 'Missing'}</StatusBadge>}>
-          {config.entities.wallet ? <code>{config.entities.wallet}</code> : 'Not set.'} Used for NomuPay Wallets payment methods.
+          {config.entities.wallet ? <code>{config.entities.wallet}</code> : 'Not set.'} Used for payment brands.
         </Property>
         <Property
           name="CARD_ENTITY_ID"

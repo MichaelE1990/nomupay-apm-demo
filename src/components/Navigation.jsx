@@ -6,7 +6,6 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useRef } from 'react'
 
-import { Button } from '@/components/Button'
 import { useIsInsideMobileNavigation } from '@/components/MobileNavigation'
 import { useSectionStore } from '@/components/SectionProvider'
 import { Tag } from '@/components/Tag'
@@ -38,6 +37,7 @@ function NavLink({
   href,
   children,
   tag,
+  step,
   active = false,
   isAnchorLink = false,
 }) {
@@ -54,7 +54,10 @@ function NavLink({
           : 'text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white',
       )}
     >
-      <span className="truncate">{children}</span>
+      <span className="truncate">
+        {step && <span className="mr-2 font-mono text-xs text-zinc-400 tabular-nums dark:text-zinc-500">{step}</span>}
+        {children}
+      </span>
       {tag && (
         <Tag variant="small" color="zinc">
           {tag}
@@ -179,6 +182,7 @@ function NavigationGroup({ group, className }) {
                         <NavLink
                           href={`${link.href}#${section.id}`}
                           tag={section.tag}
+                          step={section.step}
                           isAnchorLink
                         >
                           {section.title}
@@ -209,11 +213,6 @@ export function Navigation(props) {
             className={groupIndex === 0 ? 'md:mt-0' : ''}
           />
         ))}
-        <li className="sticky bottom-0 z-10 mt-6 min-[416px]:hidden">
-          <Button href="/playground" variant="filled" className="w-full">
-            Open playground
-          </Button>
-        </li>
       </ul>
     </nav>
   )

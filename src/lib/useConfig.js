@@ -1,22 +1,36 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useSyncExternalStore } from 'react'
 
 let cached = null
 let pending = null
+let listeners = new Set()
 
-// Environment summary and catalogue from /api/config, fetched once per page load
-export function useConfig() {
-  let [config, setConfig] = useState(cached)
-  useEffect(() => {
-    if (cached) return
-    pending = pending || fetch('/api/config').then((r) => r.json())
-    pending
+function load() {
+  pending =
+    pending ||
+    fetch('/api/config')
+      .then((r) => r.json())
+      .catch(() => ({ error: true, configured: false, environment: 'TEST', apiHost: '' }))
       .then((c) => {
         cached = c
-        setConfig(c)
+        listeners.forEach((l) => l())
       })
-      .catch(() => setConfig({ error: true, configured: false, environment: 'TEST', apiHost: '' }))
+  return pending
+}
+
+function subscribe(listener) {
+  listeners.add(listener)
+  return () => listeners.delete(listener)
+}
+
+// Environment summary and catalogue from /api/config, fetched once per page load.
+// The server snapshot is always null, so hydration matches the server HTML even
+// when another component has already loaded the config.
+export function useConfig() {
+  let config = useSyncExternalStore(subscribe, () => cached, () => null)
+  useEffect(() => {
+    if (!cached) load()
   }, [])
   return config
 }

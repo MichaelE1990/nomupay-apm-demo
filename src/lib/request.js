@@ -17,19 +17,6 @@ export const CUSTOMER_FIELDS = [
   { key: 'shipping.country', label: 'Shipping country', sample: '' },
 ]
 
-export const SAVE_DETAILS_PARAMS = [
-  ['createRegistration', 'true'],
-  ['standingInstruction.mode', 'INITIAL'],
-  ['standingInstruction.type', 'UNSCHEDULED'],
-  ['standingInstruction.source', 'CIT'],
-]
-
-export const REPEAT_PAYMENT_PARAMS = [
-  ['standingInstruction.mode', 'REPEATED'],
-  ['standingInstruction.type', 'UNSCHEDULED'],
-  ['standingInstruction.source', 'CIT'],
-]
-
 // Every field a request may carry, checked again on the server
 export const FIELD_KEY_PATTERN =
   /^(customer\.(givenName|surname|email|phone|mobile|merchantCustomerId)|billing\.(street1|houseNumber1|city|postcode|state|country)|shipping\.(street1|city|postcode|state|country)|virtualAccount\.accountId|bankAccount\.(iban|holder|mandate\.id|mandate\.dateOfSignature)|customParameters\[mandate_url\]|descriptor|merchantInvoiceId)$/
@@ -59,7 +46,7 @@ export function usesCard(brandCodes) {
 }
 
 /**
- * @param {object} input  { flow, brands[], amount, currency, merchantTransactionId, fields{}, extras{customer,cart,saveDetails}, cart[] }
+ * @param {object} input  { flow, brands[], amount, currency, merchantTransactionId, fields{}, extras{customer,cart}, cart[] }
  * @param {object} env    { entityId, testMode, shopperResultUrl }
  * @returns {Array<[string,string]>} ordered parameters
  */
@@ -94,7 +81,6 @@ export function buildPaymentParams(input, env) {
     })
   }
 
-  if (extras.saveDetails) params.push(...SAVE_DETAILS_PARAMS)
   if (input.flow === 'copyandpay' && extras.integrity !== false) params.push(['integrity', 'true'])
   if (input.flow === 's2s' && env.shopperResultUrl) params.push(['shopperResultUrl', env.shopperResultUrl])
   return params

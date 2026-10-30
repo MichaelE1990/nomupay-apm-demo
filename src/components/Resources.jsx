@@ -26,15 +26,6 @@ function GlobeIcon(props) {
   )
 }
 
-function WalletIcon(props) {
-  return (
-    <svg viewBox="0 0 20 20" aria-hidden="true" {...props}>
-      <path strokeWidth="1.5" d="M3.5 6.5a2 2 0 0 1 2-2h8v3h1a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-9a2 2 0 0 1-2-2v-8Z" />
-      <circle cx="13" cy="12" r="1" strokeWidth="0" className="fill-current" />
-    </svg>
-  )
-}
-
 function CodeIcon(props) {
   return (
     <svg viewBox="0 0 20 20" aria-hidden="true" {...props}>
@@ -46,25 +37,18 @@ function CodeIcon(props) {
 
 const resources = [
   {
-    href: '/payment-methods#cards',
-    name: 'Cards',
-    description: 'Visa, Mastercard and Amex through the COPYandPAY widget, with optional saved details.',
-    icon: CardIcon,
-    pattern: { y: 16, squares: [[0, 1], [1, 3]] },
-  },
-  {
-    href: '/payment-methods#europe',
-    name: 'Europe',
-    description: 'iDEAL, Bancontact, BLIK, Bizum, MB WAY, Przelewy24, Trustly, Twint and more through NomuPay Wallets.',
+    href: '/payment-methods#payment-brands',
+    name: 'Payment brands',
+    description: 'iDEAL, Bancontact, BLIK, Bizum, MB WAY, Przelewy24, Trustly, Twint, PayPal, Clearpay and more, with the fields each one needs.',
     icon: GlobeIcon,
     pattern: { y: -6, squares: [[-1, 2], [1, 3]] },
   },
   {
-    href: '/payment-methods#international',
-    name: 'International',
-    description: 'PayPal, Paysafecard, Clearpay and Afterpay, with the fields each one needs.',
-    icon: WalletIcon,
-    pattern: { y: 32, squares: [[0, 2], [1, 4]] },
+    href: '/payment-methods#cards',
+    name: 'Cards',
+    description: 'Visa, Mastercard and Amex through the COPYandPAY widget.',
+    icon: CardIcon,
+    pattern: { y: 16, squares: [[0, 1], [1, 3]] },
   },
   {
     href: '/result-codes',
@@ -152,7 +136,7 @@ export function Resources() {
       <Heading level={2} id="reference">
         Reference
       </Heading>
-      <div className="not-prose mt-4 grid grid-cols-1 gap-8 border-t border-zinc-900/5 pt-10 sm:grid-cols-2 xl:grid-cols-4 dark:border-white/5">
+      <div className="not-prose mt-4 grid grid-cols-1 gap-8 border-t border-zinc-900/5 pt-10 sm:grid-cols-2 xl:grid-cols-3 dark:border-white/5">
         {resources.map((resource) => (
           <Resource key={resource.href} resource={resource} />
         ))}

@@ -58,11 +58,25 @@ function Anchor({ id, inView, children }) {
   )
 }
 
+// Step number shown in front of a guide step's title
+function StepNumber({ step }) {
+  return (
+    <span
+      className="mr-3 inline-flex size-7 flex-none -translate-y-px items-center justify-center rounded-full bg-emerald-500/10 align-middle font-mono text-sm font-semibold text-emerald-700 ring-1 ring-emerald-500/25 ring-inset dark:bg-emerald-400/10 dark:text-emerald-400 dark:ring-emerald-400/25"
+    >
+      <span className="sr-only">Step </span>
+      {step}
+      <span className="sr-only">: </span>
+    </span>
+  )
+}
+
 export function Heading({
   children,
   tag,
   label,
   level,
+  step,
   anchor = true,
   ...props
 }) {
@@ -96,10 +110,14 @@ export function Heading({
       >
         {anchor ? (
           <Anchor id={props.id} inView={inView}>
+            {step && <StepNumber step={step} />}
             {children}
           </Anchor>
         ) : (
-          children
+          <>
+            {step && <StepNumber step={step} />}
+            {children}
+          </>
         )}
       </Component>
     </>
