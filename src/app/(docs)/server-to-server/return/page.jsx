@@ -21,7 +21,7 @@ export default function ServerToServerReturnPage() {
       <ReturnBridge />
       <h1>Server-to-server</h1>
       <p className="lead">
-        The shopper is back from the payment page. Step 3 reads the result with the payment <code>id</code> the gateway added to this URL.
+        The shopper is back from the payment page. The status step reads the result with the payment ID the gateway added to this address.
       </p>
       <Suspense>
         <S2SFlow mode="return" />

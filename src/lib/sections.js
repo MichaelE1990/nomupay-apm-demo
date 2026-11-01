@@ -28,10 +28,13 @@ export const allSections = {
     { id: 'render-the-payment-form', step: 2, title: 'Render the payment form' },
     { id: 'get-the-payment-result', step: 3, title: 'Get the payment result', tag: 'GET' },
   ],
+  // The steps follow the chosen flow; S2SFlow updates this list
   '/server-to-server': [
-    { id: 'create-the-payment', step: 1, title: 'Create the payment', tag: 'POST' },
-    { id: 'redirect-the-shopper', step: 2, title: 'Redirect the shopper' },
-    { id: 'get-the-payment-result', step: 3, title: 'Get the payment result', tag: 'GET' },
+    { id: 'how-it-works', title: 'How it works' },
+    { id: 'send-the-payment', step: 1, title: 'Perform debit payment', tag: 'POST' },
+    { id: 'redirect-shopper', step: 2, title: 'Redirect shopper' },
+    { id: 'get-the-payment-status', step: 3, title: 'Get the payment status', tag: 'GET' },
+    { id: 'manage-the-payment', step: 4, title: 'Manage the payment', tag: 'POST' },
   ],
   '/payment-methods': [
     { id: 'payment-brands', title: 'Payment brands' },

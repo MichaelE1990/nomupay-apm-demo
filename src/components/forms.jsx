@@ -328,3 +328,69 @@ export function Label({ htmlFor, children, hint }) {
     </div>
   )
 }
+
+// Segmented tabs (a grey track with the chosen option raised), as in the settings design.
+// options: [{ value, label, icon?, disabled?, title? }]
+export function SegmentedControl({ options, value, onChange, label, className }) {
+  return (
+    <div role="radiogroup" aria-label={label} className={clsx('flex rounded-xl bg-zinc-100 p-1 dark:bg-white/5', className)}>
+      {options.map((o) => {
+        let on = o.value === value
+        return (
+          <button
+            key={o.value}
+            type="button"
+            role="radio"
+            aria-checked={on}
+            disabled={o.disabled}
+            title={o.title}
+            onClick={() => !on && onChange(o.value)}
+            className={clsx(
+              'flex min-w-0 flex-1 items-center justify-center gap-2 rounded-lg px-3 py-1.5 text-sm transition',
+              on
+                ? 'bg-white font-medium text-zinc-900 shadow-sm ring-1 ring-zinc-900/5 dark:bg-zinc-700 dark:text-white dark:ring-white/10'
+                : 'text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200',
+              o.disabled && 'cursor-not-allowed opacity-40 hover:text-zinc-500',
+            )}
+          >
+            {o.icon}
+            <span className="min-w-0 text-center leading-5">{o.label}</span>
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
+// Status inside a dark code panel: a dot and text, no badge background
+const panelTone = {
+  success: 'text-emerald-400',
+  pending: 'text-amber-300',
+  failed: 'text-rose-400',
+  neutral: 'text-zinc-400',
+}
+export function PanelStatus({ status = 'neutral', children }) {
+  return (
+    <span className={clsx('inline-flex items-center gap-1.5 text-xs font-medium', panelTone[status] || panelTone.neutral)}>
+      <svg viewBox="0 0 6 6" aria-hidden="true" className="size-1.5 fill-current">
+        <circle r={3} cx={3} cy={3} />
+      </svg>
+      {children || statusLabel[status]}
+    </span>
+  )
+}
+
+// A bordered box for a control that has its label elsewhere (in a parameter row)
+export function FieldBox({ invalid, children, className }) {
+  return (
+    <div
+      className={clsx(
+        'rounded-lg bg-white px-3 py-1 outline-1 -outline-offset-1 outline-zinc-900/10 focus-within:outline-2 focus-within:-outline-offset-2 focus-within:outline-emerald-500 dark:bg-white/5 dark:outline-white/10 dark:focus-within:outline-emerald-400',
+        invalid && 'outline-rose-400 dark:outline-rose-400/60',
+        className,
+      )}
+    >
+      {children}
+    </div>
+  )
+}

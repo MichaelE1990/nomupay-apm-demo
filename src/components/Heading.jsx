@@ -58,15 +58,13 @@ function Anchor({ id, inView, children }) {
   )
 }
 
-// Step number shown in front of a guide step's title
+// Step number in front of a guide step's title: "1 Create the payment"
 function StepNumber({ step }) {
   return (
-    <span
-      className="mr-3 inline-flex size-7 flex-none -translate-y-px items-center justify-center rounded-full bg-emerald-500/10 align-middle font-mono text-sm font-semibold text-emerald-700 ring-1 ring-emerald-500/25 ring-inset dark:bg-emerald-400/10 dark:text-emerald-400 dark:ring-emerald-400/25"
-    >
+    <span className="mr-2.5 text-zinc-400 tabular-nums dark:text-zinc-500">
       <span className="sr-only">Step </span>
       {step}
-      <span className="sr-only">: </span>
+      <span className="sr-only">:</span>
     </span>
   )
 }

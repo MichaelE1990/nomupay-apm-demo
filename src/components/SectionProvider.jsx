@@ -21,6 +21,11 @@ function createSectionStore(sections) {
           ? {}
           : { visibleSections },
       ),
+    // Replace the list (a page whose steps change), keeping registered headings
+    setSections: (next) =>
+      set((state) => ({
+        sections: next.map((section) => ({ ...state.sections.find((p) => p.id === section.id), ...section })),
+      })),
     registerHeading: ({ id, ref, offsetRem }) =>
       set((state) => {
         return {
@@ -121,4 +126,15 @@ export function SectionProvider({ sections, children }) {
 export function useSectionStore(selector) {
   let store = useContext(SectionStoreContext)
   return useStore(store, selector)
+}
+
+// For a page whose sections depend on its state. Runs after the provider's own
+// layout effect, so it wins on first render too.
+export function useSyncSections(sections) {
+  let store = useContext(SectionStoreContext)
+  let key = JSON.stringify(sections.map((s) => [s.id, s.title, s.step, s.tag]))
+  useEffect(() => {
+    store.getState().setSections(sections)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [store, key])
 }

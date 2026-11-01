@@ -62,16 +62,16 @@ export function sendShopperToPopup(redirect, name = 'nomupay-apm-payment') {
 // Code the merchant would run: before step 1 a template, then the real redirect
 export function redirectSnippet(redirect) {
   if (!redirect?.url) {
-    return `// "redirect" from the step 1 response
+    return `// Redirect object from the step 1 response
 const { url, method, parameters = [] } = response.redirect
 
 if ((method || (parameters.length ? "POST" : "GET")) === "GET") {
-  // GET: add the parameters to the query string
+  // GET: redirect the shopper to the URL with the parameters in the query string
   const target = new URL(url)
   parameters.forEach(({ name, value }) => target.searchParams.append(name, value))
   window.location.href = target.toString()
 } else {
-  // POST: send the parameters as form fields
+  // POST: redirect the shopper by posting the parameters to the URL as a form
   const form = document.createElement("form")
   form.method = "POST"
   form.action = url
@@ -88,16 +88,16 @@ if ((method || (parameters.length ? "POST" : "GET")) === "GET") {
   }
   let params = redirectParams(redirect)
   let method = redirectMethod(redirect)
-  let head = `// "redirect" from the step 1 response\nconst redirect = ${JSON.stringify({ url: redirect.url, ...(redirect.method ? { method: redirect.method } : {}), parameters: params }, null, 2)}\n\n`
+  let head = `// Redirect object from the step 1 response\nconst redirect = ${JSON.stringify({ url: redirect.url, ...(redirect.method ? { method: redirect.method } : {}), parameters: params }, null, 2)}\n\n`
   if (method === 'GET')
     return (
       head +
       (params.length
-        ? `const url = new URL(redirect.url)\nredirect.parameters.forEach(({ name, value }) => url.searchParams.append(name, value))\nwindow.location.href = url.toString()`
-        : `// No parameters: send the shopper straight to the URL\nwindow.location.href = redirect.url`)
+        ? `// Redirect the shopper to the URL with the parameters in the query string\nconst url = new URL(redirect.url)\nredirect.parameters.forEach(({ name, value }) => url.searchParams.append(name, value))\nwindow.location.href = url.toString()`
+        : `// Redirect the shopper to the payment page\nwindow.location.href = redirect.url`)
     )
   return (
     head +
-    `// POST the parameters to the URL as a form\nconst form = document.createElement("form")\nform.method = "POST"\nform.action = redirect.url\nredirect.parameters.forEach(({ name, value }) => {\n  const input = document.createElement("input")\n  input.type = "hidden"\n  input.name = name\n  input.value = value\n  form.appendChild(input)\n})\ndocument.body.appendChild(form)\nform.submit()`
+    `// Redirect the shopper by posting the parameters to the URL as a form\nconst form = document.createElement("form")\nform.method = "POST"\nform.action = redirect.url\nredirect.parameters.forEach(({ name, value }) => {\n  const input = document.createElement("input")\n  input.type = "hidden"\n  input.name = name\n  input.value = value\n  form.appendChild(input)\n})\ndocument.body.appendChild(form)\nform.submit()`
   )
 }

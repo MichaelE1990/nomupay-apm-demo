@@ -38,9 +38,14 @@ export function publicConfig() {
   }
 }
 
+// Where the shopper comes back to. On Vercel this is the production domain, which is
+// public: deployment URLs sit behind Vercel's login, which can't load inside the
+// payment drawer's frame, so returning there would leave the drawer stuck.
 export function publicBase(request) {
   let fixed = env('PUBLIC_BASE_URL').replace(/\/+$/, '')
   if (fixed) return fixed
+  let production = env('VERCEL_PROJECT_PRODUCTION_URL')
+  if (production) return `https://${production}`
   let h = request.headers
   let proto = (h.get('x-forwarded-proto') || 'https').split(',')[0]
   let host = h.get('x-forwarded-host') || h.get('host')
@@ -82,8 +87,12 @@ export function validateInput(input, { flow }) {
   if (brands.length > 25) return 'Too many payment methods.'
   for (let code of brands) if (!getBrand(code)) return `Unknown payment method ${code}.`
   if (flow === 's2s') {
-    if (brands.length !== 1) return 'Server-to-server takes one payment method per payment.'
+    if (brands.length !== 1) return 'Server-to-server takes one payment brand per payment.'
     if (usesCard(brands)) return 'Cards are only available through COPYandPAY in this demo.'
+    let brand = getBrand(brands[0])
+    if (!['DB', 'PA'].includes(input.paymentType || 'DB')) return 'paymentType must be DB or PA.'
+    if (!brand.paymentTypes.includes(input.paymentType || 'DB')) return `${brand.name} doesn't support pre-authorization.`
+    if (input.mode === 'sync' && !brand.sync) return `${brand.name} has no synchronous flow.`
   }
   if (!/^\d{1,9}(\.\d{2})?$/.test(String(input.amount || ''))) return 'Amount must look like 10.00.'
   if (!/^[A-Z]{3}$/.test(String(input.currency || ''))) return 'Currency must be a 3-letter code.'

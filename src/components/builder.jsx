@@ -2,11 +2,14 @@
 
 import clsx from 'clsx'
 
+import { Property } from '@/components/content'
 import {
   AmountInput,
   CountrySelect,
   DIAL_CODES,
+  FieldBox,
   InsetField,
+  ReqTag,
   PhoneInput,
   StatusBadge,
   TextInput,
@@ -25,7 +28,7 @@ function shortList(values, max = 3) {
 
 // Payment brand picker: one searchable menu instead of a grid of cards.
 // multiple adds chips in the field and checkboxes in the menu (COPYandPAY).
-export function BrandSelect({ id, brands, selected, onChange, multiple = false, currency }) {
+export function BrandSelect({ id, brands, selected, onChange, multiple = false, currency, showDetails = true }) {
   let withCards = brands.some((b) => b.type === 'card')
   let options = [...brands.filter((b) => b.type !== 'card'), ...brands.filter((b) => b.type === 'card')].map((b) => {
     let unsupported = multiple && currency && selected.includes(b.code) && !b.currencies.includes(currency)
@@ -42,7 +45,7 @@ export function BrandSelect({ id, brands, selected, onChange, multiple = false, 
   })
   let chosen = selected.map((c) => brands.find((b) => b.code === c)).filter(Boolean)
   let notForCurrency = multiple && currency ? chosen.filter((b) => !b.currencies.includes(currency)) : []
-  let one = !multiple ? chosen[0] : null
+  let one = !multiple && showDetails ? chosen[0] : null
 
   return (
     <div className="not-prose">
@@ -113,7 +116,7 @@ export function AmountFields({ form, setForm, currencies, cartDriven, idPrefix }
 }
 
 // One control per parameter, chosen by its type
-function FieldControl({ id, spec, value, onChange, invalid, defaultCountry, countries }) {
+export function FieldControl({ id, spec, value, onChange, invalid, defaultCountry, countries }) {
   if (spec.type === 'country')
     return <CountrySelect id={id} bare countries={spec.options || []} value={value} onChange={onChange} invalid={invalid} />
   if (spec.type === 'select')
@@ -154,7 +157,7 @@ function FieldControl({ id, spec, value, onChange, invalid, defaultCountry, coun
 
 export function RequiredFields({ form, setForm, catalogue, idPrefix, missing = [] }) {
   let selected = form.brands.map((c) => catalogue.find((b) => b.code === c)).filter(Boolean)
-  let specs = fieldSpecs(form.brands).filter((s) => !(form.extras.customer && CUSTOMER_FIELDS.some((f) => f.key === s.key)))
+  let specs = fieldSpecs(form.brands, form.mode).filter((s) => !(form.extras.customer && CUSTOMER_FIELDS.some((f) => f.key === s.key)))
   if (!specs.length) return <p className="text-sm text-zinc-500 dark:text-zinc-400">The payment brands you chose don&rsquo;t take any extra fields.</p>
   let setField = (k, v) => setForm({ ...form, fields: { ...form.fields, [k]: v } })
   let countries = [...new Set(selected.flatMap((b) => b.countries))]
@@ -191,11 +194,91 @@ export function MissingFieldsHint({ missing }) {
   if (!missing.length) return null
   return (
     <span className="text-xs text-zinc-400">
-      Fill in the mandatory {missing.length === 1 ? 'field' : 'fields'} first:{' '}
-      <span className="font-mono text-amber-300/90">{missing.slice(0, 3).join(', ')}</span>
+      Fill in the mandatory {missing.length === 1 ? 'field' : 'fields'} first: {missing.slice(0, 3).join(', ')}
       {missing.length > 3 ? ` and ${missing.length - 3} more` : ''}
     </span>
   )
+}
+
+const countryList = (codes, max = 5) => {
+  let names = codes.map(countryName)
+  return names.length > max ? `${names.slice(0, max).join(', ')} and ${names.length - max} more` : names.join(', ')
+}
+
+// What a brand supports, from the Help Centre list and the KB: shown above its request
+export function BrandFacts({ brand }) {
+  if (!brand) return null
+  let refunds = brand.refunds.length ? brand.refunds.join(', ') : 'Not supported'
+  let limits = [brand.limits.min && `Min ${brand.limits.min}`, brand.limits.max && `Max ${brand.limits.max}`].filter(Boolean).join(' · ') || 'Not listed'
+  let rows = [
+    ['Currencies', brand.currencies.join(', ')],
+    ['Countries', countryList(brand.countries)],
+    ['Timeout', brand.timeout ? `Pending payments expire after ${brand.timeout}` : '—'],
+    ['Amount', limits],
+    ['Refunds', refunds],
+  ]
+  return (
+    <div className="not-prose my-6">
+      <dl className="grid grid-cols-1 gap-px overflow-hidden rounded-xl bg-zinc-900/7.5 ring-1 ring-zinc-900/7.5 sm:grid-cols-2 dark:bg-white/10 dark:ring-white/10">
+        {rows.map(([k, v], i) => (
+          <div key={k} className={clsx('bg-white px-4 py-3 dark:bg-zinc-900', i === rows.length - 1 && rows.length % 2 === 1 && 'sm:col-span-2')}>
+            <dt className="text-xs text-zinc-500 dark:text-zinc-400">{k}</dt>
+            <dd className="mt-0.5 text-sm text-zinc-900 dark:text-white">{v}</dd>
+          </div>
+        ))}
+      </dl>
+      {brand.note && <p className="mt-3 text-sm text-zinc-600 dark:text-zinc-400">{brand.note}</p>}
+    </div>
+  )
+}
+
+// A request parameter as a reference row: name, type, requirement, what it is, and its value
+export function ParamRow({ name, type = 'string', req, children, control }) {
+  return (
+    <Property name={name} type={type} badge={req ? <ReqTag req={req} /> : null} control={control}>
+      {children}
+    </Property>
+  )
+}
+
+// A fixed value in a parameter row (set by the demo, not typed in)
+export function FixedValue({ children }) {
+  return <span className="block truncate font-mono text-xs text-zinc-500 dark:text-zinc-400">{children}</span>
+}
+
+// The chosen brand's own fields as parameter rows with inputs
+export function BrandFieldRows({ form, setForm, catalogue, idPrefix, missing = [] }) {
+  let selected = form.brands.map((c) => catalogue.find((b) => b.code === c)).filter(Boolean)
+  let specs = fieldSpecs(form.brands, form.mode).filter((s) => !(form.extras.customer && CUSTOMER_FIELDS.some((f) => f.key === s.key)))
+  let setField = (k, v) => setForm({ ...form, fields: { ...form.fields, [k]: v } })
+  let countries = [...new Set(selected.flatMap((b) => b.countries))]
+  return specs.map((spec) => {
+    let id = `${idPrefix}-${spec.key.replace(/[^\w]/g, '_')}`
+    let invalid = missing.includes(spec.key)
+    return (
+      <ParamRow
+        key={spec.key}
+        name={spec.key}
+        type={spec.type === 'country' ? 'country code' : spec.type === 'phone' ? 'phone' : 'string'}
+        req={spec.req}
+        control={
+          <FieldBox invalid={invalid}>
+            <FieldControl
+              id={id}
+              spec={spec}
+              value={form.fields[spec.key] || ''}
+              onChange={(v) => setField(spec.key, v)}
+              invalid={invalid}
+              defaultCountry={countries[0] || 'GB'}
+              countries={countries}
+            />
+          </FieldBox>
+        }
+      >
+        {[spec.label, spec.hint].filter(Boolean).join('. ')}
+      </ParamRow>
+    )
+  })
 }
 
 const ALL_COUNTRIES = Object.keys(DIAL_CODES).sort((a, b) => countryName(a).localeCompare(countryName(b)))
@@ -216,12 +299,7 @@ export function Extras({ form, setForm, idPrefix, missing = [] }) {
       <ToggleList>
         <ToggleRow
           label="Customer & billing details"
-          description={
-            <>
-              Adds <code className="font-mono text-[0.6875rem]">customer.*</code>, <code className="font-mono text-[0.6875rem]">billing.*</code> and{' '}
-              <code className="font-mono text-[0.6875rem]">shipping.*</code>. Empty fields aren&rsquo;t sent.
-            </>
-          }
+          description="Adds the shopper’s name, email and phone, and the billing and shipping address. Empty fields aren’t sent."
           checked={form.extras.customer}
           onChange={(v) => {
             // Fill empty fields with test data so the first request already has something to send
@@ -264,22 +342,7 @@ export function Extras({ form, setForm, idPrefix, missing = [] }) {
           <ToggleRow
             label="Cart items"
             locked={cartRequired}
-            description={
-              <>
-                {cartRequired ? (
-                  <>
-                    <span className="text-rose-500">*</span> Mandatory for {cart.required.join(', ')}.{' '}
-                  </>
-                ) : null}
-                Adds{' '}
-                <code className="font-mono text-[0.6875rem]">
-                  cart.items[n].{'{'}
-                  {cart.fields.join(', ')}
-                  {'}'}
-                </code>
-                . The amount becomes the cart total.
-              </>
-            }
+            description={`${cartRequired ? `Mandatory for ${cart.required.join(', ')}. ` : ''}Adds the items in the order: ${cart.fields.join(', ')}. The amount becomes the cart total.`}
             checked={cartRequired || form.extras.cart}
             onChange={(v) => setForm({ ...form, extras: { ...form.extras, cart: v } })}
           >

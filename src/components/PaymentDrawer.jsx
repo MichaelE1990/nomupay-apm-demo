@@ -104,9 +104,8 @@ export function PaymentDrawer({ open, onClose, redirect, title, onOpenWindow }) 
             </div>
 
             <div className="border-t border-zinc-900/7.5 px-4 py-3 text-xs/5 text-zinc-500 dark:border-white/10 dark:text-zinc-400">
-              When the shopper finishes, the gateway sends them to your <code className="font-mono text-[0.6875rem] text-zinc-700 dark:text-zinc-300">shopperResultUrl</code>.
-              The drawer then closes and step 3 checks the result. Page blank or refusing to load? Some payment pages can&rsquo;t be shown inside another
-              site, so use <span className="font-medium text-zinc-700 dark:text-zinc-300">New window</span>.
+              The demo checks the payment status every few seconds and closes this once the shopper approves or declines. If the page won’t load here,
+              use <span className="font-medium text-zinc-700 dark:text-zinc-300">New window</span>.
             </div>
           </DialogPanel>
         </div>

@@ -114,9 +114,9 @@ export function CodeWindow({ title, tag, label, code, html, empty, footer, statu
   )
 }
 
-// Primary action inside a code panel footer: emerald so it reads on the dark panel in both themes
+// Action inside a code panel footer: a small, quiet button that reads on the dark panel in both themes
 const sendClass =
-  'inline-flex justify-center rounded-full bg-emerald-500 px-3 py-1 text-sm font-medium text-white transition hover:bg-emerald-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-400 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-emerald-500'
+  'inline-flex items-center justify-center rounded-md bg-white/10 px-2.5 py-1 text-xs font-medium text-white ring-1 ring-white/15 transition ring-inset hover:bg-white/15 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-400 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-white/10'
 
 export function SendButton({ className, children, ...props }) {
   return (

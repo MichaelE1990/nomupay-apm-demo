@@ -5,7 +5,7 @@ import { S2SFlow } from '@/components/S2SFlow'
 
 export const metadata = {
   title: 'Server-to-server',
-  description: 'Send an APM payment straight to /v1/payments, redirect the shopper and read the result.',
+  description: 'Send a payment brand payment from your server, redirect the shopper, read the result and refund it.',
 }
 
 export default function ServerToServerPage() {
@@ -13,8 +13,8 @@ export default function ServerToServerPage() {
     <Article>
       <h1>Server-to-server</h1>
       <p className="lead">
-        Your server sends the payment directly with <code>paymentBrand</code>, and you handle the redirect yourself. Build the request, send it,
-        then use the <code>redirect</code> and <code>id</code> from the response.
+        Your server sends the payment straight to the gateway and handles the redirect itself. Choose the flow, build the request, send it, and use
+        the response in the next step.
       </p>
       <Suspense>
         <S2SFlow />

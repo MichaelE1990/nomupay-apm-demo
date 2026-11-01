@@ -28,11 +28,14 @@ function brandsOf(codes) {
   return (codes || []).map(getBrand).filter(Boolean)
 }
 
-// One spec per field across the chosen brands: the strictest requirement wins
-export function fieldSpecs(brandCodes) {
+// One spec per field across the chosen brands: the strictest requirement wins.
+// mode 'sync' adds the fields that make a payment synchronous (no redirect);
+// any other mode leaves them out, because sending them removes the redirect.
+export function fieldSpecs(brandCodes, mode) {
   const specs = new Map()
   for (const b of brandsOf(brandCodes)) {
     for (const field of b.fields) {
+      if (field.sync && mode !== 'sync') continue
       const prev = specs.get(field.key)
       const usedBy = [...(prev?.usedBy || []), b.name]
       if (!prev || REQ_RANK[field.req] < REQ_RANK[prev.req]) {
@@ -47,8 +50,8 @@ export function fieldSpecs(brandCodes) {
   return [...specs.values()].sort((a, z) => REQ_RANK[a.req] - REQ_RANK[z.req])
 }
 
-export function brandFieldKeys(brandCodes) {
-  return fieldSpecs(brandCodes).map((s) => s.key)
+export function brandFieldKeys(brandCodes, mode) {
+  return fieldSpecs(brandCodes, mode).map((s) => s.key)
 }
 
 // Cart sub-fields the chosen brands take, and whether any of them requires a cart
@@ -70,7 +73,7 @@ export function withRequiredExtras(form) {
 // Fill a brand's sample values and defaults into empty fields
 export function withBrandDefaults(form, codes) {
   const fields = { ...form.fields }
-  for (const s of fieldSpecs(codes)) {
+  for (const s of fieldSpecs(codes, form.mode)) {
     if (s.key === 'billing.country' && s.options?.length && !s.options.includes(fields[s.key])) fields[s.key] = s.options[0]
     else if (!String(fields[s.key] ?? '').trim() && s.sample) fields[s.key] = s.sample
   }
@@ -99,7 +102,7 @@ const filled = (v) => String(v ?? '').trim() !== ''
 export function missingFields(input) {
   const fields = input.fields || {}
   const missing = []
-  const specs = fieldSpecs(input.brands)
+  const specs = fieldSpecs(input.brands, input.mode)
   for (const s of specs) {
     if (s.req === 'M' && !filled(fields[s.key])) missing.push(s.key)
     if (s.req === 'C' && s.when && fields[s.when.key] === s.when.equals && !filled(fields[s.key])) missing.push(s.key)
@@ -137,13 +140,13 @@ export function buildPaymentParams(input, env) {
     ['entityId', env.entityId],
     ['amount', String(input.amount || '')],
     ['currency', String(input.currency || '')],
-    ['paymentType', 'DB'],
+    ['paymentType', input.paymentType === 'PA' ? 'PA' : 'DB'],
   ]
   if (input.flow === 's2s' && brands[0]) params.push(['paymentBrand', brands[0]])
   if (env.testMode && usesWallet(brands)) params.push(['testMode', env.testMode])
   if (input.merchantTransactionId) params.push(['merchantTransactionId', input.merchantTransactionId])
 
-  const allowed = new Set(brandFieldKeys(brands))
+  const allowed = new Set(brandFieldKeys(brands, input.mode))
   if (extras.customer) CUSTOMER_FIELDS.forEach((f) => allowed.add(f.key))
   for (const key of allowed) {
     const value = String(fields[key] ?? '').trim()

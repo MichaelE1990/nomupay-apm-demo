@@ -10,17 +10,15 @@ export function ReturnBridge() {
   useEffect(() => {
     let framed = window.self !== window.top
     let target = framed ? window.parent : window.opener
-    let ours = false
-    try {
-      ours = Boolean(target && target !== window && target.location.origin === window.location.origin)
-    } catch {}
     // Opened some other way: show the normal return page
-    if (!ours) {
+    if (!target || target === window) {
       document.documentElement.removeAttribute('data-embedded')
       return
     }
+    // The demo page may be on another address of this deployment, so the message goes
+    // to any origin; it only carries the payment id, and the demo page checks the sender
     let params = new URLSearchParams(window.location.search)
-    target.postMessage({ type: RETURN_MESSAGE, id: params.get('id'), resourcePath: params.get('resourcePath') }, window.location.origin)
+    target.postMessage({ type: RETURN_MESSAGE, id: params.get('id'), resourcePath: params.get('resourcePath') }, '*')
     if (!framed) setTimeout(() => window.close(), 600)
   }, [])
 

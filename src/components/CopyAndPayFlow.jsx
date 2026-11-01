@@ -6,7 +6,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { AmountFields, BrandSelect, ErrorNote, Extras, MissingFieldsHint, RequiredFields, ResultSummary } from '@/components/builder'
 import { CodeWindow, SendButton, SendLink } from '@/components/CodeWindow'
 import { Col, Note, Properties, Property, Row } from '@/components/content'
-import { StatusBadge } from '@/components/forms'
+import { PanelStatus } from '@/components/forms'
 import { Heading } from '@/components/Heading'
 import { getJson, newMerchantTransactionId, postJson, usePersistentState } from '@/lib/flowState'
 import { buildCurl, highlightCurl, highlightHtml, highlightJson } from '@/lib/highlight'
@@ -221,7 +221,7 @@ export function CopyAndPayFlow({ mode = 'start' }) {
           <ErrorNote message={error.checkout} />
           <CodeWindow
             title="Response"
-            status={checkout ? <StatusBadge status={checkoutId ? 'success' : 'failed'}>{checkoutId ? 'Checkout created' : 'Not created'}</StatusBadge> : null}
+            status={checkout ? <PanelStatus status={checkoutId ? 'success' : 'failed'}>{checkoutId ? 'Checkout created' : 'Not created'}</PanelStatus> : null}
             code={checkout ? JSON.stringify(checkout.response, null, 2) : ''}
             html={checkout ? highlightJson(checkout.response) : ''}
             empty="Response Details"
@@ -298,7 +298,7 @@ export function CopyAndPayFlow({ mode = 'start' }) {
           <ErrorNote message={error.status} />
           <CodeWindow
             title="Response"
-            status={state.result ? <StatusBadge status={state.result.status} /> : null}
+            status={state.result ? <PanelStatus status={state.result.status} /> : null}
             code={state.result ? JSON.stringify(state.result.response, null, 2) : ''}
             html={state.result ? highlightJson(state.result.response) : ''}
             empty="Response Details"

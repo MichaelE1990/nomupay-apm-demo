@@ -97,7 +97,7 @@ export const WALLET_BRANDS = [
   { code: 'BCMC_VA', name: 'Bancontact', countries: ['BE'], currencies: ['EUR'], timeout: '1 hour', integration: [API], fields: [f('descriptor', 'O'), invoice] },
   {
     code: 'BIZUM', name: 'Bizum', countries: ['ES'], currencies: ['EUR'], timeout: '10 minutes', integration: [API, GW, CS],
-    fields: [f('customer.mobile', 'C', { hint: 'Leave it empty for the redirect flow. Send it and there’s no redirect: the shopper approves in their app.' }), givenName, invoice],
+    fields: [f('customer.mobile', 'M', { sync: true, sample: '+34700000000', hint: 'With a mobile number there’s no redirect: the shopper approves the payment in the Bizum app.' }), givenName, invoice],
   },
   {
     code: 'BLIK', name: 'Blik', countries: ['PL'], currencies: ['PLN'], timeout: '3 minutes', integration: [API, GW, CS], fields: [givenName, invoice],
@@ -138,7 +138,7 @@ export const WALLET_BRANDS = [
   },
   {
     code: 'PAYPAY', name: 'PayPay', countries: ['JP'], currencies: ['JPY'], timeout: '30 minutes', integration: [API, GW],
-    fields: [f('customer.merchantCustomerId', 'M'), invoice], cart: japanCart,
+    fields: [f('customer.merchantCustomerId', 'M'), invoice], cart: japanCart, paymentTypes: ['DB', 'PA'],
   },
   {
     code: 'PAYSAFECARD', name: 'Paysafecard',
@@ -160,16 +160,18 @@ export const WALLET_BRANDS = [
     code: 'DIRECTDEBIT_SEPA', name: 'SEPA Direct Debit', countries: EU_SEPA, currencies: ['EUR'], timeout: '1.5 hours', paymentMethod: 'DD', integration: [API, CS],
     fields: [
       email, f('bankAccount.iban', 'M'), f('bankAccount.holder', 'M'),
-      f('bankAccount.mandate.id', 'C', { group: 'mandate' }), f('bankAccount.mandate.dateOfSignature', 'C', { group: 'mandate' }), f('customParameters[mandate_url]', 'C', { group: 'mandate' }),
+      f('bankAccount.mandate.id', 'M', { sync: true, sample: 'MANDATE-001' }),
+      f('bankAccount.mandate.dateOfSignature', 'M', { sync: true, sample: '2026-11-01' }),
+      f('customParameters[mandate_url]', 'M', { sync: true, sample: 'https://example.com/mandates/MANDATE-001' }),
       f('billing.street1', 'C'), f('billing.houseNumber1', 'C'), f('billing.postcode', 'C'), f('billing.city', 'C'),
       f('descriptor', 'O'), invoice,
     ],
-    note: 'Send the three mandate fields together for the sync flow, or leave all three empty for the async flow. The billing address is needed for some bank accounts outside the EU.',
+    note: 'Asynchronous: the shopper signs the mandate on the redirect page. Synchronous: you send a mandate you already hold, with no redirect. The billing address is needed for some bank accounts outside the EU.',
   },
   { code: 'SHOPEEPAY', name: 'ShopeePay', countries: ['MY'], currencies: ['MYR'], timeout: '8 hours', integration: [API, GW, CS], fields: [givenName, invoice] },
   {
     code: 'SWISH', name: 'Swish', countries: ['SE'], currencies: ['SEK'], timeout: '30 minutes', integration: [API, GW, CS],
-    fields: [givenName, f('customer.mobile', 'O', { hint: 'Leave it empty for the redirect flow (QR or app switch). Send it and there’s no redirect: the shopper approves in the Swish app.' }), invoice],
+    fields: [f('customer.mobile', 'M', { sync: true, sample: '+46700000000', hint: 'With a mobile number there’s no redirect: the shopper approves the payment in the Swish app.' }), givenName, invoice],
   },
   { code: 'TOUCH_N_GO', name: 'Touch’n Go', countries: ['MY'], currencies: ['MYR'], timeout: '8 hours', integration: [API, GW, CS], fields: [email, invoice] },
   {
@@ -197,6 +199,49 @@ export const WALLET_BRANDS = [
   },
 ]
 
+// From the Help Centre list: refunds allowed and the amount limits per currency
+const FMP = ['Full', 'Partial', 'Multiple']
+const HELP_CENTRE = {
+  CLEARPAY: { refunds: FMP, min: 'GBP 1.00', max: 'GBP 1,200' },
+  AFTERPAY_PACIFIC: { refunds: FMP, min: 'USD 1.00', max: 'USD 2,000' },
+  ALIPAY: { refunds: FMP, min: 'CNY 0.10, MYR 0.10', max: 'CNY 50,000, MYR 2,000' },
+  ALIPAY_HK: { refunds: ['Full', 'Partial'] },
+  ALIPAY_PLUS: { refunds: FMP, min: 'MYR 0.10', max: 'MYR 2,000' },
+  ATOME: { refunds: FMP, min: 'MYR 10.01', max: 'MYR 2,000' },
+  BCMC_VA: { refunds: FMP, min: 'EUR 0.01', max: 'EUR 1,500' },
+  BIZUM: { refunds: FMP, min: 'EUR 0.50', max: 'EUR 100,000' },
+  BLIK: { refunds: FMP, min: 'PLN 0.01', max: 'PLN 50,000' },
+  BOOST: { refunds: FMP, min: 'MYR 1.01', max: 'MYR 2,000' },
+  CEBUANA: { refunds: [], min: 'PHP 50.01', max: 'PHP 27,000' },
+  DRAGONPAY: { refunds: [], min: 'PHP 50.01', max: 'PHP 1,000,000' },
+  DUITNOW_QR: { refunds: FMP, min: 'MYR 1.01', max: 'MYR 2,000' },
+  ECPAY: { refunds: [], min: 'PHP 50.01', max: 'PHP 27,000' },
+  EPS_VA: { refunds: FMP, min: 'EUR 1.00' },
+  FPX: { refunds: FMP, min: 'MYR 1.01', max: 'MYR 2,000' },
+  GCASH: { refunds: FMP, min: 'PHP 1.01', max: 'PHP 27,000' },
+  GRABPAY: { refunds: FMP, min: 'MYR 1.01, PHP 1.01', max: 'MYR 2,000, PHP 27,000' },
+  IDEAL_VA: { refunds: FMP, min: 'EUR 0.01' },
+  KONBINI: { refunds: [], min: 'JPY 1' },
+  MAE: { refunds: FMP, min: 'MYR 1.01', max: 'MYR 2,000' },
+  MAYA: { refunds: FMP, min: 'PHP 1.01', max: 'PHP 27,000' },
+  MBWAY: { refunds: FMP, min: 'EUR 0.01', max: 'EUR 10,000' },
+  MULTIBANCO_VA: { refunds: FMP, max: 'EUR 99,999' },
+  PAYPAY: { refunds: FMP, capture: ['Full', 'Partial'], min: 'JPY 1' },
+  PAYSAFECARD: { refunds: FMP, min: 'EUR 0.01', max: 'EUR 50' },
+  PAYU: { refunds: FMP, min: 'CZK 3.00, PLN 1.00', max: 'CZK 999,999.99, PLN 999,999.99' },
+  PRZELEWY: { refunds: FMP, min: 'EUR 0.01, PLN 0.01', max: 'EUR 55,000, PLN 55,000' },
+  SATISPAY: { refunds: FMP, min: 'EUR 0.01', max: 'EUR 99,999.99' },
+  DIRECTDEBIT_SEPA: { refunds: FMP, min: 'EUR 0.01', max: 'EUR 1,000' },
+  SHOPEEPAY: { refunds: FMP, min: 'MYR 1.01', max: 'MYR 2,000' },
+  SWISH: { refunds: FMP, min: 'SEK 0.01' },
+  TOUCH_N_GO: { refunds: FMP, min: 'MYR 1.01', max: 'MYR 2,000' },
+  TRUSTLY: { refunds: FMP, min: 'EUR 0.01' },
+  TWINT: { refunds: FMP, min: 'CHF 0.01', max: 'CHF 5,000' },
+  UPI: { refunds: FMP, min: 'INR 1.00', max: 'INR 100,000' },
+  WECHAT_PAY: { refunds: FMP, min: 'CNY 0.10, MYR 0.01', max: 'CNY 50,000, MYR 2,000' },
+  WERO: { refunds: FMP, min: 'EUR 0.01' },
+}
+
 // Cards run through the COPYandPAY widget only, on the card entity
 export const CARD_BRANDS = [
   { code: 'VISA', name: 'Visa', countries: [], currencies: ['EUR', 'GBP', 'USD', 'SEK', 'DKK', 'NOK', 'PLN', 'CHF', 'CZK'], timeout: '', fields: [] },
@@ -207,10 +252,17 @@ export const CARD_BRANDS = [
 const REQ_ORDER = { M: 0, C: 1, O: 2 }
 
 function finalise(b, type) {
+  const hc = HELP_CENTRE[b.code] || {}
   return {
     ...b,
     type,
     paymentMethod: b.paymentMethod || (type === 'card' ? 'CC' : 'VA'),
+    paymentTypes: b.paymentTypes || ['DB'],
+    // Synchronous: no redirect, when the brand takes the details for it (mobile number, SEPA mandate)
+    sync: b.fields.some((x) => x.sync),
+    refunds: hc.refunds || [],
+    capture: hc.capture || [],
+    limits: { min: hc.min || '', max: hc.max || '' },
     cart: b.cart || null,
     fields: b.fields
       .map((field, i) => {
