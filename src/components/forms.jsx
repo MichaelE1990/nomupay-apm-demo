@@ -56,7 +56,8 @@ export function ToggleList({ children }) {
   )
 }
 
-export function ToggleRow({ checked, onChange, label, description, children }) {
+// locked: on and can't be switched off (the brand requires it)
+export function ToggleRow({ checked, onChange, label, description, children, locked }) {
   return (
     <div className="px-4 py-3">
       <div className="flex items-center justify-between gap-4">
@@ -67,8 +68,10 @@ export function ToggleRow({ checked, onChange, label, description, children }) {
         <Switch
           checked={checked}
           onChange={onChange}
+          disabled={locked}
           aria-label={label}
-          className="group relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full bg-zinc-200 p-0.5 inset-ring inset-ring-zinc-900/5 outline-offset-2 outline-emerald-500 transition-colors duration-200 ease-in-out focus-visible:outline-2 data-checked:bg-emerald-500 dark:bg-white/10 dark:inset-ring-white/10 dark:data-checked:bg-emerald-500"
+          title={locked ? 'Required for this payment brand' : undefined}
+          className="group relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full bg-zinc-200 p-0.5 inset-ring inset-ring-zinc-900/5 outline-offset-2 outline-emerald-500 transition-colors duration-200 ease-in-out focus-visible:outline-2 data-checked:bg-emerald-500 data-disabled:cursor-not-allowed data-disabled:opacity-60 dark:bg-white/10 dark:inset-ring-white/10 dark:data-checked:bg-emerald-500"
         >
           <span className="size-4 rounded-full bg-white shadow-xs ring-1 ring-zinc-900/5 transition-transform duration-200 ease-in-out group-data-checked:translate-x-4" />
         </Switch>
@@ -127,10 +130,11 @@ export const countryName = (c) => {
 }
 
 export const DIAL_CODES = {
-  AE: '971', AT: '43', AU: '61', BE: '32', BG: '359', BR: '55', CA: '1', CH: '41', CY: '357', CZ: '420', DE: '49', DK: '45',
-  EE: '372', ES: '34', FI: '358', FR: '33', GB: '44', GE: '995', GI: '350', GR: '30', HR: '385', HU: '36', IE: '353', IS: '354',
-  IT: '39', LI: '423', LT: '370', LU: '352', LV: '371', MT: '356', MX: '52', NL: '31', NO: '47', NZ: '64', PE: '51', PL: '48',
-  PT: '351', RO: '40', SE: '46', SI: '386', SK: '421', US: '1', UY: '598',
+  AD: '376', AE: '971', AT: '43', AU: '61', BE: '32', BG: '359', BR: '55', CA: '1', CH: '41', CN: '86', CY: '357', CZ: '420', DE: '49', DK: '45',
+  EE: '372', ES: '34', FI: '358', FR: '33', GB: '44', GE: '995', GI: '350', GR: '30', HK: '852', HR: '385', HU: '36', ID: '62', IE: '353', IN: '91',
+  IS: '354', IT: '39', JP: '81', KR: '82', LI: '423', LT: '370', LU: '352', LV: '371', MC: '377', MT: '356', MX: '52', MY: '60', NL: '31', NO: '47',
+  NZ: '64', PE: '51', PH: '63', PL: '48', PT: '351', RO: '40', SE: '46', SG: '65', SI: '386', SK: '421', SM: '378', TH: '66', US: '1', UY: '598',
+  VA: '379', VN: '84',
 }
 
 function countryOptions(codes, { dial } = {}) {
@@ -156,8 +160,8 @@ export function CountrySelect({ id, countries, value, onChange, allowEmpty, inva
       searchPlaceholder="Search countries"
       placeholder="Choose a country"
       variant={bare ? 'bare' : 'field'}
-      className={bare ? '-mx-1.5 w-[calc(100%+0.75rem)]' : undefined}
-      panelClassName={bare ? 'w-full min-w-72' : undefined}
+      fullWidth={bare}
+      className={bare ? '-mx-1.5' : undefined}
       renderValue={
         bare
           ? (o) =>

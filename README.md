@@ -22,11 +22,25 @@ Reference pages list every payment method with its countries, currencies, timeou
 
 ## Payment methods
 
-Payment brands: Bancontact, Bizum, BLIK, EPS, iDEAL, MB WAY, Multibanco, Przelewy24, Swish, Trustly, Twint, Wero, Satispay, PayU, SEPA Direct Debit, PayPal, Paysafecard, Clearpay (Afterpay UK) and Afterpay (US). All are certified and in scope.
+The demo lists only the payment methods on the Help Centre's [Ecommerce Payment Methods](https://support.nomupay.com/hc/en-gb/articles/52156192050193-Ecommerce-Payment-Methods) list, which is production-based:
 
-Cards: Visa, Mastercard, American Express (COPYandPAY only).
+- **Payment brands**: Afterpay (UK and US), Alipay, Alipay (HK), Alipay+, Atome, Bancontact, Bizum, Blik, Boost, Cebuana, DragonPay, DuitNow QR, ECPay, Eps, FPX, GCash, GrabPay, iDEAL, Konbini, MAE by Maybank, Maya, MB WAY, Multibanco, PayPay, Paysafecard, PayU, Przelewy 24, Satispay, SEPA Direct Debit, ShopeePay, Swish, Touch'n Go, Trustly, Twint, UPI, WeChat Pay and Wero.
+- **Cards**: Visa, Mastercard and Maestro (COPYandPAY only).
 
-Countries, currencies, timeouts and field requirements come from the KB pages *NomuPay Wallets Brand details* and *NomuPay Wallets integration sheet* (last updated 14 Oct 2026). They live in `src/lib/brands.js`, so adding or changing a brand is one edit there.
+UnionPay SecurePay is on the list but has no NomuPay Wallets brand in the Payment Knowledge Base, so it isn't in the demo.
+
+Where the rest comes from:
+
+| What | Source |
+|---|---|
+| Countries and currencies | Help Centre, Ecommerce Payment Methods |
+| Mandatory, conditional and optional fields per brand | KB, *NomuPay Wallets Brand details* > Fields mapping |
+| Field formats and conditions | KB, *NomuPay Wallets integration sheet* > Fields mapping (Request) and Custom Parameters |
+| Timeouts | KB, *NomuPay Wallets Brand details* > Brands Enabled in Test |
+
+The integration sheet's *Minimal Request* examples aren't used: several leave out mandatory fields.
+
+Mandatory fields are required in test too, so a request that works here is ready for production. The Send button stays off until they're filled in, and the server rejects a request that's missing one. Everything lives in `src/lib/brands.js`, so adding or changing a brand is one edit there.
 
 ## Environment variables
 

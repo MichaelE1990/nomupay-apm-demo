@@ -3,7 +3,7 @@
 import { useSearchParams } from 'next/navigation'
 import { useEffect, useMemo, useRef, useState } from 'react'
 
-import { AmountFields, BrandSelect, ErrorNote, Extras, RequiredFields, ResultSummary } from '@/components/builder'
+import { AmountFields, BrandSelect, ErrorNote, Extras, MissingFieldsHint, RequiredFields, ResultSummary } from '@/components/builder'
 import { CodeWindow, SendButton } from '@/components/CodeWindow'
 import { Col, Note, Properties, Property, Row } from '@/components/content'
 import { StatusBadge } from '@/components/forms'
@@ -12,10 +12,10 @@ import { PaymentDrawer } from '@/components/PaymentDrawer'
 import { getJson, newMerchantTransactionId, postJson, usePersistentState } from '@/lib/flowState'
 import { buildCurl, highlightCurl, highlightJs, highlightJson } from '@/lib/highlight'
 import { RETURN_MESSAGE, redirectMethod, redirectSnippet, sendShopperToPopup } from '@/lib/redirect'
-import { buildPaymentParams, cartTotal } from '@/lib/request'
+import { buildPaymentParams, cartTotal, missingFields, withBrandDefaults, withRequiredExtras } from '@/lib/request'
 import { useConfig } from '@/lib/useConfig'
 
-const KEY = 'nomupayApmDemo.s2s.v3'
+const KEY = 'nomupayApmDemo.s2s.v4'
 const INITIAL = {
   form: {
     brands: ['IDEAL_VA'],
@@ -24,7 +24,7 @@ const INITIAL = {
     merchantTransactionId: '',
     fields: {},
     extras: { customer: false, cart: false },
-    cart: [{ name: 'Gift card', quantity: '1', price: '10.00' }],
+    cart: [{ name: 'Gift card', quantity: '1', price: '10.00', merchantItemId: 'item-001' }],
   },
   payment: null,
   result: null,
@@ -36,11 +36,8 @@ const PAYMENT_PATH = /^\/v1\/payments\/[0-9a-f]{32}$/
 function withBrand(form, code, catalogue) {
   let b = catalogue.find((x) => x.code === code)
   if (!b) return form
-  let fields = { ...form.fields }
-  if (b.countryRequirement === 'M' && !b.countries.includes(fields['billing.country'])) fields['billing.country'] = b.countries[0]
-  for (let f of b.fields) if (!fields[f.key] && f.sample) fields[f.key] = f.sample
   let currency = b.currencies.includes(form.currency) ? form.currency : b.currencies[0]
-  return { ...form, brands: [code], fields, currency }
+  return { ...withBrandDefaults(form, [code]), currency }
 }
 
 // True inside the payment drawer's frame or a payment popup (see the return page)
@@ -65,16 +62,19 @@ export function S2SFlow({ mode = 'start' }) {
   let form = state.form
   let setForm = (f) => setState((s) => ({ ...s, form: f }))
   let brand = catalogue.find((b) => b.code === form.brands[0])
-  let amount = form.extras.cart ? cartTotal(form.cart) : form.amount
+  // What gets sent: the cart is on when the brand requires one
+  let sendForm = useMemo(() => withRequiredExtras(form), [form])
+  let amount = sendForm.extras.cart ? cartTotal(form.cart) : form.amount
+  let missing = useMemo(() => missingFields({ ...sendForm, amount }), [sendForm, amount])
   let shopperResultUrl = `${origin}/server-to-server/return`
 
   let previewParams = useMemo(() => {
     if (!config) return []
     return buildPaymentParams(
-      { ...form, amount, flow: 's2s', merchantTransactionId: form.merchantTransactionId || '{generated}' },
+      { ...sendForm, amount, flow: 's2s', merchantTransactionId: form.merchantTransactionId || '{generated}' },
       { entityId: config.entities?.wallet || '{entityId}', testMode: config.testMode, shopperResultUrl },
     )
-  }, [config, form, amount, shopperResultUrl])
+  }, [config, sendForm, form.merchantTransactionId, amount, shopperResultUrl])
 
   let payment = state.payment
   let paymentId = payment?.response?.id
@@ -129,7 +129,7 @@ export function S2SFlow({ mode = 'start' }) {
     setError({})
     try {
       let data = await postJson('/api/payments', {
-        ...form,
+        ...sendForm,
         amount,
         merchantTransactionId: form.merchantTransactionId || newMerchantTransactionId(),
       })
@@ -184,11 +184,11 @@ export function S2SFlow({ mode = 'start' }) {
           <h3>Payment brand</h3>
           <BrandSelect id="s2s-brand" brands={catalogue} selected={form.brands} onChange={([code]) => setForm(withBrand(form, code, catalogue))} />
           <h3>Amount</h3>
-          <AmountFields form={form} setForm={setForm} currencies={brand?.currencies || ['EUR']} cartDriven={form.extras.cart} idPrefix="s2s" />
+          <AmountFields form={form} setForm={setForm} currencies={brand?.currencies || ['EUR']} cartDriven={sendForm.extras.cart} idPrefix="s2s" />
           <h3>Fields for {brand?.name || 'this brand'}</h3>
-          <RequiredFields form={form} setForm={setForm} catalogue={catalogue} idPrefix="s2s" />
+          <RequiredFields form={form} setForm={setForm} catalogue={catalogue} idPrefix="s2s" missing={missing} />
           <h3>Extras</h3>
-          <Extras form={form} setForm={setForm} idPrefix="s2s" />
+          <Extras form={form} setForm={setForm} idPrefix="s2s" missing={missing} />
         </Col>
         <Col sticky>
           <CodeWindow
@@ -200,9 +200,10 @@ export function S2SFlow({ mode = 'start' }) {
             empty="Loading…"
             footer={
               <div className="flex flex-wrap items-center gap-3">
-                <SendButton onClick={sendPayment} disabled={!config?.configured || !brand || busy === 'payment'}>
+                <SendButton onClick={sendPayment} disabled={!config?.configured || !brand || missing.length > 0 || busy === 'payment'}>
                   {busy === 'payment' ? 'Sending…' : 'Send request'}
                 </SendButton>
+                <MissingFieldsHint missing={missing} />
                 {payment && (
                   <button
                     type="button"

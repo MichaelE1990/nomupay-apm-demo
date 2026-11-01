@@ -14,7 +14,7 @@ const GROUPS = [
     id: 'payment-brands',
     type: 'wallet',
     title: 'Payment brands',
-    intro: 'Processed by PPRO. Send one as paymentBrand server-to-server, or list several in data-brands for COPYandPAY. On the test system they run against the PPRO simulator with testMode=EXTERNAL. Where billing.country is mandatory, it picks the market.',
+    intro: 'The payment brands on the Ecommerce Payment Methods list in the Help Centre. Send one as paymentBrand server-to-server, or list several in data-brands for COPYandPAY. On the test system they run against the PPRO simulator with testMode=EXTERNAL.',
   },
   {
     id: 'cards',
@@ -30,7 +30,7 @@ function list(values, max) {
 }
 
 function Fields({ brand }) {
-  let rows = [...(brand.countryRequirement === 'M' ? [{ key: 'billing.country', req: 'M' }] : []), ...brand.fields]
+  let rows = [...brand.fields, ...(brand.cart ? [{ key: 'cart.items[]', req: brand.cart.req, sub: brand.cart.fields }] : [])]
   if (!rows.length) return <span className="text-zinc-400 dark:text-zinc-500">None</span>
   return (
     <ul role="list" className="space-y-1.5">
@@ -38,6 +38,7 @@ function Fields({ brand }) {
         <li key={f.key} className="flex flex-wrap items-center gap-x-2 gap-y-1">
           <code className="font-mono text-xs break-all text-zinc-900 dark:text-white">{f.key}</code>
           <ReqTag req={f.req} />
+          {f.sub && <span className="w-full font-mono text-[0.6875rem] text-zinc-500 dark:text-zinc-400">{f.sub.join(' · ')}</span>}
         </li>
       ))}
     </ul>
@@ -118,9 +119,14 @@ export default function PaymentMethodsPage() {
         behind them.
       </p>
       <Note>
-        Every payment brand here is certified and in scope. If one comes back with <code>600.200.500</code> or an instant <code>800.100.152</code>,
-        it usually isn&rsquo;t switched on for the merchant&rsquo;s entity yet.
+        Mandatory fields are required in test too, so an integration that works here is ready for production. If a brand comes back with{' '}
+        <code>600.200.500</code>, it isn&rsquo;t switched on for the merchant&rsquo;s entity yet.
       </Note>
+      <p>
+        Brands, countries and currencies come from the{' '}
+        <a href="https://support.nomupay.com/hc/en-gb/articles/52156192050193-Ecommerce-Payment-Methods">Ecommerce Payment Methods</a> list.
+        Fields come from the Payment Knowledge Base pages <em>NomuPay Wallets Brand details</em> and <em>NomuPay Wallets integration sheet</em>.
+      </p>
       {GROUPS.map((group) => {
         let brands = BRANDS.filter((b) => b.type === group.type)
         return (

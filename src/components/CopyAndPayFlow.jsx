@@ -3,17 +3,17 @@
 import { useSearchParams } from 'next/navigation'
 import { useEffect, useMemo, useRef, useState } from 'react'
 
-import { AmountFields, BrandSelect, ErrorNote, Extras, RequiredFields, ResultSummary } from '@/components/builder'
+import { AmountFields, BrandSelect, ErrorNote, Extras, MissingFieldsHint, RequiredFields, ResultSummary } from '@/components/builder'
 import { CodeWindow, SendButton, SendLink } from '@/components/CodeWindow'
 import { Col, Note, Properties, Property, Row } from '@/components/content'
 import { StatusBadge } from '@/components/forms'
 import { Heading } from '@/components/Heading'
 import { getJson, newMerchantTransactionId, postJson, usePersistentState } from '@/lib/flowState'
 import { buildCurl, highlightCurl, highlightHtml, highlightJson } from '@/lib/highlight'
-import { buildPaymentParams, cartTotal, usesCard, usesWallet } from '@/lib/request'
+import { buildPaymentParams, cartTotal, missingFields, usesCard, usesWallet, withBrandDefaults, withRequiredExtras } from '@/lib/request'
 import { useConfig } from '@/lib/useConfig'
 
-const KEY = 'nomupayApmDemo.copyandpay.v3'
+const KEY = 'nomupayApmDemo.copyandpay.v4'
 const INITIAL = {
   form: {
     brands: ['IDEAL_VA', 'BCMC_VA'],
@@ -22,23 +22,16 @@ const INITIAL = {
     merchantTransactionId: '',
     fields: {},
     extras: { customer: false, cart: false },
-    cart: [{ name: 'Gift card', quantity: '1', price: '10.00' }],
+    cart: [{ name: 'Gift card', quantity: '1', price: '10.00', merchantItemId: 'item-001' }],
   },
   checkout: null,
   result: null,
 }
 
-function withBrandDefaults(form, brands, catalogue) {
-  let fields = { ...form.fields }
-  for (let code of brands) {
-    let b = catalogue.find((x) => x.code === code)
-    if (!b) continue
-    if (b.countryRequirement === 'M' && !fields['billing.country']) fields['billing.country'] = b.countries[0]
-    for (let f of b.fields) if (fields[f.key] === undefined && f.sample) fields[f.key] = f.sample
-  }
+function withBrands(form, brands, catalogue) {
   let currencies = currenciesFor(brands, catalogue)
   let currency = currencies.includes(form.currency) ? form.currency : currencies[0]
-  return { ...form, brands, fields, currency }
+  return { ...withBrandDefaults(form, brands), currency }
 }
 
 function currenciesFor(brands, catalogue) {
@@ -62,17 +55,19 @@ export function CopyAndPayFlow({ mode = 'start' }) {
   let catalogue = config?.brands || []
   let form = state.form
   let setForm = (f) => setState((s) => ({ ...s, form: f }))
-  let amount = form.extras.cart ? cartTotal(form.cart) : form.amount
+  let sendForm = useMemo(() => withRequiredExtras(form), [form])
+  let amount = sendForm.extras.cart ? cartTotal(form.cart) : form.amount
+  let missing = useMemo(() => missingFields({ ...sendForm, amount }), [sendForm, amount])
   let cardSelected = usesCard(form.brands)
   let entityKind = cardSelected ? 'card' : 'wallet'
 
   let previewParams = useMemo(() => {
     if (!config) return []
     return buildPaymentParams(
-      { ...form, amount, flow: 'copyandpay', merchantTransactionId: form.merchantTransactionId || '{generated}' },
+      { ...sendForm, amount, flow: 'copyandpay', merchantTransactionId: form.merchantTransactionId || '{generated}' },
       { entityId: config.entities?.[entityKind] || '{entityId}', testMode: config.testMode },
     )
-  }, [config, form, amount, entityKind])
+  }, [config, sendForm, form.merchantTransactionId, amount, entityKind])
 
   let checkout = state.checkout
   let checkoutId = checkout?.response?.id
@@ -93,7 +88,7 @@ export function CopyAndPayFlow({ mode = 'start' }) {
     setBusy('checkout')
     setError({})
     try {
-      let data = await postJson('/api/checkouts', { ...form, amount, merchantTransactionId: form.merchantTransactionId || newMerchantTransactionId() })
+      let data = await postJson('/api/checkouts', { ...sendForm, amount, merchantTransactionId: form.merchantTransactionId || newMerchantTransactionId() })
       // Stay on step 1 so the response can be read; step 2 is ready below
       setState((s) => ({
         ...s,
@@ -178,7 +173,7 @@ export function CopyAndPayFlow({ mode = 'start' }) {
             selected={form.brands}
             multiple
             currency={form.currency}
-            onChange={(brands) => setForm(withBrandDefaults(form, brands, catalogue))}
+            onChange={(brands) => setForm(withBrands(form, brands, catalogue))}
           />
           {cardSelected && (
             <Note>
@@ -188,11 +183,11 @@ export function CopyAndPayFlow({ mode = 'start' }) {
             </Note>
           )}
           <h3>Amount</h3>
-          <AmountFields form={form} setForm={setForm} currencies={currenciesFor(form.brands, catalogue)} cartDriven={form.extras.cart} idPrefix="cp" />
+          <AmountFields form={form} setForm={setForm} currencies={currenciesFor(form.brands, catalogue)} cartDriven={sendForm.extras.cart} idPrefix="cp" />
           <h3>Fields for your payment brands</h3>
-          <RequiredFields form={form} setForm={setForm} catalogue={catalogue} idPrefix="cp" />
+          <RequiredFields form={form} setForm={setForm} catalogue={catalogue} idPrefix="cp" missing={missing} />
           <h3>Extras</h3>
-          <Extras form={form} setForm={setForm} idPrefix="cp" />
+          <Extras form={form} setForm={setForm} idPrefix="cp" missing={missing} />
         </Col>
         <Col sticky>
           <CodeWindow
@@ -204,9 +199,10 @@ export function CopyAndPayFlow({ mode = 'start' }) {
             empty="Loading…"
             footer={
               <div className="flex flex-wrap items-center gap-3">
-                <SendButton onClick={sendCheckout} disabled={!config?.configured || !form.brands.length || busy === 'checkout'}>
+                <SendButton onClick={sendCheckout} disabled={!config?.configured || !form.brands.length || missing.length > 0 || busy === 'checkout'}>
                   {busy === 'checkout' ? 'Sending…' : 'Send request'}
                 </SendButton>
+                <MissingFieldsHint missing={missing} />
                 {checkout && (
                   <button
                     type="button"

@@ -1,6 +1,7 @@
 // Builds request parameters for both the live preview (browser) and the real
-// request (server), so what the page shows is exactly what gets sent.
-import { getBrand } from '@/lib/brands'
+// request (server), so what the page shows is exactly what gets sent. The
+// required-field check runs in both places too.
+import { CART_FIELDS, getBrand } from '@/lib/brands'
 
 export const CUSTOMER_FIELDS = [
   { key: 'customer.givenName', label: 'Given name', sample: 'Test' },
@@ -19,17 +20,61 @@ export const CUSTOMER_FIELDS = [
 
 // Every field a request may carry, checked again on the server
 export const FIELD_KEY_PATTERN =
-  /^(customer\.(givenName|surname|email|phone|mobile|merchantCustomerId)|billing\.(street1|houseNumber1|city|postcode|state|country)|shipping\.(street1|city|postcode|state|country)|virtualAccount\.accountId|bankAccount\.(iban|holder|mandate\.id|mandate\.dateOfSignature)|customParameters\[mandate_url\]|descriptor|merchantInvoiceId)$/
+  /^(customer\.(givenName|surname|email|phone|mobile|merchantCustomerId|ip)|billing\.(street1|houseNumber1|city|postcode|state|country)|shipping\.(street1|city|postcode|state|country)|virtualAccount\.accountId|bankAccount\.(iban|holder|mandate\.id|mandate\.dateOfSignature)|customParameters\[(mandate_url|FPXBANK_NAME|commercial_transaction_type|flow_type)\]|descriptor|merchantInvoiceId)$/
+
+const REQ_RANK = { M: 0, C: 1, O: 2 }
+
+function brandsOf(codes) {
+  return (codes || []).map(getBrand).filter(Boolean)
+}
+
+// One spec per field across the chosen brands: the strictest requirement wins
+export function fieldSpecs(brandCodes) {
+  const specs = new Map()
+  for (const b of brandsOf(brandCodes)) {
+    for (const field of b.fields) {
+      const prev = specs.get(field.key)
+      const usedBy = [...(prev?.usedBy || []), b.name]
+      if (!prev || REQ_RANK[field.req] < REQ_RANK[prev.req]) {
+        const options = field.key === 'billing.country' && prev?.options ? [...new Set([...prev.options, ...field.options])] : field.options
+        specs.set(field.key, { ...field, options, usedBy })
+      } else {
+        if (field.key === 'billing.country') prev.options = [...new Set([...prev.options, ...field.options])]
+        prev.usedBy = usedBy
+      }
+    }
+  }
+  return [...specs.values()].sort((a, z) => REQ_RANK[a.req] - REQ_RANK[z.req])
+}
 
 export function brandFieldKeys(brandCodes) {
-  const keys = []
-  for (const code of brandCodes) {
-    const b = getBrand(code)
-    if (!b) continue
-    if (b.type === 'wallet' && b.countryRequirement === 'M' && !keys.includes('billing.country')) keys.push('billing.country')
-    for (const f of b.fields) if (!keys.includes(f.key)) keys.push(f.key)
+  return fieldSpecs(brandCodes).map((s) => s.key)
+}
+
+// Cart sub-fields the chosen brands take, and whether any of them requires a cart
+export function cartSpec(brandCodes) {
+  const brands = brandsOf(brandCodes).filter((b) => b.cart)
+  if (!brands.length) return null
+  const fields = CART_FIELDS.filter((k) => brands.some((b) => b.cart.fields.includes(k)))
+  const required = brands.filter((b) => b.cart.req === 'M').map((b) => b.name)
+  return { fields, required }
+}
+
+// The cart is switched on for brands that require it, and off for brands that don't take one
+export function withRequiredExtras(form) {
+  const cart = cartSpec(form.brands)
+  const on = cart ? (cart.required.length ? true : Boolean(form.extras?.cart)) : false
+  return { ...form, extras: { ...form.extras, cart: on } }
+}
+
+// Fill a brand's sample values and defaults into empty fields
+export function withBrandDefaults(form, codes) {
+  const fields = { ...form.fields }
+  for (const s of fieldSpecs(codes)) {
+    if (s.key === 'billing.country' && s.options?.length && !s.options.includes(fields[s.key])) fields[s.key] = s.options[0]
+    else if (!String(fields[s.key] ?? '').trim() && s.sample) fields[s.key] = s.sample
   }
-  return keys
+  return { ...form, brands: codes, fields }
 }
 
 export function cartTotal(cart) {
@@ -43,6 +88,40 @@ export function usesWallet(brandCodes) {
 
 export function usesCard(brandCodes) {
   return brandCodes.some((c) => getBrand(c)?.type === 'card')
+}
+
+const filled = (v) => String(v ?? '').trim() !== ''
+
+/**
+ * Mandatory and conditional fields still missing for the chosen brands.
+ * @returns {string[]} parameter names, e.g. ['customer.email', 'cart.items[0].merchantItemId']
+ */
+export function missingFields(input) {
+  const fields = input.fields || {}
+  const missing = []
+  const specs = fieldSpecs(input.brands)
+  for (const s of specs) {
+    if (s.req === 'M' && !filled(fields[s.key])) missing.push(s.key)
+    if (s.req === 'C' && s.when && fields[s.when.key] === s.when.equals && !filled(fields[s.key])) missing.push(s.key)
+  }
+  // Conditional groups are all-or-nothing (the SEPA mandate fields)
+  const groups = {}
+  for (const s of specs) if (s.group) (groups[s.group] = groups[s.group] || []).push(s.key)
+  for (const keys of Object.values(groups)) {
+    if (keys.some((k) => filled(fields[k]))) missing.push(...keys.filter((k) => !filled(fields[k])))
+  }
+  const cart = cartSpec(input.brands)
+  if (cart?.required.length) {
+    const items = (input.extras?.cart ? input.cart : null) || []
+    if (!items.length) missing.push('cart.items')
+    items.forEach((item, i) => {
+      if (!filled(item.name)) missing.push(`cart.items[${i}].name`)
+      if (!(Number(item.quantity) > 0)) missing.push(`cart.items[${i}].quantity`)
+      if (!filled(item.price)) missing.push(`cart.items[${i}].price`)
+      if (cart.fields.includes('merchantItemId') && !filled(item.merchantItemId)) missing.push(`cart.items[${i}].merchantItemId`)
+    })
+  }
+  return missing
 }
 
 /**
@@ -71,13 +150,21 @@ export function buildPaymentParams(input, env) {
     if (value) params.push([key, value])
   }
 
-  if (extras.cart) {
+  const cart = cartSpec(brands)
+  if (cart && extras.cart) {
     ;(input.cart || []).forEach((item, i) => {
       if (!item.name) return
-      params.push([`cart.items[${i}].name`, item.name])
-      params.push([`cart.items[${i}].quantity`, String(item.quantity || 1)])
-      params.push([`cart.items[${i}].price`, Number(item.price || 0).toFixed(2)])
-      params.push([`cart.items[${i}].currency`, String(input.currency || '')])
+      const price = Number(item.price || 0)
+      const quantity = String(item.quantity || 1)
+      const values = {
+        name: item.name,
+        quantity,
+        price: price.toFixed(2),
+        totalAmount: (price * Number(quantity)).toFixed(2),
+        currency: String(input.currency || ''),
+        merchantItemId: String(item.merchantItemId || '').trim(),
+      }
+      for (const k of cart.fields) if (values[k]) params.push([`cart.items[${i}].${k}`, values[k]])
     })
   }
 

@@ -89,6 +89,7 @@ export function SelectMenu({
   id,
   invalid,
   variant = 'field',
+  fullWidth = false,
   maxChips = 3,
   align = 'left',
   className,
@@ -114,16 +115,24 @@ export function SelectMenu({
   let selectedOptions = selectedValues.map((v) => options.find((o) => o.value === v)).filter(Boolean)
   let withSearch = searchable ?? options.length > 8
 
+  // Matches on the name come first, then the code, then anything else (countries, currencies)
   let filtered = useMemo(() => {
     let q = query.trim().toLowerCase()
     if (!q) return options
-    return options.filter((o) =>
-      [o.label, o.value, o.meta, typeof o.description === 'string' ? o.description : '', o.keywords]
-        .filter(Boolean)
-        .join(' ')
-        .toLowerCase()
-        .includes(q),
-    )
+    let groups = [...new Set(options.map((o) => o.group))]
+    let score = (o) => {
+      let label = String(o.label).toLowerCase()
+      if (label.startsWith(q)) return 0
+      if (label.includes(q)) return 1
+      if ([o.value, o.meta].filter(Boolean).join(' ').toLowerCase().includes(q)) return 2
+      let rest = [typeof o.description === 'string' ? o.description : '', o.keywords].filter(Boolean).join(' ').toLowerCase()
+      return rest.includes(q) ? 3 : -1
+    }
+    return options
+      .map((o, i) => ({ o, i, s: score(o), g: groups.indexOf(o.group) }))
+      .filter((x) => x.s >= 0)
+      .sort((a, z) => a.g - z.g || a.s - z.s || a.i - z.i)
+      .map((x) => x.o)
   }, [options, query])
 
   function openMenu() {
@@ -224,7 +233,7 @@ export function SelectMenu({
   let single = selectedOptions[0]
 
   return (
-    <div ref={rootRef} className={clsx('relative', bare ? 'inline-flex' : 'block', className)}>
+    <div ref={rootRef} className={clsx('relative', bare && !fullWidth ? 'inline-flex' : 'block', className)}>
       {multiple ? (
         <div
           className={clsx(
@@ -271,7 +280,7 @@ export function SelectMenu({
           {...triggerProps}
           className={clsx(
             bare
-              ? 'flex items-center gap-1.5 rounded-md py-0.5 pr-1 pl-1.5 text-sm/6 text-zinc-700 hover:bg-zinc-900/5 dark:text-zinc-300 dark:hover:bg-white/5'
+              ? clsx('flex items-center gap-1.5 rounded-md py-0.5 pr-1 pl-1.5 text-sm/6 text-zinc-700 hover:bg-zinc-900/5 dark:text-zinc-300 dark:hover:bg-white/5', fullWidth && 'w-full')
               : clsx(fieldClass, 'flex min-h-9 items-center gap-2.5 py-1.5 pr-2.5 pl-3', invalid && 'outline-rose-400 dark:outline-rose-400/60'),
             open && !bare && 'outline-2 -outline-offset-2 outline-emerald-500 dark:outline-emerald-400',
             focusClass,
@@ -301,7 +310,7 @@ export function SelectMenu({
           className={clsx(
             'absolute z-40 overflow-hidden rounded-xl bg-white shadow-lg ring-1 ring-zinc-900/10 dark:bg-zinc-800 dark:ring-white/10',
             dropUp ? 'bottom-full mb-2' : 'top-full mt-2',
-            bare ? (align === 'right' ? 'right-0 w-72' : 'left-0 w-72') : 'inset-x-0 min-w-64',
+            bare && !fullWidth ? (align === 'right' ? 'right-0 w-72' : 'left-0 w-72') : 'inset-x-0 min-w-64',
             panelClassName,
           )}
           onKeyDown={onPanelKeyDown}
@@ -397,18 +406,29 @@ const MONO_COLORS = [
 const MONO_TEXT = {
   IDEAL_VA: 'iD',
   MBWAY: 'MB',
-  PAYPAL: 'PP',
   PAYU: 'PU',
+  PAYPAY: 'PP',
   PAYSAFECARD: 'PS',
-  CLEARPAY: 'CP',
+  CLEARPAY: 'AP',
   AFTERPAY_PACIFIC: 'AP',
+  ALIPAY: 'Ali',
+  ALIPAY_HK: 'AHK',
+  ALIPAY_PLUS: 'A+',
   DIRECTDEBIT_SEPA: 'DD',
   MULTIBANCO_VA: 'MU',
   PRZELEWY: 'P24',
   BCMC_VA: 'BC',
+  DUITNOW_QR: 'DN',
+  DRAGONPAY: 'DP',
+  GCASH: 'GC',
+  GRABPAY: 'GP',
+  KONBINI: 'KB',
+  SHOPEEPAY: 'SP',
+  TOUCH_N_GO: 'TnG',
+  WECHAT_PAY: 'WC',
   VISA: 'VI',
   MASTER: 'MC',
-  AMEX: 'AX',
+  MAESTRO: 'MA',
 }
 
 export function Monogram({ code, name, className }) {

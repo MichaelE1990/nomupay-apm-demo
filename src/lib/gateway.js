@@ -1,7 +1,7 @@
 // Server-only: gateway credentials and calls. Never import this from a client component.
 import { getBrand } from '@/lib/brands'
 import { classify } from '@/lib/codes'
-import { FIELD_KEY_PATTERN, maskEntity, usesCard } from '@/lib/request'
+import { FIELD_KEY_PATTERN, maskEntity, missingFields, usesCard } from '@/lib/request'
 
 const env = (k) => (process.env[k] || '').trim()
 
@@ -101,7 +101,11 @@ export function validateInput(input, { flow }) {
     if (String(item.name || '').length > 255) return 'Cart item name is too long.'
     if (!/^\d{1,4}$/.test(String(item.quantity ?? '1'))) return 'Cart quantity must be a whole number.'
     if (!/^\d{1,9}(\.\d{1,2})?$/.test(String(item.price ?? '0'))) return 'Cart price must look like 10.00.'
+    if (String(item.merchantItemId || '').length > 32) return 'Cart item ID can be up to 32 characters.'
   }
+  // Mandatory fields are required in test too, so the integration is ready for production
+  let missing = missingFields({ ...input, brands, fields, cart })
+  if (missing.length) return `Missing mandatory ${missing.length === 1 ? 'field' : 'fields'}: ${missing.join(', ')}`
   return null
 }
 

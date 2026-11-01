@@ -17,7 +17,7 @@ import {
 } from '@/components/forms'
 import { Monogram, SelectMenu } from '@/components/select'
 import { describeCode } from '@/lib/codes'
-import { CUSTOMER_FIELDS, brandFieldKeys, cartTotal } from '@/lib/request'
+import { CUSTOMER_FIELDS, cartSpec, cartTotal, fieldSpecs } from '@/lib/request'
 
 function shortList(values, max = 3) {
   return values.length > max ? `${values.slice(0, max).join(' ')} +${values.length - max}` : values.join(' ')
@@ -112,19 +112,29 @@ export function AmountFields({ form, setForm, currencies, cartDriven, idPrefix }
   )
 }
 
-function fieldSpec(key, brands) {
-  for (let b of brands) {
-    if (key === 'billing.country' && b.countryRequirement === 'M') return { req: 'M', label: 'Billing country', countries: b.countries }
-    let f = b.fields.find((x) => x.key === key)
-    if (f) return f
-  }
-  return { req: 'O', label: key }
-}
-
 // One control per parameter, chosen by its type
 function FieldControl({ id, spec, value, onChange, invalid, defaultCountry, countries }) {
-  if (spec.countries)
-    return <CountrySelect id={id} bare countries={spec.countries} value={value} onChange={onChange} invalid={invalid} />
+  if (spec.type === 'country')
+    return <CountrySelect id={id} bare countries={spec.options || []} value={value} onChange={onChange} invalid={invalid} />
+  if (spec.type === 'select')
+    return (
+      <SelectMenu
+        id={id}
+        variant="bare"
+        options={[...(spec.req === 'M' ? [] : [{ value: '', label: 'Not sent' }]), ...spec.options.map((o) => ({ value: o, label: o }))]}
+        value={value || (spec.req === 'M' ? undefined : '')}
+        onChange={onChange}
+        searchable={spec.options.length > 8}
+        searchPlaceholder={`Search ${spec.label.toLowerCase()}`}
+        fullWidth
+        className="-mx-1.5"
+        renderValue={(o) => (
+          <span className={clsx('flex-auto truncate text-left font-mono text-sm', o?.value ? 'text-zinc-900 dark:text-white' : 'text-zinc-400 dark:text-zinc-500')}>
+            {o?.label || 'Choose…'}
+          </span>
+        )}
+      />
+    )
   if (spec.type === 'phone')
     return <PhoneInput id={id} value={value} onChange={onChange} format={spec.format || 'plus'} defaultCountry={defaultCountry} countries={countries} invalid={invalid} />
   return (
@@ -142,32 +152,29 @@ function FieldControl({ id, spec, value, onChange, invalid, defaultCountry, coun
   )
 }
 
-export function RequiredFields({ form, setForm, catalogue, idPrefix }) {
+export function RequiredFields({ form, setForm, catalogue, idPrefix, missing = [] }) {
   let selected = form.brands.map((c) => catalogue.find((b) => b.code === c)).filter(Boolean)
-  let keys = brandFieldKeys(form.brands).filter((k) => !(form.extras.customer && CUSTOMER_FIELDS.some((f) => f.key === k)))
-  if (!keys.length) return <p className="text-sm text-zinc-500 dark:text-zinc-400">The payment brands you chose don&rsquo;t need any extra fields.</p>
+  let specs = fieldSpecs(form.brands).filter((s) => !(form.extras.customer && CUSTOMER_FIELDS.some((f) => f.key === s.key)))
+  if (!specs.length) return <p className="text-sm text-zinc-500 dark:text-zinc-400">The payment brands you chose don&rsquo;t take any extra fields.</p>
   let setField = (k, v) => setForm({ ...form, fields: { ...form.fields, [k]: v } })
   let countries = [...new Set(selected.flatMap((b) => b.countries))]
   return (
     <div className="not-prose @container">
       <div className="grid grid-cols-1 gap-3 @md:grid-cols-2">
-        {keys.map((key) => {
-          let spec = fieldSpec(key, selected)
-          let usedBy = selected
-            .filter((b) => b.fields.some((f) => f.key === key) || (key === 'billing.country' && b.countryRequirement === 'M'))
-            .map((b) => b.name)
+        {specs.map((spec) => {
+          let key = spec.key
           let id = `${idPrefix}-${key.replace(/[^\w]/g, '_')}`
           let value = form.fields[key] || ''
-          let missing = spec.req === 'M' && !String(value).trim()
-          let hint = [selected.length > 1 && usedBy.length ? `For ${usedBy.join(', ')}` : '', spec.hint].filter(Boolean).join('. ')
+          let invalid = missing.includes(key)
+          let hint = [selected.length > 1 && spec.usedBy?.length ? `For ${spec.usedBy.join(', ')}` : '', spec.hint].filter(Boolean).join('. ')
           return (
-            <InsetField key={key} htmlFor={id} name={key} req={spec.req} invalid={missing} hint={hint}>
+            <InsetField key={key} htmlFor={id} name={key} req={spec.req} invalid={invalid} hint={hint}>
               <FieldControl
                 id={id}
                 spec={spec}
                 value={value}
                 onChange={(v) => setField(key, v)}
-                invalid={missing}
+                invalid={invalid}
                 defaultCountry={countries[0] || 'GB'}
                 countries={countries}
               />
@@ -179,11 +186,31 @@ export function RequiredFields({ form, setForm, catalogue, idPrefix }) {
   )
 }
 
+// Under a Send button: why it's switched off
+export function MissingFieldsHint({ missing }) {
+  if (!missing.length) return null
+  return (
+    <span className="text-xs text-zinc-400">
+      Fill in the mandatory {missing.length === 1 ? 'field' : 'fields'} first:{' '}
+      <span className="font-mono text-amber-300/90">{missing.slice(0, 3).join(', ')}</span>
+      {missing.length > 3 ? ` and ${missing.length - 3} more` : ''}
+    </span>
+  )
+}
+
 const ALL_COUNTRIES = Object.keys(DIAL_CODES).sort((a, b) => countryName(a).localeCompare(countryName(b)))
 
-export function Extras({ form, setForm, idPrefix }) {
+const cellInvalid = 'outline-rose-400 dark:outline-rose-400/60'
+
+export function Extras({ form, setForm, idPrefix, missing = [] }) {
   let setField = (k, v) => setForm({ ...form, fields: { ...form.fields, [k]: v } })
   let setCart = (cart) => setForm({ ...form, cart })
+  let cart = cartSpec(form.brands)
+  let cartRequired = Boolean(cart?.required.length)
+  let withItemId = Boolean(cart?.fields.includes('merchantItemId'))
+  let cols = withItemId ? 'grid-cols-[1fr_6.5rem_3.5rem_5rem_2rem]' : 'grid-cols-[1fr_4rem_5.5rem_2rem]'
+  let setItem = (i, patch) => setCart(form.cart.map((x, j) => (j === i ? { ...x, ...patch } : x)))
+  let bad = (i, k) => missing.includes(`cart.items[${i}].${k}`)
   return (
     <div className="not-prose">
       <ToggleList>
@@ -233,54 +260,80 @@ export function Extras({ form, setForm, idPrefix }) {
           </div>
         </ToggleRow>
 
-        <ToggleRow
-          label="Cart items"
-          description={
-            <>
-              Adds <code className="font-mono text-[0.6875rem]">cart.items[n].*</code>. The amount becomes the cart total.
-            </>
-          }
-          checked={form.extras.cart}
-          onChange={(v) => setForm({ ...form, extras: { ...form.extras, cart: v } })}
-        >
-          <div className="space-y-2">
-            <div className="grid grid-cols-[1fr_4rem_5.5rem_2rem] gap-2 px-0.5 text-xs text-zinc-500 dark:text-zinc-400">
-              <span>Item</span>
-              <span>Qty</span>
-              <span>Price</span>
-              <span />
-            </div>
-            {form.cart.map((item, i) => (
-              <div key={i} className="grid grid-cols-[1fr_4rem_5.5rem_2rem] items-center gap-2">
-                <TextInput aria-label={`Item ${i + 1} name`} placeholder="Item name" value={item.name} onChange={(e) => setCart(form.cart.map((x, j) => (j === i ? { ...x, name: e.target.value } : x)))} />
-                <TextInput aria-label={`Item ${i + 1} quantity`} inputMode="numeric" value={item.quantity} onChange={(e) => setCart(form.cart.map((x, j) => (j === i ? { ...x, quantity: e.target.value } : x)))} />
-                <TextInput aria-label={`Item ${i + 1} price`} inputMode="decimal" value={item.price} onChange={(e) => setCart(form.cart.map((x, j) => (j === i ? { ...x, price: e.target.value } : x)))} />
+        {cart && (
+          <ToggleRow
+            label="Cart items"
+            locked={cartRequired}
+            description={
+              <>
+                {cartRequired ? (
+                  <>
+                    <span className="text-rose-500">*</span> Mandatory for {cart.required.join(', ')}.{' '}
+                  </>
+                ) : null}
+                Adds{' '}
+                <code className="font-mono text-[0.6875rem]">
+                  cart.items[n].{'{'}
+                  {cart.fields.join(', ')}
+                  {'}'}
+                </code>
+                . The amount becomes the cart total.
+              </>
+            }
+            checked={cartRequired || form.extras.cart}
+            onChange={(v) => setForm({ ...form, extras: { ...form.extras, cart: v } })}
+          >
+            <div className="space-y-2">
+              <div className={clsx('grid gap-2 px-0.5 text-xs text-zinc-500 dark:text-zinc-400', cols)}>
+                <span>name</span>
+                {withItemId && <span>merchantItemId</span>}
+                <span>quantity</span>
+                <span>price</span>
+                <span />
+              </div>
+              {form.cart.map((item, i) => (
+                <div key={i} className={clsx('grid items-center gap-2', cols)}>
+                  <TextInput aria-label={`Item ${i + 1} name`} placeholder="Item name" value={item.name} className={bad(i, 'name') && cellInvalid} onChange={(e) => setItem(i, { name: e.target.value })} />
+                  {withItemId && (
+                    <TextInput
+                      aria-label={`Item ${i + 1} merchantItemId`}
+                      placeholder="item-001"
+                      maxLength={32}
+                      value={item.merchantItemId || ''}
+                      className={bad(i, 'merchantItemId') && cellInvalid}
+                      onChange={(e) => setItem(i, { merchantItemId: e.target.value })}
+                    />
+                  )}
+                  <TextInput aria-label={`Item ${i + 1} quantity`} inputMode="numeric" value={item.quantity} className={bad(i, 'quantity') && cellInvalid} onChange={(e) => setItem(i, { quantity: e.target.value })} />
+                  <TextInput aria-label={`Item ${i + 1} price`} inputMode="decimal" value={item.price} className={bad(i, 'price') && cellInvalid} onChange={(e) => setItem(i, { price: e.target.value })} />
+                  <button
+                    type="button"
+                    aria-label={`Remove item ${i + 1}`}
+                    onClick={() => setCart(form.cart.filter((_, j) => j !== i))}
+                    className="flex size-8 items-center justify-center rounded-lg text-zinc-400 transition hover:bg-zinc-900/5 hover:text-zinc-600 dark:hover:bg-white/5 dark:hover:text-zinc-300"
+                  >
+                    <svg viewBox="0 0 20 20" fill="currentColor" className="size-4" aria-hidden="true">
+                      <path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z" />
+                    </svg>
+                  </button>
+                </div>
+              ))}
+              {missing.includes('cart.items') && <p className="text-xs text-rose-600 dark:text-rose-400">Add at least one item.</p>}
+              <div className="flex items-center justify-between pt-1">
                 <button
                   type="button"
-                  aria-label={`Remove item ${i + 1}`}
-                  onClick={() => setCart(form.cart.filter((_, j) => j !== i))}
-                  className="flex size-8 items-center justify-center rounded-lg text-zinc-400 transition hover:bg-zinc-900/5 hover:text-zinc-600 dark:hover:bg-white/5 dark:hover:text-zinc-300"
+                  onClick={() => setCart([...form.cart, { name: '', quantity: '1', price: '0.00', merchantItemId: `item-${String(form.cart.length + 1).padStart(3, '0')}` }])}
+                  className="rounded-full bg-zinc-100 px-3 py-1 text-sm font-medium text-zinc-900 transition hover:bg-zinc-200 dark:bg-zinc-800/40 dark:text-zinc-400 dark:ring-1 dark:ring-zinc-800 dark:ring-inset dark:hover:bg-zinc-800 dark:hover:text-zinc-300"
                 >
-                  <svg viewBox="0 0 20 20" fill="currentColor" className="size-4" aria-hidden="true">
-                    <path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z" />
-                  </svg>
+                  Add item
                 </button>
+                <span className="text-sm text-zinc-600 dark:text-zinc-400">
+                  Total <span className="font-mono text-zinc-900 dark:text-white">{cartTotal(form.cart)} {form.currency}</span>
+                </span>
               </div>
-            ))}
-            <div className="flex items-center justify-between pt-1">
-              <button
-                type="button"
-                onClick={() => setCart([...form.cart, { name: '', quantity: '1', price: '0.00' }])}
-                className="rounded-full bg-zinc-100 px-3 py-1 text-sm font-medium text-zinc-900 transition hover:bg-zinc-200 dark:bg-zinc-800/40 dark:text-zinc-400 dark:ring-1 dark:ring-zinc-800 dark:ring-inset dark:hover:bg-zinc-800 dark:hover:text-zinc-300"
-              >
-                Add item
-              </button>
-              <span className="text-sm text-zinc-600 dark:text-zinc-400">
-                Total <span className="font-mono text-zinc-900 dark:text-white">{cartTotal(form.cart)} {form.currency}</span>
-              </span>
             </div>
-          </div>
-        </ToggleRow>
+          </ToggleRow>
+        )}
       </ToggleList>
     </div>
   )

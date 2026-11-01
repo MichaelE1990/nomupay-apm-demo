@@ -39,14 +39,14 @@ const resources = [
   {
     href: '/payment-methods#payment-brands',
     name: 'Payment brands',
-    description: 'iDEAL, Bancontact, BLIK, Bizum, MB WAY, Przelewy24, Trustly, Twint, PayPal, Clearpay and more, with the fields each one needs.',
+    description: 'Europe and Asia: iDEAL, Bizum, Blik, Przelewy 24, Trustly, Alipay, WeChat Pay, GrabPay, PayPay and more, with the fields each one needs.',
     icon: GlobeIcon,
     pattern: { y: -6, squares: [[-1, 2], [1, 3]] },
   },
   {
     href: '/payment-methods#cards',
     name: 'Cards',
-    description: 'Visa, Mastercard and Amex through the COPYandPAY widget.',
+    description: 'Visa, Mastercard and Maestro through the COPYandPAY widget.',
     icon: CardIcon,
     pattern: { y: 16, squares: [[0, 1], [1, 3]] },
   },
