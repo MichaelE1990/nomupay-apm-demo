@@ -109,6 +109,8 @@ export function CopyAndPayFlow({ mode = 'start' }) {
     try {
       let kind = checkout?.entity || 'wallet'
       let data = await getJson(`/api/status?resourcePath=${encodeURIComponent(resourcePath)}&entity=${kind}`)
+      // Too many requests says nothing about the payment: keep the last result
+      if (data.status === 'throttled') return setError({ status: 'The gateway limits how often one checkout can be checked. Wait a moment and check again.' })
       setState((s) => ({ ...s, result: data }))
     } catch (e) {
       setError({ status: e.message })

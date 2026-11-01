@@ -3,7 +3,11 @@
 const SUCCESS = /^(000\.000\.|000\.100\.1|000\.[36]|000\.400\.[1][12]0)/
 const PENDING = /^(000\.200|800\.400\.5|100\.400\.500)/
 
+// The gateway's answer to too many status requests: says nothing about the payment
+export const THROTTLED = /^800\.120\.100/
+
 export function classify(code) {
+  if (THROTTLED.test(code || '')) return 'throttled'
   if (SUCCESS.test(code || '')) return 'success'
   if (PENDING.test(code || '')) return 'pending'
   return 'failed'

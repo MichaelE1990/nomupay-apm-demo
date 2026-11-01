@@ -104,7 +104,7 @@ export function PaymentDrawer({ open, onClose, redirect, title, onOpenWindow }) 
             </div>
 
             <div className="border-t border-zinc-900/7.5 px-4 py-3 text-xs/5 text-zinc-500 dark:border-white/10 dark:text-zinc-400">
-              The demo checks the payment status every few seconds and closes this once the shopper approves or declines. If the page won’t load here,
+              The demo closes this when the shopper comes back, and also checks the payment status every 30 seconds in case the page can’t finish here. If the page won’t load here,
               use <span className="font-medium text-zinc-700 dark:text-zinc-300">New window</span>.
             </div>
           </DialogPanel>

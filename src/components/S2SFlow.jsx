@@ -49,7 +49,12 @@ const INITIAL = {
 }
 
 const PAYMENT_PATH = /^\/v1\/payments\/[0-9a-f]{32}$/
-const POLL_MS = 3000
+// The gateway allows two status requests a minute for each server-to-server payment
+const STATUS_LIMIT = 2
+const STATUS_WINDOW_MS = 60000
+const POLL_EVERY_MS = 30000
+const THROTTLED_TEXT = 'The gateway allows two status checks a minute for each payment.'
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 
 const FLOW_TEXT = {
   async: 'The shopper is redirected to the payment brand’s page to approve the payment, then comes back to your shop.',
@@ -222,14 +227,36 @@ export function S2SFlow({ mode = 'start' }) {
   let sentAmount = payment?.response?.amount || amount
   let sentCurrency = payment?.response?.currency || form.currency
 
-  async function checkStatus(path = resourcePath, { quiet = false } = {}) {
+  // Status requests made per payment in the last minute, to stay inside the gateway's limit
+  let statusCalls = useRef({})
+  function statusWait(path) {
+    let now = Date.now()
+    let recent = (statusCalls.current[path] || []).filter((t) => now - t < STATUS_WINDOW_MS)
+    statusCalls.current[path] = recent
+    return recent.length < STATUS_LIMIT ? 0 : recent[0] + STATUS_WINDOW_MS - now + 250
+  }
+
+  // quiet: background check (no busy state or errors); wait: hold until the limit allows it
+  async function checkStatus(path = resourcePath, { quiet = false, wait = false } = {}) {
     if (!path) return null
+    let ms = statusWait(path)
+    if (ms > 0 && (quiet || !wait)) {
+      if (!quiet) setError({ status: `${THROTTLED_TEXT} Try again in ${Math.ceil(ms / 1000)} seconds.` })
+      return null
+    }
     if (!quiet) {
       setBusy('status')
       setError({})
     }
     try {
+      if (ms > 0) await sleep(ms)
+      statusCalls.current[path] = [...(statusCalls.current[path] || []), Date.now()]
       let data = await getJson(`/api/status?resourcePath=${encodeURIComponent(path)}&entity=wallet`)
+      // Too many requests says nothing about the payment: keep the last result
+      if (data.status === 'throttled') {
+        if (!quiet) setError({ status: `${THROTTLED_TEXT} Wait a moment and check again.` })
+        return null
+      }
       setState((s) => ({ ...s, result: data }))
       return data
     } catch (e) {
@@ -266,26 +293,31 @@ export function S2SFlow({ mode = 'start' }) {
       if (current && e.data.id && e.data.id !== current) return
       setDrawerOpen(false)
       setState((s) => ({ ...s, returned: true }))
-      latest.current.checkStatus(PAYMENT_PATH.test(e.data.resourcePath || '') ? e.data.resourcePath : path).then(scrollToStatus)
+      latest.current.checkStatus(PAYMENT_PATH.test(e.data.resourcePath || '') ? e.data.resourcePath : path, { wait: true }).then(scrollToStatus)
     }
     window.addEventListener('message', onMessage)
     return () => window.removeEventListener('message', onMessage)
   }, [config, setState])
 
-  // While the drawer is open, check the status too: once the shopper approves or declines,
-  // the drawer closes even if the payment page can't finish its redirect inside the frame
+  // While the drawer is open, also check the status every 30 seconds (inside the gateway's
+  // limit): once the shopper approves or declines, the drawer closes even if the payment
+  // page can't finish its redirect inside the frame
   useEffect(() => {
     if (!drawerOpen || !paymentId) return
     let stopped = false
+    let path = `/v1/payments/${paymentId}`
+    let last = Date.now()
     let timer = setInterval(async () => {
-      let data = await latest.current.checkStatus(`/v1/payments/${paymentId}`, { quiet: true })
+      if (stopped || Date.now() - last < POLL_EVERY_MS) return
+      last = Date.now()
+      let data = await latest.current.checkStatus(path, { quiet: true })
       if (!stopped && data && data.status !== 'pending') {
         stopped = true
         setDrawerOpen(false)
         setState((s) => ({ ...s, returned: true }))
         scrollToStatus()
       }
-    }, POLL_MS)
+    }, 5000)
     return () => {
       stopped = true
       clearInterval(timer)
@@ -665,7 +697,8 @@ export function S2SFlow({ mode = 'start' }) {
           <p>
             {flow.mode === 'sync'
               ? `There’s no redirect, so check the status while the shopper approves in their app. The payment stays pending until they do${brand?.timeout ? `, or until it times out after ${brand.timeout}` : ''}.`
-              : 'When the shopper comes back, request the payment with your entity ID to get the outcome. Payments can stay pending for a while; check again, or rely on the webhook in production.'}
+              : 'When the shopper comes back, request the payment with your entity ID to get the outcome. Payments can stay pending for a while; check again, or rely on the webhook in production.'}{' '}
+            The gateway allows two status checks a minute for each payment.
           </p>
           <ResultSummary result={state.result} emptyText={resourcePath ? 'Not checked yet.' : 'Comes after step 1.'} />
         </Col>
