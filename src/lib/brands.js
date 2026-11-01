@@ -160,13 +160,13 @@ export const WALLET_BRANDS = [
     code: 'DIRECTDEBIT_SEPA', name: 'SEPA Direct Debit', countries: EU_SEPA, currencies: ['EUR'], timeout: '1.5 hours', paymentMethod: 'DD', integration: [API, CS],
     fields: [
       email, f('bankAccount.iban', 'M'), f('bankAccount.holder', 'M'),
-      f('bankAccount.mandate.id', 'M', { sync: true, sample: 'MANDATE-001' }),
-      f('bankAccount.mandate.dateOfSignature', 'M', { sync: true, sample: '2026-11-01' }),
-      f('customParameters[mandate_url]', 'M', { sync: true, sample: 'https://example.com/mandates/MANDATE-001' }),
+      f('bankAccount.mandate.id', 'C', { group: 'mandate' }),
+      f('bankAccount.mandate.dateOfSignature', 'C', { group: 'mandate' }),
+      f('customParameters[mandate_url]', 'C', { group: 'mandate' }),
       f('billing.street1', 'C'), f('billing.houseNumber1', 'C'), f('billing.postcode', 'C'), f('billing.city', 'C'),
       f('descriptor', 'O'), invoice,
     ],
-    note: 'Asynchronous: the shopper signs the mandate on the redirect page. Synchronous: you send a mandate you already hold, with no redirect. The billing address is needed for some bank accounts outside the EU.',
+    note: 'Send the three mandate fields together when you already hold a signed mandate, or leave all three empty. The test system still redirects either way. The billing address is needed for some bank accounts outside the EU.',
   },
   { code: 'SHOPEEPAY', name: 'ShopeePay', countries: ['MY'], currencies: ['MYR'], timeout: '8 hours', integration: [API, GW, CS], fields: [givenName, invoice] },
   {

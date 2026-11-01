@@ -14,9 +14,13 @@ A test bench for payment brands (APMs) and cards on the ACI/OPPWA gateway. It's 
 
 **Server-to-server** (`/server-to-server`)
 
-1. **Create the payment**: `POST /v1/payments` with one `paymentBrand`, picked from a searchable menu. The page stays on step 1 so the response can be read.
-2. **Redirect the shopper**: the `redirect` object from the response as a JS snippet. **Redirect the shopper** opens the payment page in a drawer (GET or POST, as the gateway asks), so the demo page stays put; **open it in a new window** does the same in a popup for pages that can't be framed. When the shopper reaches the `shopperResultUrl`, that page tells the demo, the drawer closes and step 3 checks the result.
-3. **Get the payment result**: `GET /v1/payments/{id}`.
+*How it works* comes first: choose the payment flow (Asynchronous, or Synchronous for Bizum and Swish with the shopper's mobile number), the transaction flow (Debit, or Pre-authorization + Capture for PayPay) and the payment brand. The steps follow that choice, as in the server-to-server guide on docs.oppwa.com:
+
+1. **Perform debit payment** / **Pre-authorize payment**: `POST /v1/payments`. Shows the brand's currencies, countries, timeout, amount limits and refunds, then every request parameter with its description and an input where it's editable. The page stays on this step so the response can be read.
+2. **Redirect shopper** (asynchronous only): the `redirect` object as a JS snippet. The payment page opens in a drawer, or a new window. The shopper returns to the production domain (deployment URLs are behind Vercel's login, which can't load inside the frame), and that page tells the demo, which closes the drawer and checks the status. As a fallback the demo also checks every 30 seconds while the drawer is open.
+3. **Get the payment status**: `GET /v1/payments/{id}`. The gateway allows two status requests a minute per payment (more get `800.120.100`), so the demo counts them and waits rather than going over.
+4. **Capture the payment** (pre-authorization only): `POST /v1/payments/{id}` with `paymentType=CP`.
+5. **Manage the payment** (optional): a full or partial refund, `paymentType=RF`, for brands that allow refunds. Capture and refund send the same `testMode` as the payment, or the gateway answers `700.100.600`. Refunds come back pending (`000.200.001`) while the brand processes them.
 
 Reference pages list every payment method with its countries, currencies, timeout and fields (`/payment-methods`), and the result codes you're likely to see (`/result-codes`).
 
@@ -86,5 +90,6 @@ Next.js, Tailwind CSS and Headless UI. The layout, navigation, code panels and b
 | `/checkout/{checkoutId}` | Checkout page running `paymentWidgets.js` |
 | `POST /api/checkouts` | Creates a COPYandPAY checkout |
 | `POST /api/payments` | Server-to-server payment |
+| `POST /api/payments/{id}` | Capture (CP) or refund (RF) of an earlier payment |
 | `GET /api/status?resourcePath=…&entity=…` | Payment or checkout status |
 | `GET /api/config` | Environment summary and payment method catalogue |

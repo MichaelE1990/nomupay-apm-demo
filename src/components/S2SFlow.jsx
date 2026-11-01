@@ -58,7 +58,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 
 const FLOW_TEXT = {
   async: 'The shopper is redirected to the payment brand’s page to approve the payment, then comes back to your shop.',
-  sync: 'No redirect: the shopper approves the payment in their app (Bizum, Swish), or you send a SEPA mandate you already hold.',
+  sync: 'No redirect: you send the shopper’s mobile number and they approve the payment in their app. Bizum and Swish support it.',
   DB: 'Takes the money in one step.',
   PA: 'Reserves the amount first, then you capture it once the shopper has approved. Only PayPay supports it.',
 }
@@ -497,7 +497,7 @@ export function S2SFlow({ mode = 'start' }) {
         <Col>
           <p>
             {flow.mode === 'sync'
-              ? 'Send the debit request with the details that skip the redirect: the shopper’s mobile number for Bizum and Swish, or a SEPA mandate you already hold.'
+              ? 'Send the debit request with the shopper’s mobile number. There’s no redirect: the payment brand asks the shopper to approve it in their app.'
               : flow.tx === 'PA'
                 ? 'Send the pre-authorization request from your server. The amount is reserved once the shopper approves, and you capture it afterwards.'
                 : 'Send the debit request from your server with the payment brand and the fields it needs. The response comes back pending, with a redirect for the next step.'}
@@ -697,7 +697,7 @@ export function S2SFlow({ mode = 'start' }) {
         <Col>
           <p>
             {flow.mode === 'sync'
-              ? `There’s no redirect, so check the status while the shopper approves in their app. The payment stays pending until they do${brand?.timeout ? `, or until it times out after ${brand.timeout}` : ''}.`
+              ? `There’s no redirect, so check the status while the shopper approves in their app. The payment stays pending until they do${brand?.timeout ? `, or until it times out after ${brand.timeout}` : ''}. On the test system the simulator approves it by itself within about 30 seconds.`
               : 'When the shopper comes back, request the payment with your entity ID to get the outcome. Payments can stay pending for a while; check again, or rely on the webhook in production.'}{' '}
             The gateway allows two status checks a minute for each payment.
           </p>
@@ -825,6 +825,12 @@ export function S2SFlow({ mode = 'start' }) {
               </Properties>
               {!refundReady && (
                 <p className="text-sm text-zinc-500 dark:text-zinc-400">Available once the {flow.tx === 'PA' ? 'capture' : 'payment'} is successful.</p>
+              )}
+              {state.refund?.status === 'pending' && (
+                <Note>
+                  The refund was accepted and is pending (000.200.001) while the payment brand processes it. The final result arrives by webhook in
+                  production.
+                </Note>
               )}
             </>
           )}
