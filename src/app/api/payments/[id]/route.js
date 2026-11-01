@@ -1,4 +1,4 @@
-import { CONFIGURED, entity, gateway, masked, notConfigured } from '@/lib/gateway'
+import { CONFIGURED, TEST_MODE, entity, gateway, masked, notConfigured } from '@/lib/gateway'
 
 export const dynamic = 'force-dynamic'
 
@@ -20,6 +20,8 @@ export async function POST(request, { params: routeParams }) {
     ['currency', String(input.currency)],
     ['paymentType', paymentType],
   ]
+  // Must match the original payment's mode, or the gateway answers 700.100.600
+  if (TEST_MODE) params.push(['testMode', TEST_MODE])
   let path = `/v1/payments/${id}`
   try {
     let { httpStatus, data, status } = await gateway('POST', path, params, 'wallet')

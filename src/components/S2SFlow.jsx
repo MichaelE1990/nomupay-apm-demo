@@ -413,6 +413,7 @@ export function S2SFlow({ mode = 'start' }) {
         ['amount', state.amounts?.[kind] || sentAmount],
         ['currency', sentCurrency],
         ['paymentType', type],
+        ...(config?.testMode ? [['testMode', config.testMode]] : []),
       ],
     })
   let captureCurl = backOfficeCurl(paymentId, 'CP', 'capture')
@@ -753,6 +754,11 @@ export function S2SFlow({ mode = 'start' }) {
                 <ParamRow name="paymentType" req="M" control={<FixedValue>CP</FixedValue>}>
                   CP captures the pre-authorization.
                 </ParamRow>
+                {config?.testMode && (
+                  <ParamRow name="testMode" control={<FixedValue>{config.testMode}</FixedValue>}>
+                    Test only: must match the pre-authorization, or the gateway rejects the capture.
+                  </ParamRow>
+                )}
               </Properties>
               {!approved && <p className="text-sm text-zinc-500 dark:text-zinc-400">Available once the pre-authorization is approved.</p>}
             </Col>
@@ -811,6 +817,11 @@ export function S2SFlow({ mode = 'start' }) {
                 <ParamRow name="paymentType" req="M" control={<FixedValue>RF</FixedValue>}>
                   RF refunds the payment.
                 </ParamRow>
+                {config?.testMode && (
+                  <ParamRow name="testMode" control={<FixedValue>{config.testMode}</FixedValue>}>
+                    Test only: must match the original payment, or the gateway rejects the refund.
+                  </ParamRow>
+                )}
               </Properties>
               {!refundReady && (
                 <p className="text-sm text-zinc-500 dark:text-zinc-400">Available once the {flow.tx === 'PA' ? 'capture' : 'payment'} is successful.</p>
