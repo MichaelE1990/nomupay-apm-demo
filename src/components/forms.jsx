@@ -301,7 +301,7 @@ export function ReqTag({ req }) {
 
 // Requirement as plain text on the right of a parameter row, as in API references
 const REQ_TEXT = {
-  M: ['Required', 'text-rose-600 dark:text-rose-400'],
+  M: ['Required', 'text-rose-700/75 dark:text-rose-300/70'],
   C: ['Conditional', 'text-amber-600 dark:text-amber-400'],
   O: ['Optional', 'text-zinc-400 dark:text-zinc-500'],
   T: ['Test only', 'text-zinc-400 dark:text-zinc-500'],
@@ -382,19 +382,56 @@ export function SegmentedControl({ options, value, onChange, label, className })
   )
 }
 
-// Status inside a dark code panel: a dot and text, no badge background
+// Status inside a dark code panel: a soft pill with an icon
 const panelTone = {
-  success: 'text-emerald-400',
-  pending: 'text-amber-300',
-  failed: 'text-rose-400',
-  neutral: 'text-zinc-400',
+  success: 'bg-emerald-400/10 text-emerald-300/85 ring-emerald-400/20',
+  pending: 'bg-amber-400/10 text-amber-200/80 ring-amber-400/20',
+  failed: 'bg-rose-400/10 text-rose-300/85 ring-rose-400/20',
+  neutral: 'bg-white/5 text-zinc-400 ring-white/10',
 }
+
+function StatusIcon({ status, className }) {
+  if (status === 'success')
+    return (
+      <svg viewBox="0 0 16 16" fill="none" aria-hidden="true" className={className}>
+        <circle cx="8" cy="8" r="6.25" stroke="currentColor" strokeWidth="1.25" />
+        <path d="m5.75 8.25 1.5 1.5 3-3.25" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    )
+  if (status === 'failed')
+    return (
+      <svg viewBox="0 0 16 16" fill="none" aria-hidden="true" className={className}>
+        <circle cx="8" cy="8" r="6.25" stroke="currentColor" strokeWidth="1.25" />
+        <path d="m6 6 4 4m0-4-4 4" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" />
+      </svg>
+    )
+  if (status === 'pending')
+    return (
+      <svg viewBox="0 0 16 16" fill="none" aria-hidden="true" className={className}>
+        <path
+          d="M8 1.75v2.5M8 11.75v2.5M1.75 8h2.5M11.75 8h2.5M3.6 3.6l1.75 1.75M10.65 10.65l1.75 1.75M3.6 12.4l1.75-1.75"
+          stroke="currentColor"
+          strokeWidth="1.25"
+          strokeLinecap="round"
+        />
+      </svg>
+    )
+  return (
+    <svg viewBox="0 0 6 6" aria-hidden="true" className="size-1.5 fill-current">
+      <circle r={3} cx={3} cy={3} />
+    </svg>
+  )
+}
+
 export function PanelStatus({ status = 'neutral', children }) {
   return (
-    <span className={clsx('inline-flex items-center gap-1.5 text-xs font-medium', panelTone[status] || panelTone.neutral)}>
-      <svg viewBox="0 0 6 6" aria-hidden="true" className="size-1.5 fill-current">
-        <circle r={3} cx={3} cy={3} />
-      </svg>
+    <span
+      className={clsx(
+        'inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset',
+        panelTone[status] || panelTone.neutral,
+      )}
+    >
+      <StatusIcon status={status} className="size-3.5" />
       {children || statusLabel[status]}
     </span>
   )

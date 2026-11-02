@@ -18,7 +18,7 @@ import {
   bareInputClass,
   countryName,
 } from '@/components/forms'
-import { Monogram, SelectMenu } from '@/components/select'
+import { Flag, Monogram, SelectMenu } from '@/components/select'
 import { FIELD_DEFS } from '@/lib/brands'
 import { describeCode } from '@/lib/codes'
 import { CUSTOMER_FIELDS, cartSpec, cartTotal, fieldSpecs } from '@/lib/request'
@@ -210,7 +210,20 @@ const countryList = (codes, max = 5) => {
 export function BrandFacts({ brand }) {
   if (!brand) return null
   let refunds = brand.refunds.length ? brand.refunds.join(', ') : 'Not supported'
-  let limits = [brand.limits.min && `Min ${brand.limits.min}`, brand.limits.max && `Max ${brand.limits.max}`].filter(Boolean).join(' · ') || 'Not listed'
+  let limits = brand.amounts.length ? (
+    <ul role="list" className="space-y-1">
+      {brand.amounts.map((a) => (
+        <li key={a.currency} className="flex items-center gap-2">
+          <Flag code={a.currency === 'EUR' ? 'EU' : a.currency.slice(0, 2)} className="size-4" />
+          <span className="tabular-nums">
+            {a.min && a.max ? `${a.currency} ${a.min} – ${a.max}` : a.min ? `From ${a.currency} ${a.min}` : `Up to ${a.currency} ${a.max}`}
+          </span>
+        </li>
+      ))}
+    </ul>
+  ) : (
+    'Not listed'
+  )
   let rows = [
     ['Currencies', brand.currencies.join(', ')],
     ['Countries', countryList(brand.countries)],

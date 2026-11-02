@@ -260,6 +260,23 @@ export const CARD_BRANDS = [
 
 const REQ_ORDER = { M: 0, C: 1, O: 2 }
 
+// "CNY 0.10, MYR 0.10" and "CNY 50,000, MYR 2,000" -> one row per currency
+function amountLimits(min = '', max = '') {
+  const rows = new Map()
+  const add = (text, key) => {
+    for (const part of String(text).split(/,\s+(?=[A-Z]{3}\s)/)) {
+      const m = part.trim().match(/^([A-Z]{3})\s+(.+)$/)
+      if (!m) continue
+      const row = rows.get(m[1]) || { currency: m[1], min: '', max: '' }
+      row[key] = m[2]
+      rows.set(m[1], row)
+    }
+  }
+  add(min, 'min')
+  add(max, 'max')
+  return [...rows.values()]
+}
+
 function finalise(b, type) {
   const hc = HELP_CENTRE[b.code] || {}
   return {
@@ -272,6 +289,7 @@ function finalise(b, type) {
     refunds: hc.refunds || [],
     capture: hc.capture || [],
     limits: { min: hc.min || '', max: hc.max || '' },
+    amounts: amountLimits(hc.min, hc.max),
     cart: b.cart || null,
     fields: b.fields
       .map((field, i) => {

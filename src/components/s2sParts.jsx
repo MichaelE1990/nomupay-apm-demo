@@ -32,7 +32,7 @@ export function ParamGroup({ title, missing = 0, defaultOpen = false, children }
     <Disclosure as="div" defaultOpen={defaultOpen} className="border-t border-zinc-900/10 first:border-t-0 dark:border-white/10">
       <DisclosureButton className="group flex w-full items-center gap-3 py-3.5 text-left">
         <span className="text-sm font-semibold text-zinc-900 dark:text-white">{title}</span>
-        {missing > 0 && <span className="text-xs font-medium text-rose-600 dark:text-rose-400">{missing} to fill in</span>}
+        {missing > 0 && <span className="text-xs font-medium text-rose-700/75 dark:text-rose-300/70">{missing} to fill in</span>}
         <ChevronDownIcon className="ml-auto size-4 flex-none text-zinc-500 transition group-data-open:rotate-180 dark:text-zinc-400" />
       </DisclosureButton>
       <DisclosurePanel className="pb-5">

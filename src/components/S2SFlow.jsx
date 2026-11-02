@@ -44,7 +44,9 @@ const STATUS_WINDOW_MS = 60000
 const THROTTLED_TEXT = 'The gateway allows two status checks a minute for each payment.'
 
 const HELP_CENTRE_URL = 'https://support.nomupay.com/hc/en-gb/articles/52156192050193-Ecommerce-Payment-Methods'
-const REFERENCE_URL = 'https://nomupay.docs.oppwa.com/reference/parameters'
+// Shown instead of the demo's own values: the request carries the real ones
+const SHOPPER_RESULT_URL_SHOWN = 'https://demo/paymentresult'
+const ENTITY_SHOWN = '{entity_id}'
 
 // Payment flows and their transaction flows, as in the server-to-server guide on docs.oppwa.com
 const MODES = [
@@ -178,12 +180,8 @@ export function S2SFlow({ mode = 'start' }) {
   let [state, setState, ready] = usePersistentState(KEY, INITIAL)
   let [busy, setBusy] = useState('')
   let [error, setError] = useState({})
-  let [origin, setOrigin] = useState('https://your-site.example')
   let [drawerOpen, setDrawerOpen] = useState(false)
-  let statusRef = useRef(null)
   let autoScrolled = useRef(false)
-
-  useEffect(() => setOrigin(window.location.origin), [])
 
   let catalogue = useMemo(() => (config?.brands || []).filter((b) => b.type === 'wallet'), [config])
   let flow = state.flow || INITIAL.flow
@@ -211,15 +209,13 @@ export function S2SFlow({ mode = 'start' }) {
   )
   let amount = sendForm.extras.cart ? cartTotal(form.cart) : form.amount
   let missing = useMemo(() => missingFields({ ...sendForm, amount }), [sendForm, amount])
-  let returnBase = config?.returnBase || origin
-  let shopperResultUrl = `${returnBase}/server-to-server/return`
   let previewParams = useMemo(() => {
     if (!config) return []
     return buildPaymentParams(
       { ...sendForm, amount, flow: 's2s', merchantTransactionId: form.merchantTransactionId || '{generated}' },
-      { entityId: config.entities?.wallet || '{entityId}', testMode: config.testMode, shopperResultUrl },
+      { entityId: ENTITY_SHOWN, testMode: config.testMode, shopperResultUrl: SHOPPER_RESULT_URL_SHOWN },
     )
-  }, [config, sendForm, form.merchantTransactionId, amount, shopperResultUrl])
+  }, [config, sendForm, form.merchantTransactionId, amount])
 
   let payment = state.payment
   let paymentId = payment?.response?.id
@@ -268,14 +264,12 @@ export function S2SFlow({ mode = 'start' }) {
     }
   }
 
-  let scrollToStatus = () => setTimeout(() => statusRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 350)
-
-  // Back on the return page after a full-page redirect: go to the status step, where
-  // the merchant sends the status request themselves
+  // Back on the return page after a full-page redirect: show step 2, where the redirect
+  // is marked complete; the merchant sends the status request themselves
   useEffect(() => {
     if (mode !== 'return' || autoScrolled.current || !ready || !resourcePath || isEmbedded()) return
     autoScrolled.current = true
-    scrollToStatus()
+    setTimeout(() => document.getElementById('redirect-shopper')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 350)
   }, [mode, resourcePath, ready])
 
   let latest = useRef({})
@@ -293,7 +287,6 @@ export function S2SFlow({ mode = 'start' }) {
       if (current && e.data.id && e.data.id !== current) return
       setDrawerOpen(false)
       setState((s) => ({ ...s, returned: true }))
-      scrollToStatus()
     }
     window.addEventListener('message', onMessage)
     return () => window.removeEventListener('message', onMessage)
@@ -371,7 +364,7 @@ export function S2SFlow({ mode = 'start' }) {
   }
 
   let apiHost = config?.apiHost || 'eu-test.oppwa.com'
-  let entityShown = config?.entities?.wallet || '{entityId}'
+  let entityShown = ENTITY_SHOWN
   let requestCurl = config ? buildCurl({ url: `https://${apiHost}/v1/payments`, params: previewParams }) : ''
   let statusCurl = buildCurl({ method: 'GET', url: `https://${apiHost}${resourcePath || '/v1/payments/{id}'}`, params: [['entityId', entityShown]] })
   let snippet = redirectSnippet(redirect)
@@ -499,27 +492,13 @@ export function S2SFlow({ mode = 'start' }) {
                 setState((s) => ({ ...s, form: withBrand(s.form, code, catalogue, flow.mode), payment: null, result: null, capture: null, refund: null }))
               }
             />
-            {brand && (
-              <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
-                See the required {brand.name} parameters below. For more details on {brand.name}, refer to{' '}
-                <a
-                  href={HELP_CENTRE_URL}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="font-medium text-emerald-600 hover:text-emerald-500 dark:text-emerald-400 dark:hover:text-emerald-300"
-                >
-                  Ecommerce Payment Methods
-                </a>
-                .
-              </p>
-            )}
           </div>
           <BrandFacts brand={brand} />
           <h3>Body parameters</h3>
           <p>
-            {brand ? `The parameters ${brand.name} takes,` : 'The parameters,'} grouped as in the{' '}
-            <a href={REFERENCE_URL} target="_blank" rel="noreferrer">
-              parameters reference
+            Required and optional {brand ? `${brand.name} ` : ''}parameters. For further details refer to{' '}
+            <a href={HELP_CENTRE_URL} target="_blank" rel="noreferrer">
+              Ecommerce Payment Methods
             </a>
             .
           </p>
@@ -585,7 +564,7 @@ export function S2SFlow({ mode = 'start' }) {
             </ParamGroup>
             {flow.mode === 'async' && (
               <ParamGroup title="Asynchronous payments">
-                <ParamRow name="shopperResultUrl" type="url" req="M" control={<FixedValue>{shopperResultUrl}</FixedValue>}>
+                <ParamRow name="shopperResultUrl" type="url" req="M" control={<FixedValue>{SHOPPER_RESULT_URL_SHOWN}</FixedValue>}>
                   Your page the shopper is sent back to after the payment brand. The gateway adds the payment’s id and resourcePath to it.
                 </ParamRow>
               </ParamGroup>
@@ -660,7 +639,7 @@ export function S2SFlow({ mode = 'start' }) {
           <ErrorNote message={error.payment} />
           <CodeWindow
             title="Response"
-            status={panelStatus(payment, redirect ? 'Pending · redirect' : 'Pending')}
+            status={panelStatus(payment, redirect ? 'Pending redirect' : 'Pending')}
             code={payment ? JSON.stringify(payment.response, null, 2) : ''}
             html={payment ? highlightJson(payment.response) : ''}
             empty="Response Details"
@@ -699,7 +678,6 @@ export function S2SFlow({ mode = 'start' }) {
               {paymentId && payment?.status === 'pending' && !redirect && (
                 <Note>There’s no redirect in this response, so the shopper approves the payment in their app. Check the status in the next step.</Note>
               )}
-              {state.returned && <Note>The shopper is back. Send the status request in the next step.</Note>}
             </Col>
             <Col sticky>
               <CodeWindow
@@ -721,6 +699,21 @@ export function S2SFlow({ mode = 'start' }) {
                 }
               />
               <ErrorNote message={error.redirect} />
+              {(state.returned || (mode === 'return' && resourcePath)) && (
+                <div className="not-prose mt-4 flex items-start gap-2.5 rounded-xl bg-emerald-50/70 px-4 py-3 text-sm text-emerald-900 ring-1 ring-emerald-600/15 ring-inset dark:bg-emerald-400/5 dark:text-emerald-200 dark:ring-emerald-400/15">
+                  <svg viewBox="0 0 16 16" fill="none" aria-hidden="true" className="mt-0.5 size-4 flex-none text-emerald-600 dark:text-emerald-400">
+                    <circle cx="8" cy="8" r="6.25" stroke="currentColor" strokeWidth="1.25" />
+                    <path d="m5.75 8.25 1.5 1.5 3-3.25" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                  <p>
+                    <span className="font-medium">Redirect complete.</span> Continue to{' '}
+                    <a href={`#${status.id}`} className="font-medium underline decoration-emerald-600/30 underline-offset-2 hover:decoration-emerald-600">
+                      step {status.step}
+                    </a>{' '}
+                    to retrieve the payment status.
+                  </p>
+                </div>
+              )}
             </Col>
           </Row>
           <PaymentDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} redirect={redirect} title={paidBrandTitle} onOpenWindow={openWindow} />
@@ -729,7 +722,6 @@ export function S2SFlow({ mode = 'start' }) {
 
       {/* Payment status */}
       <hr />
-      <div ref={statusRef} className="scroll-mt-24" />
       <Heading level={2} id={status.id} step={status.step} tag="GET" label={resourcePath || '/v1/payments/{id}'}>
         {status.title}
       </Heading>
