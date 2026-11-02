@@ -52,15 +52,16 @@
   --color-emerald-900: #0b4373;
   --color-emerald-950: #082a4c;
 
-  /* Neutrals with the brand navy at 900 */
+  /* Neutrals: the brand light greys and navy at the ends; the text greys
+     (300-700) stay the template's original zinc */
   --color-zinc-50: #f6f6f8;
   --color-zinc-100: #eceef3;
   --color-zinc-200: #dadde7;
-  --color-zinc-300: #c1c5d4;
-  --color-zinc-400: #9298ae;
-  --color-zinc-500: #6c728b;
-  --color-zinc-600: #50576f;
-  --color-zinc-700: #3a4160;
+  --color-zinc-300: oklch(87.1% 0.006 286.286);
+  --color-zinc-400: oklch(70.5% 0.015 286.067);
+  --color-zinc-500: oklch(55.2% 0.016 285.938);
+  --color-zinc-600: oklch(44.2% 0.017 285.786);
+  --color-zinc-700: oklch(37% 0.013 285.805);
   --color-zinc-800: #262e52;
   --color-zinc-900: #172147;
   --color-zinc-950: #0e1631;
@@ -100,6 +101,43 @@
   [inert] ::-webkit-scrollbar {
     display: none;
   }
+}
+
+/* Code panels (requests, responses, snippets) keep the template's original
+   look: system font, neutral zinc, emerald and green, original token colours */
+.code-window {
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', 'Noto Sans', Arial, sans-serif, 'Apple Color Emoji',
+    'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+  --color-zinc-50: oklch(98.5% 0 none);
+  --color-zinc-100: oklch(96.7% 0.001 286.375);
+  --color-zinc-200: oklch(92% 0.004 286.32);
+  --color-zinc-300: oklch(87.1% 0.006 286.286);
+  --color-zinc-400: oklch(70.5% 0.015 286.067);
+  --color-zinc-500: oklch(55.2% 0.016 285.938);
+  --color-zinc-600: oklch(44.2% 0.017 285.786);
+  --color-zinc-700: oklch(37% 0.013 285.805);
+  --color-zinc-800: oklch(27.4% 0.006 286.033);
+  --color-zinc-900: oklch(21% 0.006 285.885);
+  --color-zinc-950: oklch(14.1% 0.005 285.823);
+  --color-emerald-50: oklch(97.9% 0.021 166.113);
+  --color-emerald-100: oklch(95% 0.052 163.051);
+  --color-emerald-200: oklch(90.5% 0.093 164.15);
+  --color-emerald-300: oklch(84.5% 0.143 164.978);
+  --color-emerald-400: oklch(76.5% 0.177 163.223);
+  --color-emerald-500: oklch(69.6% 0.17 162.48);
+  --color-emerald-600: oklch(59.6% 0.145 163.225);
+  --color-emerald-700: oklch(50.8% 0.118 165.612);
+  --color-emerald-800: oklch(43.2% 0.095 166.913);
+  --color-emerald-900: oklch(37.8% 0.077 168.94);
+  --color-emerald-950: oklch(26.2% 0.051 172.552);
+  --color-green-300: oklch(87.1% 0.15 154.449);
+  --color-green-400: oklch(79.2% 0.209 151.711);
+  --shiki-token-constant: oklch(84.5% 0.143 164.978);
+  --shiki-token-string: oklch(84.5% 0.143 164.978);
+  --shiki-token-comment: oklch(55.2% 0.016 285.938);
+  --shiki-token-string-expression: oklch(84.5% 0.143 164.978);
+  --shiki-token-punctuation: oklch(92% 0.004 286.32);
 }
 
 /* Server-to-server return page inside the payment drawer or a popup: show only the "you're back" panel */

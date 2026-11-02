@@ -383,9 +383,9 @@ export function SegmentedControl({ options, value, onChange, label, className })
   )
 }
 
-// Status inside a dark code panel: a soft pill with an icon
+// Status inside a dark code panel: a soft pill with an icon (the panel keeps the original emerald)
 const panelTone = {
-  success: 'bg-green-400/10 text-green-300/85 ring-green-400/20',
+  success: 'bg-emerald-400/10 text-emerald-300/85 ring-emerald-400/20',
   pending: 'bg-amber-400/10 text-amber-200/80 ring-amber-400/20',
   failed: 'bg-rose-400/10 text-rose-300/85 ring-rose-400/20',
   neutral: 'bg-white/5 text-zinc-400 ring-white/10',

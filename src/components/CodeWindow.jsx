@@ -5,6 +5,9 @@ import { useEffect, useState } from 'react'
 
 import { Tag } from '@/components/Tag'
 
+// The template's original method colours (code panels keep the original look)
+const TAG_COLORS = { GET: 'emerald', POST: 'sky', PUT: 'amber', DELETE: 'rose' }
+
 // Code panel in the Protocol template's CodeGroup style, for code that changes
 // as the page is used (live requests and real responses).
 
@@ -78,7 +81,7 @@ export function CodeWindow({ title, tag, label, code, html, empty, footer, statu
   return (
     <div
       className={clsx(
-        'not-prose my-6 overflow-hidden rounded-2xl bg-zinc-900 shadow-md dark:ring-1 dark:ring-white/10',
+        'code-window not-prose my-6 overflow-hidden rounded-2xl bg-zinc-900 shadow-md dark:ring-1 dark:ring-white/10',
         className,
       )}
     >
@@ -90,7 +93,9 @@ export function CodeWindow({ title, tag, label, code, html, empty, footer, statu
         <div className="flex h-9 items-center gap-2 border-y border-t-transparent border-b-white/7.5 bg-zinc-900 bg-white/2.5 px-4 dark:border-b-white/5 dark:bg-white/1">
           {tag && (
             <div className="dark flex">
-              <Tag variant="small">{tag}</Tag>
+              <Tag variant="small" color={TAG_COLORS[tag] || 'emerald'}>
+                {tag}
+              </Tag>
             </div>
           )}
           {tag && label && <span className="h-0.5 w-0.5 rounded-full bg-zinc-500" />}
