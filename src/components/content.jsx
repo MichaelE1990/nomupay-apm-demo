@@ -59,8 +59,30 @@ export function Properties({ children, className }) {
 }
 
 // A parameter as in an API reference: the name in bold mono, its type in grey,
-// the requirement on the right, then what it is and (in the guides) its value
-export function Property({ name, type, badge, children, control }) {
+// the requirement on the right, then what it is and (in the guides) its value.
+// split: a compact row with the name and description on the left and the
+// value or input on the right (stacked on small screens); wide puts a large
+// control (a table) underneath instead
+export function Property({ name, type, badge, children, control, split = false, wide = false }) {
+  if (split)
+    return (
+      <li
+        className={clsx(
+          'm-0 grid grid-cols-1 gap-x-6 gap-y-2 px-0 py-3 first:pt-0 last:pb-0',
+          !wide && 'sm:grid-cols-[minmax(0,1fr)_minmax(0,13.5rem)] sm:items-center',
+        )}
+      >
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+            <span className="min-w-0 font-mono text-[0.8125rem] font-semibold break-all text-zinc-900 dark:text-white">{name}</span>
+            {type && <span className="font-mono text-xs text-zinc-400 dark:text-zinc-500">{type}</span>}
+            {badge}
+          </div>
+          {children && <div className="mt-0.5 text-xs/5 text-zinc-500 dark:text-zinc-400">{children}</div>}
+        </div>
+        {control && <div className="min-w-0">{control}</div>}
+      </li>
+    )
   return (
     <li className="m-0 px-0 py-3.5 first:pt-0 last:pb-0">
       <dl className="m-0">

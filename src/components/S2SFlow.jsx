@@ -104,6 +104,12 @@ function responseGroups(flow) {
       rows: [
         ['result.code', 'A', 'The result of the request, for example 000.100.112 for a successful test payment or 000.200.000 while pending.'],
         ['result.description', 'A', 'What the result code means.'],
+        ...(flow.mode === 'async'
+          ? [
+              ['redirect.url', 'C', 'Only while the payment is pending: the payment brand’s page to send the shopper to.', 'url'],
+              ['redirect.parameters', 'C', 'Only while the payment is pending: the name and value pairs to pass with the redirect.', 'array'],
+            ]
+          : []),
       ],
     },
     {
@@ -120,13 +126,6 @@ function responseGroups(flow) {
         ['resultDetails.ConnectorErrorFieldDetails', 'C', 'Only on errors: why that field was rejected.'],
       ],
     },
-    flow.mode === 'async' && {
-      title: 'Asynchronous payments',
-      rows: [
-        ['redirect.url', 'C', 'Only while the payment is pending: the payment brand’s page to send the shopper to.', 'url'],
-        ['redirect.parameters', 'C', 'Only while the payment is pending: the name and value pairs to pass with the redirect.', 'array'],
-      ],
-    },
     {
       title: 'Other',
       rows: [
@@ -136,8 +135,15 @@ function responseGroups(flow) {
         ['ndc', 'A', 'An internal unique identifier for the request.'],
       ],
     },
-  ].filter(Boolean)
+  ]
 }
+
+// Filled values in one line, for a closed group's header
+const preview = (...values) =>
+  values
+    .flat()
+    .filter((v) => v !== undefined && v !== null && String(v).trim() !== '')
+    .join(' · ')
 
 const valueAt = (obj, path) => {
   if (!obj) return undefined
@@ -433,6 +439,10 @@ export function S2SFlow({ mode = 'start' }) {
   let requestCurl = config ? buildCurl({ url: `https://${apiHost}/v1/payments`, params: previewParams }) : ''
   let statusCurl = buildCurl({ method: 'GET', url: `https://${apiHost}${resourcePath || '/v1/payments/{id}'}`, params: [['entityId', entityShown]] })
   let snippet = redirectSnippet(redirect)
+  let redirectHost = ''
+  try {
+    redirectHost = redirect?.url ? new URL(redirect.url).host : ''
+  } catch {}
   let paidBrand = catalogue.find((b) => b.code === payment?.response?.paymentBrand)
   let paidBrandTitle = [paidBrand?.name || 'Payment page', payment?.response?.amount && `${payment.response.amount} ${payment.response.currency || ''}`]
     .filter(Boolean)
@@ -464,6 +474,7 @@ export function S2SFlow({ mode = 'start' }) {
   // The chosen brand's own fields, shown in their parameter groups
   let specs = brand ? fieldSpecs([brand.code], flow.mode) : []
   let missingIn = (group) => missing.filter((k) => groupOf(k) === group).length
+  let basicSpecs = specs.filter((x) => groupOf(x.key) === 'basic')
   let fieldRows = (group) => (
     <BrandFieldRows
       form={{ ...form, mode: flow.mode }}
@@ -476,7 +487,7 @@ export function S2SFlow({ mode = 'start' }) {
   )
   let testModeGroup = (text) =>
     config?.testMode && (
-      <ParamGroup title="Testing">
+      <ParamGroup title="Testing" preview={config.testMode}>
         <ParamRow name="testMode" req="T" control={<FixedValue>{config.testMode}</FixedValue>}>
           {text}
         </ParamRow>
@@ -484,7 +495,7 @@ export function S2SFlow({ mode = 'start' }) {
     )
   let backOfficeGroups = (kind, type, text) => (
     <ParamGroups>
-      <ParamGroup title="Basic payment">
+      <ParamGroup title="Basic payment" preview={preview(`${state.amounts?.[kind] || sentAmount} ${sentCurrency}`, type)}>
         <ParamRow
           name="amount"
           type="decimal"
@@ -569,7 +580,11 @@ export function S2SFlow({ mode = 'start' }) {
             .
           </p>
           <ParamGroups key={`${brand?.code}-${flow.mode}-${flow.tx}`}>
-            <ParamGroup title="Basic payment" missing={missingIn('basic')}>
+            <ParamGroup
+              title="Basic payment"
+              missing={missingIn('basic')}
+              preview={preview(`${amount} ${form.currency}`, flow.tx, brand?.code, basicSpecs.map((x) => form.fields[x.key]))}
+            >
               <ParamRow
                 name="amount"
                 type="decimal"
@@ -626,27 +641,29 @@ export function S2SFlow({ mode = 'start' }) {
               >
                 Your reference for the payment, often used for reconciliation.
               </ParamRow>
+              <ParamRow name="shopperResultUrl" type="url" req="M" control={<FixedValue>{SHOPPER_RESULT_URL_SHOWN}</FixedValue>}>
+                Your page the shopper is sent back to after the payment brand. The gateway adds the payment’s id and resourcePath to it.
+                {flow.mode === 'sync' ? ' Not used when there’s no redirect.' : ''}
+              </ParamRow>
               {fieldRows('basic')}
             </ParamGroup>
-            {flow.mode === 'async' && (
-              <ParamGroup title="Asynchronous payments">
-                <ParamRow name="shopperResultUrl" type="url" req="M" control={<FixedValue>{SHOPPER_RESULT_URL_SHOWN}</FixedValue>}>
-                  Your page the shopper is sent back to after the payment brand. The gateway adds the payment’s id and resourcePath to it.
-                </ParamRow>
-              </ParamGroup>
-            )}
             {FIELD_GROUPS.map((g) => {
               let list = specs.filter((x) => g.test(x.key))
               if (!list.length) return null
               return (
-                <ParamGroup key={g.id} title={g.title} missing={missingIn(g.id)}>
+                <ParamGroup key={g.id} title={g.title} missing={missingIn(g.id)} preview={preview(list.map((x) => form.fields[x.key]))}>
                   {fieldRows(g.id)}
                 </ParamGroup>
               )
             })}
             {cart && (
-              <ParamGroup title="Cart" missing={missingIn('cart')}>
+              <ParamGroup
+                title="Cart"
+                missing={missingIn('cart')}
+                preview={sendForm.extras.cart ? `${form.cart.length} ${form.cart.length === 1 ? 'item' : 'items'} · ${cartTotal(form.cart)} ${form.currency}` : 'Not sent'}
+              >
                 <ParamRow
+                  wide
                   name="cart.items[n]"
                   type="array"
                   req={cartRequired ? 'M' : 'O'}
@@ -729,14 +746,19 @@ export function S2SFlow({ mode = 'start' }) {
               </p>
               <h3>Response parameters</h3>
               <ParamGroups>
-                <ParamGroup title="Redirect">
-                  <Property name="redirect.url" type="url">
+                <ParamGroup title="Redirect" preview={redirect ? preview(redirectMethod(redirect), redirectHost) : null}>
+                  <Property split name="redirect.url" type="url" control={redirect && <FixedValue>{redirect.url}</FixedValue>}>
                     The payment brand’s page to send the shopper to.
                   </Property>
-                  <Property name="redirect.method" type="string">
+                  <Property split name="redirect.method" type="string" control={redirect && <FixedValue>{redirectMethod(redirect)}</FixedValue>}>
                     GET or POST. If it’s missing, use POST when there are parameters and GET when there aren’t.
                   </Property>
-                  <Property name="redirect.parameters" type="array">
+                  <Property
+                    split
+                    name="redirect.parameters"
+                    type="array"
+                    control={redirect && <FixedValue>{(redirect.parameters || []).map((x) => x.name).join(', ') || 'None'}</FixedValue>}
+                  >
                     Name and value pairs to pass on unchanged: query parameters for GET, hidden form fields for POST.
                   </Property>
                 </ParamGroup>
@@ -801,11 +823,25 @@ export function S2SFlow({ mode = 'start' }) {
           </p>
           <ParamGroups>
             {responseGroups(flow).map((g) => (
-              <ParamGroup key={g.title} title={g.title}>
+              <ParamGroup
+                key={g.title}
+                title={g.title}
+                preview={
+                  state.result
+                    ? preview(
+                        g.rows
+                          .filter(([name]) => !['id', 'ndc', 'buildNumber'].includes(name))
+                          .slice(0, 3)
+                          .map(([name]) => valueAt(state.result.response, name)),
+                      )
+                    : null
+                }
+              >
                 {g.rows.map(([name, req, text, type = 'string']) => {
                   let value = valueAt(state.result?.response, name)
                   return (
                     <Property
+                      split
                       key={name}
                       name={name}
                       type={type}

@@ -250,9 +250,9 @@ export function BrandFacts({ brand }) {
 }
 
 // A request parameter as a reference row: name, type, requirement, what it is, and its value
-export function ParamRow({ name, type = 'string', req, children, control }) {
+export function ParamRow({ name, type = 'string', req, children, control, wide }) {
   return (
-    <Property name={name} type={type} badge={req ? <ReqText req={req} /> : null} control={control}>
+    <Property split wide={wide} name={name} type={type} badge={req ? <ReqText req={req} /> : null} control={control}>
       {children}
     </Property>
   )
@@ -260,7 +260,7 @@ export function ParamRow({ name, type = 'string', req, children, control }) {
 
 // A fixed value in a parameter row (set by the demo, not typed in)
 export function FixedValue({ children }) {
-  return <span className="block truncate font-mono text-xs text-zinc-500 dark:text-zinc-400">{children}</span>
+  return <span className="block truncate font-mono text-xs text-zinc-600 dark:text-zinc-300">{children}</span>
 }
 
 // The chosen brand's own fields as parameter rows with inputs
