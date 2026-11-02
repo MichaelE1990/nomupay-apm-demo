@@ -1,14 +1,16 @@
+import '@fontsource-variable/montserrat'
+
 import { Providers } from '@/app/providers'
 
 import '@/styles/tailwind.css'
 
 export const metadata = {
   title: {
-    template: '%s · NomuPay APM Demo',
-    default: 'NomuPay APM Demo',
+    template: '%s · Nomupay Payment Methods',
+    default: 'Nomupay Payment Methods',
   },
   description:
-    'Test payment brands and cards the way a merchant integrates them: build the request, send it, and use the response in the next step.',
+    'Test the payment methods merchants can offer through Nomupay: build each request, send it to the test gateway, and use the response in the next step.',
 }
 
 export default function RootLayout({ children }) {

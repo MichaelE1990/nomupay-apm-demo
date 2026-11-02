@@ -102,7 +102,7 @@ function responseGroups(flow) {
     {
       title: 'Result',
       rows: [
-        ['result.code', 'A', 'The result of the request, for example 000.100.112 for a successful test payment or 000.200.000 while pending. See Result codes.'],
+        ['result.code', 'A', 'The result of the request, for example 000.100.112 for a successful test payment or 000.200.000 while pending.'],
         ['result.description', 'A', 'What the result code means.'],
       ],
     },
@@ -760,14 +760,14 @@ export function S2SFlow({ mode = 'start' }) {
               />
               <ErrorNote message={error.redirect} />
               {(state.returned || (mode === 'return' && resourcePath)) && (
-                <div className="not-prose mt-4 flex items-start gap-2.5 rounded-xl bg-emerald-50/70 px-4 py-3 text-sm text-emerald-900 ring-1 ring-emerald-600/15 ring-inset dark:bg-emerald-400/5 dark:text-emerald-200 dark:ring-emerald-400/15">
-                  <svg viewBox="0 0 16 16" fill="none" aria-hidden="true" className="mt-0.5 size-4 flex-none text-emerald-600 dark:text-emerald-400">
+                <div className="not-prose mt-4 flex items-start gap-2.5 rounded-xl bg-green-50/70 px-4 py-3 text-sm text-green-900 ring-1 ring-green-600/15 ring-inset dark:bg-green-400/5 dark:text-green-200 dark:ring-green-400/15">
+                  <svg viewBox="0 0 16 16" fill="none" aria-hidden="true" className="mt-0.5 size-4 flex-none text-green-600 dark:text-green-400">
                     <circle cx="8" cy="8" r="6.25" stroke="currentColor" strokeWidth="1.25" />
                     <path d="m5.75 8.25 1.5 1.5 3-3.25" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
                   <p>
                     <span className="font-medium">Redirect complete.</span> Continue to{' '}
-                    <a href={`#${status.id}`} className="font-medium underline decoration-emerald-600/30 underline-offset-2 hover:decoration-emerald-600">
+                    <a href={`#${status.id}`} className="font-medium underline decoration-green-600/30 underline-offset-2 hover:decoration-green-600">
                       step {status.step}
                     </a>{' '}
                     to retrieve the payment status.

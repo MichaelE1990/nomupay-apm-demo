@@ -3,7 +3,6 @@ import { motion, useScroll, useTransform } from 'framer-motion'
 import Link from 'next/link'
 import { forwardRef } from 'react'
 
-import { EnvironmentBadges } from '@/components/EnvironmentBadges'
 import { Logo } from '@/components/Logo'
 import {
   MobileNavigation,
@@ -12,21 +11,6 @@ import {
 } from '@/components/MobileNavigation'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { CloseButton } from '@headlessui/react'
-
-export const REPO_URL = 'https://github.com/MichaelE1990/nomupay-apm-demo'
-
-function TopLevelNavItem({ href, children }) {
-  return (
-    <li>
-      <Link
-        href={href}
-        className="text-sm/5 text-zinc-600 transition hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white"
-      >
-        {children}
-      </Link>
-    </li>
-  )
-}
 
 export const Header = forwardRef(function Header({ className, ...props }, ref) {
   let { isOpen: mobileNavIsOpen } = useMobileNavigationStore()
@@ -61,9 +45,7 @@ export const Header = forwardRef(function Header({ className, ...props }, ref) {
             'bg-zinc-900/7.5 dark:bg-white/7.5',
         )}
       />
-      <div className="hidden min-w-0 lg:block">
-        <EnvironmentBadges />
-      </div>
+      <div className="hidden lg:block" />
       <div className="flex items-center gap-5 lg:hidden">
         <MobileNavigation />
         <CloseButton as={Link} href="/" aria-label="Home">
@@ -71,13 +53,6 @@ export const Header = forwardRef(function Header({ className, ...props }, ref) {
         </CloseButton>
       </div>
       <div className="flex items-center gap-5">
-        <nav className="hidden md:block">
-          <ul role="list" className="flex items-center gap-8">
-            <TopLevelNavItem href="/payment-methods">Payment methods</TopLevelNavItem>
-            <TopLevelNavItem href={REPO_URL}>GitHub</TopLevelNavItem>
-          </ul>
-        </nav>
-        <div className="hidden md:block md:h-5 md:w-px md:bg-zinc-900/10 md:dark:bg-white/15" />
         <div className="flex gap-4">
           <ThemeToggle />
         </div>

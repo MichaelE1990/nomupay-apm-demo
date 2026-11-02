@@ -1,6 +1,6 @@
-# NomuPay APM Demo
+# Nomupay Payment Methods
 
-A test bench for payment brands (APMs) and cards on the ACI/OPPWA gateway. It's built to feel like a merchant integrating: every step shows the request on the right as you build it, sends it, shows the real response underneath, and the next step uses what came back.
+A test bench for payment brands (APMs) and cards on the ACI/OPPWA gateway, in the Nomupay brand (Montserrat, navy #172147, blue #0190F7; logo paths from the Brand Guidelines). It's built to feel like a merchant integrating: every step shows the request on the right as you build it, sends it, shows the real response underneath, and the next step uses what came back.
 
 ## Guides
 
@@ -22,7 +22,7 @@ A test bench for payment brands (APMs) and cards on the ACI/OPPWA gateway. It's 
 4. **Capture the payment** (pre-authorization only): `POST /v1/payments/{id}` with `paymentType=CP`.
 5. **Manage the payment** (optional): a full or partial refund, `paymentType=RF`, for brands that allow refunds. Capture and refund send the same `testMode` as the payment, or the gateway answers `700.100.600`. Refunds come back pending (`000.200.001`) while the brand processes them.
 
-Reference pages list every payment method with its countries, currencies, timeout and fields (`/payment-methods`), and the result codes you're likely to see (`/result-codes`).
+The introduction covers getting started and credentials (entityId and the access token as a Bearer header, from the Credentials section of the Nomupay Dashboard), and links to both guides.
 
 ## Payment methods
 
@@ -84,7 +84,7 @@ Next.js, Tailwind CSS and Headless UI. The layout, navigation, code panels and b
 
 | Route | What it does |
 |---|---|
-| `/` | Introduction and environment |
+| `/` | Introduction: getting started, credentials, guides |
 | `/copyandpay`, `/copyandpay/return` | COPYandPAY guide; the return page is the widget's form action |
 | `/server-to-server`, `/server-to-server/return` | Server-to-server guide; the return page is the `shopperResultUrl`, and inside the drawer or popup it messages the guide instead |
 | `/checkout/{checkoutId}` | Checkout page running `paymentWidgets.js` |

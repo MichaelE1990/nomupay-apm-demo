@@ -7,7 +7,7 @@ import { useEffect, useState } from 'react'
 import { Flag, SelectMenu } from '@/components/select'
 import { Tag } from '@/components/Tag'
 
-// Tailwind UI form controls in the Protocol palette (zinc + emerald)
+// Tailwind UI form controls in the brand palette (zinc = navy neutrals, emerald = brand blue)
 
 const inputClass =
   'block w-full rounded-lg bg-white px-3 py-1.5 text-sm/6 text-zinc-900 outline-1 -outline-offset-1 outline-zinc-900/10 placeholder:text-zinc-400 focus:outline-2 focus:-outline-offset-2 focus:outline-emerald-500 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:placeholder:text-zinc-500 dark:focus:outline-emerald-400'
@@ -314,7 +314,7 @@ export function ReqText({ req }) {
 }
 
 const statusStyles = {
-  success: 'bg-emerald-50 text-emerald-700 ring-emerald-600/20 dark:bg-emerald-400/10 dark:text-emerald-400 dark:ring-emerald-400/20',
+  success: 'bg-green-50 text-green-700 ring-green-600/20 dark:bg-green-400/10 dark:text-green-300 dark:ring-green-400/20',
   pending: 'bg-amber-50 text-amber-800 ring-amber-600/20 dark:bg-amber-400/10 dark:text-amber-400 dark:ring-amber-400/20',
   failed: 'bg-rose-50 text-rose-700 ring-rose-600/20 dark:bg-rose-400/10 dark:text-rose-400 dark:ring-rose-400/20',
   neutral: 'bg-zinc-50 text-zinc-600 ring-zinc-500/20 dark:bg-zinc-400/10 dark:text-zinc-400 dark:ring-zinc-400/20',
@@ -385,7 +385,7 @@ export function SegmentedControl({ options, value, onChange, label, className })
 
 // Status inside a dark code panel: a soft pill with an icon
 const panelTone = {
-  success: 'bg-emerald-400/10 text-emerald-300/85 ring-emerald-400/20',
+  success: 'bg-green-400/10 text-green-300/85 ring-green-400/20',
   pending: 'bg-amber-400/10 text-amber-200/80 ring-amber-400/20',
   failed: 'bg-rose-400/10 text-rose-300/85 ring-rose-400/20',
   neutral: 'bg-white/5 text-zinc-400 ring-white/10',

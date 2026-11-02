@@ -35,6 +35,49 @@
 
   --shadow-glow: 0 0 4px rgb(0 0 0 / 0.1);
 
+  /* NomuPay brand (Brand Guidelines): Montserrat, navy #172147, blue #0190F7,
+     light grey #F6F6F6, light blue #DCEDFD */
+  --font-sans: 'Montserrat Variable', 'Montserrat', ui-sans-serif, system-ui, sans-serif;
+
+  /* The template's accent scale, now the brand blue */
+  --color-emerald-50: #eff7ff;
+  --color-emerald-100: #dcedfd;
+  --color-emerald-200: #bbdcfd;
+  --color-emerald-300: #85c4fb;
+  --color-emerald-400: #45a8f9;
+  --color-emerald-500: #0190f7;
+  --color-emerald-600: #0175d4;
+  --color-emerald-700: #035eaa;
+  --color-emerald-800: #074f8b;
+  --color-emerald-900: #0b4373;
+  --color-emerald-950: #082a4c;
+
+  /* Neutrals with the brand navy at 900 */
+  --color-zinc-50: #f6f6f8;
+  --color-zinc-100: #eceef3;
+  --color-zinc-200: #dadde7;
+  --color-zinc-300: #c1c5d4;
+  --color-zinc-400: #9298ae;
+  --color-zinc-500: #6c728b;
+  --color-zinc-600: #50576f;
+  --color-zinc-700: #3a4160;
+  --color-zinc-800: #262e52;
+  --color-zinc-900: #172147;
+  --color-zinc-950: #0e1631;
+
+  /* Success: the brand's additional greens */
+  --color-green-50: #effbf3;
+  --color-green-100: #d8f5e0;
+  --color-green-200: #b4ebc4;
+  --color-green-300: #87e19c;
+  --color-green-400: #4fc678;
+  --color-green-500: #23a865;
+  --color-green-600: #0c875b;
+  --color-green-700: #0b6c4a;
+  --color-green-800: #0c563d;
+  --color-green-900: #0b4733;
+  --color-green-950: #04281c;
+
   --container-lg: 33rem;
   --container-2xl: 40rem;
   --container-3xl: 50rem;
@@ -44,13 +87,13 @@
 @layer base {
   :root {
     --shiki-color-text: var(--color-white);
-    --shiki-token-constant: var(--color-emerald-300);
-    --shiki-token-string: var(--color-emerald-300);
+    --shiki-token-constant: var(--color-green-300);
+    --shiki-token-string: var(--color-green-300);
     --shiki-token-comment: var(--color-zinc-500);
     --shiki-token-keyword: var(--color-sky-300);
     --shiki-token-parameter: var(--color-pink-300);
     --shiki-token-function: var(--color-violet-300);
-    --shiki-token-string-expression: var(--color-emerald-300);
+    --shiki-token-string-expression: var(--color-green-300);
     --shiki-token-punctuation: var(--color-zinc-200);
   }
 

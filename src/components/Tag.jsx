@@ -11,6 +11,11 @@ const colorStyles = {
     medium:
       'ring-emerald-300 dark:ring-emerald-400/30 bg-emerald-400/10 text-emerald-500 dark:text-emerald-400',
   },
+  green: {
+    small: 'text-green-600 dark:text-green-400',
+    medium:
+      'ring-green-300 bg-green-400/10 text-green-600 dark:ring-green-400/30 dark:bg-green-400/10 dark:text-green-400',
+  },
   sky: {
     small: 'text-sky-500',
     medium:
@@ -34,8 +39,8 @@ const colorStyles = {
 }
 
 const valueColorMap = {
-  GET: 'emerald',
-  POST: 'sky',
+  GET: 'green',
+  POST: 'emerald',
   PUT: 'amber',
   DELETE: 'rose',
 }

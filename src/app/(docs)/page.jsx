@@ -1,88 +1,74 @@
 import { Article } from '@/components/Article'
 import { Button } from '@/components/Button'
-import { Note, Properties, Property } from '@/components/content'
-import { StatusBadge } from '@/components/forms'
+import { CodeWindow } from '@/components/CodeWindow'
+import { Properties, Property } from '@/components/content'
 import { Guides } from '@/components/Guides'
 import { Heading } from '@/components/Heading'
 import { HeroPattern } from '@/components/HeroPattern'
-import { Resources } from '@/components/Resources'
-import { publicConfig } from '@/lib/gateway'
-
-export const dynamic = 'force-dynamic'
+import { buildCurl, highlightCurl } from '@/lib/highlight'
 
 export const metadata = {
   title: 'Introduction',
 }
 
+// Help Centre: where merchants find their credentials in the Nomupay Dashboard
+const CREDENTIALS_URL = 'https://support.nomupay.com/hc/en-gb/articles/8918887969297-Credential-Management'
+
+const example = buildCurl({
+  method: 'GET',
+  url: 'https://eu-test.oppwa.com/v1/payments/{id}',
+  params: [['entityId', '{entity_id}']],
+})
+
 export default function Home() {
-  let config = publicConfig()
   return (
     <Article>
       <HeroPattern />
-      <h1>NomuPay APM Demo</h1>
+      <h1>Nomupay Payment Methods</h1>
       <p className="lead">
-        Test payment brands and cards the way a merchant integrates them. Build a request, see exactly what gets sent, send it to
-        the test gateway, and use the response in the next step.
+        Try the payment methods merchants can offer through Nomupay, the way a merchant integrates them. Build each request, see exactly what’s
+        sent, send it to the test gateway, and use the response in the next step.
       </p>
-      <div className="not-prose mt-6 mb-16 flex flex-wrap gap-3">
-        <Button href="/server-to-server" arrow="right">
-          Server-to-server guide
-        </Button>
-        <Button href="/copyandpay" variant="outline">
-          COPYandPAY guide
+
+      <Heading level={2} id="getting-started">
+        Getting started
+      </Heading>
+      <p className="lead">
+        To get started, retrieve your test credentials from the Credentials section of your Nomupay Dashboard account. Every request to the gateway
+        carries them, and the guides below show where each one goes. When your integration is ready to go live, swap in your live credentials.
+      </p>
+      <div className="not-prose mt-6 mb-16">
+        <Button href={CREDENTIALS_URL} target="_blank" rel="noreferrer" variant="text" arrow="right">
+          Retrieve your Test Credentials
         </Button>
       </div>
 
-      <Heading level={2} id="environment">
-        Environment
+      <Heading level={2} id="credentials">
+        Credentials
       </Heading>
-      <p className="lead">
-        Requests go from this deployment&rsquo;s server to the gateway below. The access token never reaches the browser, and entity IDs are
-        masked on screen.
+      <p>
+        Your credentials identify your merchant account and authenticate your requests. There are two, and every request to the gateway needs both.
       </p>
-      {!config.configured && (
-        <Note tone="amber">
-          No credentials yet. Add <code>ENTITY_ID</code> and <code>ACCESS_TOKEN</code> in Vercel under Settings → Environment Variables, then
-          redeploy. The pages still show every request; only sending is off.
-        </Note>
-      )}
       <Properties>
-        <Property name="environment" type="string" badge={<StatusBadge status={config.environment === 'TEST' ? 'success' : 'pending'}>{config.environment}</StatusBadge>}>
-          Set by <code>API_HOST</code>: anything with &ldquo;test&rdquo; in it is the test system.
+        <Property name="entityId" type="string">
+          Identifies your merchant entity. Send it as a parameter with every request: in the body of a POST, or the query of a GET.
         </Property>
-        <Property name="apiHost" type="string">
-          <code>{config.apiHost}</code>
-        </Property>
-        <Property name="testMode" type="string">
-          {config.testMode ? (
-            <>
-              <code>{config.testMode}</code>, sent with payment brand requests so the PPRO simulator handles them.
-            </>
-          ) : (
-            'Not sent.'
-          )}
-        </Property>
-        <Property name="ENTITY_ID" type="string" badge={<StatusBadge status={config.configured ? 'success' : 'failed'}>{config.configured ? 'Set' : 'Missing'}</StatusBadge>}>
-          {config.entities.wallet ? <code>{config.entities.wallet}</code> : 'Not set.'} Used for payment brands.
-        </Property>
-        <Property
-          name="CARD_ENTITY_ID"
-          type="string"
-          badge={<StatusBadge status={config.entities.cardDedicated ? 'success' : 'neutral'}>{config.entities.cardDedicated ? 'Set' : 'Optional'}</StatusBadge>}
-        >
-          {config.entities.cardDedicated ? (
-            <>
-              <code>{config.entities.card}</code> is used whenever a checkout includes cards.
-            </>
-          ) : (
-            'Not set, so cards use ENTITY_ID. Add CARD_ENTITY_ID (and CARD_ACCESS_TOKEN if it differs) to test cards on their own entity.'
-          )}
+        <Property name="Authorization" type="header">
+          Your access token, sent in the Authorization header with the Bearer scheme.
         </Property>
       </Properties>
+      <p>Here’s how to send both with cURL:</p>
+      <CodeWindow title="Example request with your credentials" code={example} html={highlightCurl(example)} />
+      <p>
+        Send test requests to eu-test.oppwa.com with your test credentials. Live requests go to eu-prod.oppwa.com with your live credentials.
+      </p>
+      <p>
+        Keep your access token on your server and never expose it in a browser or app. Only Dashboard users with High Level access can view
+        credentials, and only once, so copy and store them securely. If yours are no longer visible, contact help@nomupay.com with your full name
+        and email address to have them reactivated.
+      </p>
 
       <Guides />
-
-      <Resources />
     </Article>
   )
 }

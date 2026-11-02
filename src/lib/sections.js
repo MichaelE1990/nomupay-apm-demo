@@ -8,20 +8,13 @@ export const navigation = [
       { title: 'Server-to-server', href: '/server-to-server' },
     ],
   },
-  {
-    title: 'Reference',
-    links: [
-      { title: 'Payment methods', href: '/payment-methods' },
-      { title: 'Result codes', href: '/result-codes' },
-    ],
-  },
 ]
 
 export const allSections = {
   '/': [
-    { id: 'environment', title: 'Environment' },
+    { id: 'getting-started', title: 'Getting started' },
+    { id: 'credentials', title: 'Credentials' },
     { id: 'guides', title: 'Guides' },
-    { id: 'reference', title: 'Reference' },
   ],
   '/copyandpay': [
     { id: 'prepare-the-checkout', step: 1, title: 'Prepare the checkout', tag: 'POST' },
@@ -36,11 +29,6 @@ export const allSections = {
     { id: 'get-the-payment-status', step: 3, title: 'Get the payment status', tag: 'GET' },
     { id: 'manage-the-payment', step: 4, title: 'Manage the payment', tag: 'POST' },
   ],
-  '/payment-methods': [
-    { id: 'payment-brands', title: 'Payment brands' },
-    { id: 'cards', title: 'Cards' },
-  ],
-  '/result-codes': [],
 }
 
 // Return pages (/copyandpay/return) belong to their parent guide
