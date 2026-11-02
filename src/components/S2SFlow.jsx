@@ -507,10 +507,9 @@ export function S2SFlow({ mode = 'start' }) {
         mode={flow.mode}
         tx={flow.tx}
         onChange={setFlow}
-        footer={`Supported by ${eligible.length} payment ${eligible.length === 1 ? 'brand' : 'brands'}.`}
       />
       <p>
-        The requests in this flow, between the shopper, your server, the NomuPay gateway and the payment brand. Numbered requests are the steps
+        The requests in this flow, between the shopper, the merchant server, the payment gateway and the payment brand. Numbered requests are the steps
         below.
       </p>
       <SequenceDiagram title={`${modeInfo.title} · ${flowInfo.title}`} messages={sequence(flow, steps)} />
@@ -543,22 +542,22 @@ export function S2SFlow({ mode = 'start' }) {
                 setState((s) => ({ ...s, form: withBrand(s.form, code, catalogue, flow.mode), payment: null, result: null, capture: null, refund: null }))
               }
             />
-            <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
-              {eligible.length} payment {eligible.length === 1 ? 'brand supports' : 'brands support'} the selected flow.
-            </p>
-          </div>
-          {brand && (
-            <>
-              <p className="mt-6 text-sm">
+            {brand && (
+              <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
                 For more details on {brand.name}, refer to{' '}
-                <a href={HELP_CENTRE_URL} target="_blank" rel="noreferrer">
+                <a
+                  href={HELP_CENTRE_URL}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="font-medium text-emerald-600 hover:text-emerald-500 dark:text-emerald-400 dark:hover:text-emerald-300"
+                >
                   Ecommerce Payment Methods
                 </a>
                 .
               </p>
-              <BrandFacts brand={brand} />
-            </>
-          )}
+            )}
+          </div>
+          <BrandFacts brand={brand} />
           <h3>Body parameters</h3>
           <p>
             {brand ? `The parameters ${brand.name} takes,` : 'The parameters,'} grouped as in the{' '}

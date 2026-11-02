@@ -53,30 +53,32 @@ export function ParamGroup({ title, count, required = 0, missing = 0, defaultOpe
 // tray underneath to pick the transaction flow
 // ---------------------------------------------------------------------------
 
+// Asynchronous: the shopper goes out to the payment brand and comes back
 function RedirectIcon(props) {
   return (
     <svg viewBox="0 0 20 20" aria-hidden="true" {...props}>
       <path
         fill="none"
-        strokeWidth="1.5"
+        strokeWidth="1.25"
         strokeLinecap="round"
         strokeLinejoin="round"
-        d="M11 3.5h5.5V9M16.5 3.5 9.5 10.5M8 4.5H5a1.5 1.5 0 0 0-1.5 1.5v9A1.5 1.5 0 0 0 5 16.5h9a1.5 1.5 0 0 0 1.5-1.5v-3"
+        d="M3.5 7h12.5m0 0-2.75-2.75M16 7l-2.75 2.75M16.5 13H4m0 0 2.75-2.75M4 13l2.75 2.75"
       />
     </svg>
   )
 }
 
-function PhoneIcon(props) {
+// Synchronous: the shopper approves in the payment brand's app
+function PhoneCheckIcon(props) {
   return (
     <svg viewBox="0 0 20 20" aria-hidden="true" {...props}>
-      <rect x="5.75" y="2.5" width="8.5" height="15" rx="2" strokeWidth="1.5" />
-      <path fill="none" strokeWidth="1.5" strokeLinecap="round" d="M9 14.5h2" />
+      <rect x="6" y="2.75" width="8" height="14.5" rx="1.75" strokeWidth="1.25" />
+      <path fill="none" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round" d="m8.25 9.75 1.25 1.25 2.25-2.5M9.25 14.75h1.5" />
     </svg>
   )
 }
 
-const FLOW_ICONS = { async: RedirectIcon, sync: PhoneIcon }
+const FLOW_ICONS = { async: RedirectIcon, sync: PhoneCheckIcon }
 const FLOW_PATTERNS = {
   async: { y: -6, squares: [[-1, 2], [1, 3]] },
   sync: { y: 16, squares: [[0, 1], [1, 3]] },
@@ -107,14 +109,14 @@ function FlowCard({ mode, selected, onSelect, tray }) {
   return (
     <div
       className={clsx(
-        'rounded-2xl transition-colors duration-300',
+        'flex flex-col rounded-2xl transition-colors duration-300',
         selected ? 'bg-zinc-100 ring-1 ring-zinc-900/7.5 dark:bg-white/5 dark:ring-white/10' : 'bg-transparent',
       )}
     >
       <div
         onMouseMove={onMouseMove}
         className={clsx(
-          'group relative flex rounded-2xl transition-shadow',
+          'group relative flex flex-auto rounded-2xl transition-shadow',
           selected
             ? 'bg-white shadow-sm shadow-zinc-900/5 dark:bg-zinc-900'
             : 'bg-zinc-50 hover:shadow-md hover:shadow-zinc-900/5 dark:bg-white/2.5 dark:hover:shadow-black/5',
@@ -132,7 +134,7 @@ function FlowCard({ mode, selected, onSelect, tray }) {
           role="radio"
           aria-checked={selected}
           onClick={onSelect}
-          className="relative w-full rounded-2xl px-4 pt-5 pb-4 text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-500"
+          className="relative flex w-full flex-col justify-start rounded-2xl px-4 pt-5 pb-4 text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-500"
         >
           <span className="flex items-start justify-between">
             <ResourceIcon icon={FLOW_ICONS[mode.value]} />
@@ -154,9 +156,9 @@ function FlowCard({ mode, selected, onSelect, tray }) {
 }
 
 // modes: [{ value, title, description, flows: [{ value, title, types: ['PA','CP'] }] }]
-export function FlowCards({ modes, mode, tx, onChange, footer }) {
+export function FlowCards({ modes, mode, tx, onChange }) {
   return (
-    <div role="radiogroup" aria-label="Payment flow" className="not-prose my-6 grid grid-cols-1 items-start gap-4 sm:grid-cols-2">
+    <div role="radiogroup" aria-label="Payment flow" className="not-prose my-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
       {modes.map((m) => {
         let selected = m.value === mode
         return (
@@ -192,7 +194,6 @@ export function FlowCards({ modes, mode, tx, onChange, footer }) {
                     )
                   })}
                 </div>
-                {selected && footer && <p className="mt-3 text-xs/5 text-zinc-500 dark:text-zinc-400">{footer}</p>}
               </div>
             }
           />
@@ -208,8 +209,8 @@ export function FlowCards({ modes, mode, tx, onChange, footer }) {
 
 export const LANES = [
   { id: 'shopper', label: 'Shopper', bar: 'bg-emerald-500 dark:bg-emerald-400' },
-  { id: 'server', label: 'Your server', bar: 'bg-amber-500 dark:bg-amber-400' },
-  { id: 'gateway', label: 'NomuPay gateway', bar: 'bg-sky-500 dark:bg-sky-400' },
+  { id: 'server', label: 'Merchant server', bar: 'bg-amber-500 dark:bg-amber-400' },
+  { id: 'gateway', label: 'Payment gateway', bar: 'bg-sky-500 dark:bg-sky-400' },
   { id: 'brand', label: 'Payment brand', bar: 'bg-violet-500 dark:bg-violet-400' },
 ]
 const laneIndex = (id) => LANES.findIndex((l) => l.id === id)
