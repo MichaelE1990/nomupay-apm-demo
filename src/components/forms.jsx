@@ -56,6 +56,22 @@ export function ToggleList({ children }) {
   )
 }
 
+export function Toggle({ checked, onChange, disabled, label, title, id }) {
+  return (
+    <Switch
+      id={id}
+      checked={checked}
+      onChange={onChange}
+      disabled={disabled}
+      aria-label={label}
+      title={title}
+      className="group relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full bg-zinc-200 p-0.5 inset-ring inset-ring-zinc-900/5 outline-offset-2 outline-emerald-500 transition-colors duration-200 ease-in-out focus-visible:outline-2 data-checked:bg-emerald-500 data-disabled:cursor-not-allowed data-disabled:opacity-60 dark:bg-white/10 dark:inset-ring-white/10 dark:data-checked:bg-emerald-500"
+    >
+      <span className="size-4 rounded-full bg-white shadow-xs ring-1 ring-zinc-900/5 transition-transform duration-200 ease-in-out group-data-checked:translate-x-4" />
+    </Switch>
+  )
+}
+
 // locked: on and can't be switched off (the brand requires it)
 export function ToggleRow({ checked, onChange, label, description, children, locked }) {
   return (
@@ -65,16 +81,7 @@ export function ToggleRow({ checked, onChange, label, description, children, loc
           <p className="text-sm font-medium text-zinc-900 dark:text-white">{label}</p>
           {description && <div className="text-xs/5 text-zinc-500 dark:text-zinc-400">{description}</div>}
         </div>
-        <Switch
-          checked={checked}
-          onChange={onChange}
-          disabled={locked}
-          aria-label={label}
-          title={locked ? 'Required for this payment brand' : undefined}
-          className="group relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full bg-zinc-200 p-0.5 inset-ring inset-ring-zinc-900/5 outline-offset-2 outline-emerald-500 transition-colors duration-200 ease-in-out focus-visible:outline-2 data-checked:bg-emerald-500 data-disabled:cursor-not-allowed data-disabled:opacity-60 dark:bg-white/10 dark:inset-ring-white/10 dark:data-checked:bg-emerald-500"
-        >
-          <span className="size-4 rounded-full bg-white shadow-xs ring-1 ring-zinc-900/5 transition-transform duration-200 ease-in-out group-data-checked:translate-x-4" />
-        </Switch>
+        <Toggle checked={checked} onChange={onChange} disabled={locked} label={label} title={locked ? 'Required for this payment brand' : undefined} />
       </div>
       {checked && children && <div className="mt-3 pb-1">{children}</div>}
     </div>
@@ -290,6 +297,19 @@ export function ReqTag({ req }) {
       <Tag color={reqColor[req] || 'zinc'}>{reqName[req] || req}</Tag>
     </span>
   )
+}
+
+// Requirement as plain text on the right of a parameter row, as in API references
+const REQ_TEXT = {
+  M: ['Required', 'text-rose-600 dark:text-rose-400'],
+  C: ['Conditional', 'text-amber-600 dark:text-amber-400'],
+  O: ['Optional', 'text-zinc-400 dark:text-zinc-500'],
+  T: ['Test only', 'text-zinc-400 dark:text-zinc-500'],
+}
+
+export function ReqText({ req }) {
+  let [text, color] = REQ_TEXT[req] || REQ_TEXT.O
+  return <span className={clsx('text-xs font-medium', color)}>{text}</span>
 }
 
 const statusStyles = {

@@ -1,34 +1,24 @@
 'use client'
 
-import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { useEffect, useMemo, useRef, useState } from 'react'
 
-import {
-  BrandFacts,
-  BrandFieldRows,
-  BrandSelect,
-  ErrorNote,
-  Extras,
-  FixedValue,
-  MissingFieldsHint,
-  ParamRow,
-  ResultSummary,
-} from '@/components/builder'
+import { BrandFacts, BrandFieldRows, BrandSelect, CartEditor, ErrorNote, FixedValue, MissingFieldsHint, ParamRow, ResultSummary } from '@/components/builder'
 import { CodeWindow, SendButton } from '@/components/CodeWindow'
 import { Col, Note, Properties, Property, Row } from '@/components/content'
-import { FieldBox, PanelStatus, SegmentedControl, bareInputClass } from '@/components/forms'
+import { FieldBox, PanelStatus, Toggle, bareInputClass } from '@/components/forms'
 import { Heading } from '@/components/Heading'
 import { PaymentDrawer } from '@/components/PaymentDrawer'
+import { FlowCards, ParamGroup, ParamGroups, SequenceDiagram } from '@/components/s2sParts'
 import { useSyncSections } from '@/components/SectionProvider'
 import { SelectMenu } from '@/components/select'
 import { getJson, newMerchantTransactionId, postJson, usePersistentState } from '@/lib/flowState'
 import { buildCurl, highlightCurl, highlightJs, highlightJson } from '@/lib/highlight'
 import { RETURN_MESSAGE, redirectMethod, redirectSnippet, sendShopperToPopup } from '@/lib/redirect'
-import { buildPaymentParams, cartSpec, cartTotal, missingFields, withBrandDefaults, withRequiredExtras } from '@/lib/request'
+import { buildPaymentParams, cartSpec, cartTotal, fieldSpecs, missingFields, withBrandDefaults, withRequiredExtras } from '@/lib/request'
 import { useConfig } from '@/lib/useConfig'
 
-const KEY = 'nomupayApmDemo.s2s.v5'
+const KEY = 'nomupayApmDemo.s2s.v6'
 const INITIAL = {
   flow: { mode: 'async', tx: 'DB' },
   form: {
@@ -56,11 +46,69 @@ const POLL_EVERY_MS = 30000
 const THROTTLED_TEXT = 'The gateway allows two status checks a minute for each payment.'
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 
-const FLOW_TEXT = {
-  async: 'The shopper is redirected to the payment brand’s page to approve the payment, then comes back to your shop.',
-  sync: 'No redirect: you send the shopper’s mobile number and they approve the payment in their app. Bizum and Swish support it.',
-  DB: 'Takes the money in one step.',
-  PA: 'Reserves the amount first, then you capture it once the shopper has approved. Only PayPay supports it.',
+const HELP_CENTRE_URL = 'https://support.nomupay.com/hc/en-gb/articles/52156192050193-Ecommerce-Payment-Methods'
+const REFERENCE_URL = 'https://nomupay.docs.oppwa.com/reference/parameters'
+
+// Payment flows and their transaction flows, as in the server-to-server guide on docs.oppwa.com
+const MODES = [
+  {
+    value: 'async',
+    title: 'Asynchronous payment',
+    description: 'The shopper is redirected to the payment brand to verify and complete the payment, then returns to your shopperResultUrl.',
+    flows: [
+      { value: 'DB', title: 'Debit', types: ['DB'] },
+      { value: 'PA', title: 'Pre-authorization + Capture', types: ['PA', 'CP'] },
+    ],
+  },
+  {
+    value: 'sync',
+    title: 'Synchronous payment',
+    description: 'No redirect. The request carries the shopper’s mobile number, and the shopper confirms the payment in the payment brand’s app.',
+    flows: [{ value: 'DB', title: 'Debit', types: ['DB'] }],
+  },
+]
+
+// Request parameter groups, named as in the parameters reference on docs.oppwa.com
+const FIELD_GROUPS = [
+  { id: 'customer', title: 'Customer', test: (k) => k.startsWith('customer.') },
+  { id: 'billing', title: 'Billing address', test: (k) => k.startsWith('billing.') },
+  { id: 'shipping', title: 'Shipping address', test: (k) => k.startsWith('shipping.') },
+  { id: 'bank', title: 'Bank account', test: (k) => k.startsWith('bankAccount.') },
+  { id: 'virtual', title: 'Virtual account', test: (k) => k.startsWith('virtualAccount.') },
+  { id: 'custom', title: 'Custom parameters', test: (k) => k.startsWith('customParameters[') },
+]
+function groupOf(key) {
+  if (key.startsWith('cart.')) return 'cart'
+  return FIELD_GROUPS.find((g) => g.test(key))?.id || 'basic'
+}
+
+// Who sends what to whom in the chosen flow; numbered requests link to their step
+function sequence(flow, steps) {
+  let by = Object.fromEntries(steps.map((s) => [s.key, s]))
+  let step = (key, extra) => ({ step: by[key].step, href: by[key].id, label: by[key].title, ...extra })
+  if (flow.mode === 'sync')
+    return [
+      { from: 'shopper', to: 'server', label: 'Places the order' },
+      { from: 'server', to: 'gateway', ...step('send', { detail: 'POST /v1/payments · DB' }) },
+      { from: 'gateway', to: 'server', kind: 'response', label: 'Pending, no redirect' },
+      { from: 'gateway', to: 'brand', label: 'Payment request', detail: 'customer.mobile' },
+      { from: 'brand', kind: 'note', label: 'Shopper approves in the app' },
+      { from: 'server', to: 'gateway', ...step('status', { detail: 'GET /v1/payments/{id}' }) },
+      { from: 'gateway', to: 'server', kind: 'response', label: 'Payment result' },
+      { from: 'server', to: 'gateway', ...step('manage', { detail: 'POST /v1/payments/{id} · RF', optional: true }) },
+    ]
+  return [
+    { from: 'shopper', to: 'server', label: 'Places the order' },
+    { from: 'server', to: 'gateway', ...step('send', { detail: `POST /v1/payments · ${flow.tx}` }) },
+    { from: 'gateway', to: 'server', kind: 'response', label: 'Pending, with redirect' },
+    { from: 'server', to: 'brand', ...step('redirect', { detail: 'redirect.url' }) },
+    { from: 'brand', kind: 'note', label: 'Shopper verifies and approves the payment' },
+    { from: 'brand', to: 'shopper', kind: 'response', label: 'Shopper returns to your shopperResultUrl' },
+    { from: 'server', to: 'gateway', ...step('status', { detail: 'GET /v1/payments/{id}' }) },
+    { from: 'gateway', to: 'server', kind: 'response', label: 'Payment result' },
+    flow.tx === 'PA' && { from: 'server', to: 'gateway', ...step('capture', { detail: 'POST /v1/payments/{id} · CP' }) },
+    { from: 'server', to: 'gateway', ...step('manage', { detail: 'POST /v1/payments/{id} · RF', optional: true }) },
+  ].filter(Boolean)
 }
 
 function eligibleBrands(catalogue, flow) {
@@ -108,51 +156,6 @@ function flowSteps(flow) {
   ]
     .filter(Boolean)
     .map((s, i) => ({ ...s, step: i + 1 }))
-}
-
-function TxTag({ children }) {
-  return (
-    <span className="inline-flex items-center rounded-md px-1.5 py-0.5 font-mono text-[0.6875rem] font-semibold text-zinc-700 ring-1 ring-zinc-900/15 ring-inset dark:text-zinc-300 dark:ring-white/15">
-      {children}
-    </span>
-  )
-}
-
-function StepsOverview({ steps }) {
-  return (
-    <ol role="list" className="not-prose my-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
-      {steps.map((s) => (
-        <li key={s.key}>
-          <Link
-            href={`#${s.id}`}
-            className="flex h-full flex-col rounded-xl p-4 ring-1 ring-zinc-900/7.5 transition hover:bg-zinc-50 dark:ring-white/10 dark:hover:bg-white/2.5"
-          >
-            <span className="flex items-baseline gap-2">
-              <span className="text-sm text-zinc-400 tabular-nums dark:text-zinc-500">{s.step}</span>
-              <span className="text-sm font-semibold text-zinc-900 dark:text-white">{s.title}</span>
-              {s.optional && <span className="ml-auto text-xs text-zinc-400 dark:text-zinc-500">Optional</span>}
-            </span>
-            <span className="mt-1 pl-5 text-sm text-zinc-600 dark:text-zinc-400">{s.summary}</span>
-            {s.tx && (
-              <span className="mt-3 flex gap-1.5 pl-5">
-                {s.tx.map((t) => (
-                  <TxTag key={t}>{t}</TxTag>
-                ))}
-              </span>
-            )}
-          </Link>
-        </li>
-      ))}
-    </ol>
-  )
-}
-
-function FieldLabel({ children, htmlFor }) {
-  return (
-    <label htmlFor={htmlFor} className="mb-2 block text-sm font-medium text-zinc-900 dark:text-white">
-      {children}
-    </label>
-  )
 }
 
 function AmountRow({ id, value, onChange, readOnly, invalid }) {
@@ -203,8 +206,12 @@ export function S2SFlow({ mode = 'start' }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready, eligible, brand])
 
-  // What gets sent: the flow's mode and payment type, and the cart when the brand requires one
-  let sendForm = useMemo(() => withRequiredExtras({ ...form, mode: flow.mode, paymentType: flow.tx }), [form, flow])
+  // What gets sent: the brand's own fields (from the KB fields mapping), the flow's mode and
+  // payment type, and the cart when the brand requires one
+  let sendForm = useMemo(
+    () => withRequiredExtras({ ...form, extras: { ...form.extras, customer: false }, mode: flow.mode, paymentType: flow.tx }),
+    [form, flow],
+  )
   let amount = sendForm.extras.cart ? cartTotal(form.cart) : form.amount
   let missing = useMemo(() => missingFields({ ...sendForm, amount }), [sendForm, amount])
   let returnBase = config?.returnBase || origin
@@ -324,9 +331,8 @@ export function S2SFlow({ mode = 'start' }) {
     }
   }, [drawerOpen, paymentId, setState])
 
-  function setFlow(patch) {
-    let next = { ...flow, ...patch }
-    if (next.mode === 'sync') next.tx = 'DB'
+  function setFlow(next) {
+    if (next.mode === flow.mode && next.tx === flow.tx) return
     let list = eligibleBrands(catalogue, next)
     setState((s) => {
       let code = list.some((b) => b.code === s.form.brands[0]) ? s.form.brands[0] : list[0]?.code
@@ -420,11 +426,67 @@ export function S2SFlow({ mode = 'start' }) {
   let refundCurl = backOfficeCurl(refundTargetId, 'RF', 'refund')
   let setAmount = (kind, v) => setState((s) => ({ ...s, amounts: { ...s.amounts, [kind]: v } }))
   let cart = cartSpec(form.brands)
+  let cartRequired = Boolean(cart?.required.length)
   let send = stepOf('send')
   let redirectStep = stepOf('redirect')
   let status = stepOf('status')
   let capture = stepOf('capture')
   let manage = stepOf('manage')
+  let modeInfo = MODES.find((m) => m.value === flow.mode)
+  let flowInfo = modeInfo.flows.find((f) => f.value === flow.tx)
+
+  // The chosen brand's own fields, shown in their parameter groups
+  let specs = brand ? fieldSpecs([brand.code], flow.mode) : []
+  let missingIn = (group) => missing.filter((k) => groupOf(k) === group).length
+  let required = (list) => list.filter((x) => x.req === 'M').length
+  let basicSpecs = specs.filter((x) => groupOf(x.key) === 'basic')
+  let fieldRows = (group) => (
+    <BrandFieldRows
+      form={{ ...form, mode: flow.mode }}
+      setForm={({ mode: _mode, ...f }) => setForm(f)}
+      catalogue={catalogue}
+      idPrefix="s2s"
+      missing={missing}
+      filter={(x) => groupOf(x.key) === group}
+    />
+  )
+  let entityRow = (
+    <ParamRow name="entityId" req="M" control={<FixedValue>{entityShown}</FixedValue>}>
+      The entity for the request. The demo’s server adds the real one; it’s masked here.
+    </ParamRow>
+  )
+  let testModeGroup = (text) =>
+    config?.testMode && (
+      <ParamGroup title="Testing" count={1}>
+        <ParamRow name="testMode" req="T" control={<FixedValue>{config.testMode}</FixedValue>}>
+          {text}
+        </ParamRow>
+      </ParamGroup>
+    )
+  let backOfficeGroups = (kind, type, text) => (
+    <ParamGroups>
+      <ParamGroup title="Authentication" count={1} required={1}>
+        {entityRow}
+      </ParamGroup>
+      <ParamGroup title="Basic payment" count={3} required={3} defaultOpen>
+        <ParamRow
+          name="amount"
+          type="decimal"
+          req="M"
+          control={<AmountRow id={`s2s-${kind}-amount`} value={state.amounts?.[kind] || sentAmount} onChange={(v) => setAmount(kind, v)} />}
+        >
+          {text.amount}
+        </ParamRow>
+        <ParamRow name="currency" req="M" control={<FixedValue>{sentCurrency}</FixedValue>}>
+          {text.currency}
+        </ParamRow>
+        <ParamRow name="paymentType" req="M" control={<FixedValue>{type}</FixedValue>}>
+          {text.paymentType}
+        </ParamRow>
+      </ParamGroup>
+      {testModeGroup(text.testMode)}
+    </ParamGroups>
+  )
 
   return (
     <>
@@ -432,60 +494,26 @@ export function S2SFlow({ mode = 'start' }) {
         <Note tone="amber">Payment requests are off. Add ENTITY_ID and ACCESS_TOKEN in Vercel under Settings, Environment Variables, then redeploy.</Note>
       )}
 
-      {/* How it works: the flow and the brand, before the steps */}
+      {/* How it works: the payment flow and transaction flow, then the requests they make */}
       <Heading level={2} id="how-it-works">
         How it works
       </Heading>
-      <p>Choose how the payment runs and the payment brand. The steps below follow your choice.</p>
-      <div className="not-prose my-6 grid grid-cols-1 gap-6">
-        <div>
-          <FieldLabel>Payment flow</FieldLabel>
-          <SegmentedControl
-            label="Payment flow"
-            value={flow.mode}
-            onChange={(v) => setFlow({ mode: v })}
-            options={[
-              { value: 'async', label: 'Asynchronous' },
-              { value: 'sync', label: 'Synchronous' },
-            ]}
-          />
-          <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">{FLOW_TEXT[flow.mode]}</p>
-        </div>
-        <div>
-          <FieldLabel>Transaction flow</FieldLabel>
-          <SegmentedControl
-            label="Transaction flow"
-            value={flow.tx}
-            onChange={(v) => setFlow({ tx: v })}
-            options={[
-              { value: 'DB', label: 'Debit' },
-              {
-                value: 'PA',
-                label: 'Pre-authorization + Capture',
-                disabled: flow.mode === 'sync',
-                title: flow.mode === 'sync' ? 'No synchronous brand supports pre-authorization' : undefined,
-              },
-            ]}
-          />
-          <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">{FLOW_TEXT[flow.tx]}</p>
-        </div>
-      </div>
-      <div className="not-prose my-6">
-        <FieldLabel htmlFor="s2s-brand">Payment brand</FieldLabel>
-        <BrandSelect
-          id="s2s-brand"
-          brands={eligible}
-          selected={brand ? [brand.code] : []}
-          showDetails={false}
-          onChange={([code]) =>
-            setState((s) => ({ ...s, form: withBrand(s.form, code, catalogue, flow.mode), payment: null, result: null, capture: null, refund: null }))
-          }
-        />
-        <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-          {eligible.length} payment {eligible.length === 1 ? 'brand supports' : 'brands support'} this flow.
-        </p>
-      </div>
-      <StepsOverview steps={steps} />
+      <p>
+        Select your transaction flow. Be aware, some payment brands may not support your chosen flow: step 1 lists only the brands that support
+        it.
+      </p>
+      <FlowCards
+        modes={MODES}
+        mode={flow.mode}
+        tx={flow.tx}
+        onChange={setFlow}
+        footer={`Supported by ${eligible.length} payment ${eligible.length === 1 ? 'brand' : 'brands'}.`}
+      />
+      <p>
+        The requests in this flow, between the shopper, your server, the NomuPay gateway and the payment brand. Numbered requests are the steps
+        below.
+      </p>
+      <SequenceDiagram title={`${modeInfo.title} · ${flowInfo.title}`} messages={sequence(flow, steps)} />
 
       <hr />
 
@@ -497,97 +525,168 @@ export function S2SFlow({ mode = 'start' }) {
         <Col>
           <p>
             {flow.mode === 'sync'
-              ? 'Send the debit request with the shopper’s mobile number. There’s no redirect: the payment brand asks the shopper to approve it in their app.'
+              ? 'Initiate a server-to-server POST request with the required payment data, including the shopper’s mobile number. There’s no redirect: the payment brand asks the shopper to approve the payment in its app.'
               : flow.tx === 'PA'
-                ? 'Send the pre-authorization request from your server. The amount is reserved once the shopper approves, and you capture it afterwards.'
-                : 'Send the debit request from your server with the payment brand and the fields it needs. The response comes back pending, with a redirect for the next step.'}
+                ? 'Initiate a server-to-server POST request with the required payment data, payment type PA and your shopperResultUrl. The response is pending and carries the redirect details for the next step. Once the shopper approves, the amount is reserved until you capture it.'
+                : 'Initiate a server-to-server POST request with the required payment data and your shopperResultUrl. The response is pending and carries the redirect details for the next step.'}
           </p>
+          <div className="not-prose mt-8">
+            <label htmlFor="s2s-brand" className="mb-2 block text-sm font-medium text-zinc-900 dark:text-white">
+              Payment brand
+            </label>
+            <BrandSelect
+              id="s2s-brand"
+              brands={eligible}
+              selected={brand ? [brand.code] : []}
+              showDetails={false}
+              onChange={([code]) =>
+                setState((s) => ({ ...s, form: withBrand(s.form, code, catalogue, flow.mode), payment: null, result: null, capture: null, refund: null }))
+              }
+            />
+            <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
+              {eligible.length} payment {eligible.length === 1 ? 'brand supports' : 'brands support'} the selected flow.
+            </p>
+          </div>
           {brand && (
             <>
-              <h3>{brand.name}</h3>
+              <p className="mt-6 text-sm">
+                For more details on {brand.name}, refer to{' '}
+                <a href={HELP_CENTRE_URL} target="_blank" rel="noreferrer">
+                  Ecommerce Payment Methods
+                </a>
+                .
+              </p>
               <BrandFacts brand={brand} />
             </>
           )}
-          <h3>Request parameters</h3>
-          <Properties>
-            <ParamRow name="entityId" req="M" control={<FixedValue>{entityShown}</FixedValue>}>
-              Your entity ID. The demo’s server adds the real one; it’s masked here.
-            </ParamRow>
-            <ParamRow
-              name="amount"
-              req="M"
-              control={<AmountRow id="s2s-amount" value={amount} readOnly={sendForm.extras.cart} onChange={(v) => setForm({ ...form, amount: v })} />}
-            >
-              The amount to charge, with two decimals.{sendForm.extras.cart ? ' Set by the cart total below.' : ''}
-            </ParamRow>
-            <ParamRow
-              name="currency"
-              req="M"
-              control={
-                <FieldBox>
-                  <SelectMenu
-                    id="s2s-currency"
-                    variant="bare"
-                    fullWidth
-                    className="-mx-1.5"
-                    aria-label="currency"
-                    options={(brand?.currencies || ['EUR']).map((c) => ({ value: c, label: c }))}
-                    value={form.currency}
-                    onChange={(v) => setForm({ ...form, currency: v })}
-                    searchPlaceholder="Search currencies"
-                    renderValue={(o) => <span className="flex-auto text-left font-mono text-sm text-zinc-900 dark:text-white">{o?.value || form.currency}</span>}
-                  />
-                </FieldBox>
-              }
-            >
-              The three-letter currency code.{brand ? ` ${brand.name} takes ${brand.currencies.join(', ')}.` : ''}
-            </ParamRow>
-            <ParamRow name="paymentType" req="M" control={<FixedValue>{flow.tx}</FixedValue>}>
-              {flow.tx === 'PA' ? 'PA pre-authorizes the amount for a later capture.' : 'DB debits the shopper straight away.'} Set by the transaction flow
-              above.
-            </ParamRow>
-            <ParamRow name="paymentBrand" req="M" control={<FixedValue>{brand?.code || '—'}</FixedValue>}>
-              The payment brand chosen above.
-            </ParamRow>
-            <ParamRow name="shopperResultUrl" type="url" req="M" control={<FixedValue>{shopperResultUrl}</FixedValue>}>
-              Your page the shopper comes back to after paying.
-            </ParamRow>
-            {config?.testMode && (
-              <ParamRow name="testMode" control={<FixedValue>{config.testMode}</FixedValue>}>
-                Test only: sends the payment to the PPRO simulator. Leave it out in production.
+          <h3>Body parameters</h3>
+          <p>
+            {brand ? `The parameters ${brand.name} takes,` : 'The parameters,'} grouped as in the{' '}
+            <a href={REFERENCE_URL} target="_blank" rel="noreferrer">
+              parameters reference
+            </a>
+            .
+          </p>
+          <ParamGroups key={`${brand?.code}-${flow.mode}-${flow.tx}`}>
+            <ParamGroup title="Authentication" count={1} required={1}>
+              {entityRow}
+            </ParamGroup>
+            <ParamGroup title="Basic payment" count={5 + basicSpecs.length} required={4 + required(basicSpecs)} missing={missingIn('basic')} defaultOpen>
+              <ParamRow
+                name="amount"
+                type="decimal"
+                req="M"
+                control={<AmountRow id="s2s-amount" value={amount} readOnly={sendForm.extras.cart} onChange={(v) => setForm({ ...form, amount: v })} />}
+              >
+                The amount to charge, with two decimals.{sendForm.extras.cart ? ' Set by the cart total.' : ''}
               </ParamRow>
+              <ParamRow
+                name="currency"
+                req="M"
+                control={
+                  <FieldBox>
+                    <SelectMenu
+                      id="s2s-currency"
+                      variant="bare"
+                      fullWidth
+                      className="-mx-1.5"
+                      aria-label="currency"
+                      options={(brand?.currencies || ['EUR']).map((c) => ({ value: c, label: c }))}
+                      value={form.currency}
+                      onChange={(v) => setForm({ ...form, currency: v })}
+                      searchPlaceholder="Search currencies"
+                      renderValue={(o) => <span className="flex-auto text-left font-mono text-sm text-zinc-900 dark:text-white">{o?.value || form.currency}</span>}
+                    />
+                  </FieldBox>
+                }
+              >
+                The three-letter ISO 4217 currency code.{brand ? ` ${brand.name} takes ${brand.currencies.join(', ')}.` : ''}
+              </ParamRow>
+              <ParamRow name="paymentBrand" req="M" control={<FixedValue>{brand?.code || '—'}</FixedValue>}>
+                The payment brand selected above.
+              </ParamRow>
+              <ParamRow name="paymentType" req="M" control={<FixedValue>{flow.tx}</FixedValue>}>
+                {flow.tx === 'PA' ? 'PA pre-authorizes the amount for a later capture.' : 'DB debits the shopper’s account.'} Set by the transaction flow.
+              </ParamRow>
+              <ParamRow
+                name="merchantTransactionId"
+                req="O"
+                control={
+                  <FieldBox>
+                    <input
+                      id="s2s-mtid"
+                      type="text"
+                      autoComplete="off"
+                      spellCheck="false"
+                      placeholder="Generated if empty"
+                      value={form.merchantTransactionId}
+                      onChange={(e) => setForm({ ...form, merchantTransactionId: e.target.value })}
+                      className={bareInputClass}
+                    />
+                  </FieldBox>
+                }
+              >
+                Your reference for the payment, often used for reconciliation.
+              </ParamRow>
+              {fieldRows('basic')}
+            </ParamGroup>
+            {flow.mode === 'async' && (
+              <ParamGroup title="Asynchronous payments" count={1} required={1}>
+                <ParamRow name="shopperResultUrl" type="url" req="M" control={<FixedValue>{shopperResultUrl}</FixedValue>}>
+                  Your page the shopper is sent back to after the payment brand. The gateway adds the payment’s id and resourcePath to it.
+                </ParamRow>
+              </ParamGroup>
             )}
-            <ParamRow
-              name="merchantTransactionId"
-              req="O"
-              control={
-                <FieldBox>
-                  <input
-                    id="s2s-mtid"
-                    type="text"
-                    autoComplete="off"
-                    spellCheck="false"
-                    placeholder="Generated if empty"
-                    value={form.merchantTransactionId}
-                    onChange={(e) => setForm({ ...form, merchantTransactionId: e.target.value })}
-                    className={bareInputClass}
-                  />
-                </FieldBox>
-              }
-            >
-              Your own reference for the payment.
-            </ParamRow>
-            <BrandFieldRows
-              form={{ ...form, mode: flow.mode }}
-              setForm={({ mode: _mode, ...f }) => setForm(f)}
-              catalogue={catalogue}
-              idPrefix="s2s"
-              missing={missing}
-            />
-          </Properties>
-          <h3>Optional extras</h3>
-          <Extras form={form} setForm={setForm} idPrefix="s2s" missing={missing} />
-          {cart?.required.length > 0 && <p className="mt-3 text-sm text-zinc-600 dark:text-zinc-400">The cart is mandatory for {cart.required.join(', ')}.</p>}
+            {FIELD_GROUPS.map((g) => {
+              let list = specs.filter((x) => g.test(x.key))
+              if (!list.length) return null
+              return (
+                <ParamGroup
+                  key={g.id}
+                  title={g.title}
+                  count={list.length}
+                  required={required(list)}
+                  missing={missingIn(g.id)}
+                  defaultOpen={list.some((x) => x.req !== 'O')}
+                >
+                  {fieldRows(g.id)}
+                </ParamGroup>
+              )
+            })}
+            {cart && (
+              <ParamGroup
+                title="Cart"
+                count={cart.fields.length}
+                required={cartRequired ? cart.fields.length : 0}
+                missing={missingIn('cart')}
+                defaultOpen={cartRequired}
+              >
+                <ParamRow
+                  name="cart.items[n]"
+                  type="array"
+                  req={cartRequired ? 'M' : 'O'}
+                  control={
+                    <div className="space-y-3">
+                      {!cartRequired && (
+                        <label className="flex items-center gap-3 text-sm text-zinc-700 dark:text-zinc-300">
+                          <Toggle
+                            checked={form.extras.cart}
+                            label="Send cart items"
+                            onChange={(v) => setForm({ ...form, extras: { ...form.extras, cart: v } })}
+                          />
+                          Send cart items
+                        </label>
+                      )}
+                      {sendForm.extras.cart && <CartEditor form={form} setForm={setForm} missing={missing} />}
+                    </div>
+                  }
+                >
+                  The items in the order, each with its {cart.fields.join(', ')}. When you send a cart, the amount is the cart total.
+                </ParamRow>
+              </ParamGroup>
+            )}
+            {testModeGroup('Test only: EXTERNAL sends the payment to the PPRO simulator. Leave it out in production.')}
+          </ParamGroups>
         </Col>
         <Col sticky>
           <CodeWindow
@@ -639,23 +738,24 @@ export function S2SFlow({ mode = 'start' }) {
           <Row>
             <Col>
               <p>
-                A pending response carries a redirect object. Send the shopper to its URL with its parameters, using the method it gives. Here the
-                payment page opens in a drawer, so you stay on this page.
+                Redirect the shopper to the redirect URL from step 1, passing its parameters with the method it gives. The payment brand guides the
+                shopper through verifying and completing the payment, then sends them to your shopperResultUrl. Here the payment page opens in a
+                drawer, so you stay on this page.
               </p>
-              <Properties>
-                <Property name="redirect.url" type="url">
-                  The payment brand’s page to send the shopper to.
-                </Property>
-                <Property name="redirect.method" type="string">
-                  How to send the shopper there: GET or POST. If it’s missing, use POST when there are parameters and GET when there aren’t.
-                </Property>
-                <Property name="redirect.parameters" type="array">
-                  Name and value pairs to pass on unchanged: query parameters for GET, hidden form fields for POST.
-                </Property>
-                <Property name="shopperResultUrl" type="url">
-                  Your page the shopper comes back to. The gateway adds the payment ID and resource path for the status check.
-                </Property>
-              </Properties>
+              <h3>Response parameters</h3>
+              <ParamGroups>
+                <ParamGroup title="Redirect" count={3} defaultOpen>
+                  <Property name="redirect.url" type="url">
+                    The payment brand’s page to send the shopper to.
+                  </Property>
+                  <Property name="redirect.method" type="string">
+                    GET or POST. If it’s missing, use POST when there are parameters and GET when there aren’t.
+                  </Property>
+                  <Property name="redirect.parameters" type="array">
+                    Name and value pairs to pass on unchanged: query parameters for GET, hidden form fields for POST.
+                  </Property>
+                </ParamGroup>
+              </ParamGroups>
               {paymentId && payment?.status === 'pending' && !redirect && (
                 <Note>There’s no redirect in this response, so the shopper approves the payment in their app. Check the status in the next step.</Note>
               )}
@@ -697,10 +797,17 @@ export function S2SFlow({ mode = 'start' }) {
         <Col>
           <p>
             {flow.mode === 'sync'
-              ? `There’s no redirect, so check the status while the shopper approves in their app. The payment stays pending until they do${brand?.timeout ? `, or until it times out after ${brand.timeout}` : ''}. On the test system the simulator approves it by itself within about 30 seconds.`
-              : 'When the shopper comes back, request the payment with your entity ID to get the outcome. Payments can stay pending for a while; check again, or rely on the webhook in production.'}{' '}
+              ? `Send a GET request for the payment with your entityId to get the result. There’s no redirect, so the payment stays pending until the shopper approves it in the app${brand?.timeout ? ` or it times out after ${brand.timeout}` : ''}. On the test system the simulator approves it by itself within about 30 seconds.`
+              : 'Once the payment is processed, the shopper is redirected to your shopperResultUrl with the id and resourcePath parameters. Send a GET request to the resourcePath with your entityId to get the payment result. A payment can stay pending for a while: check again, or rely on the webhook in production.'}{' '}
             The gateway allows two status checks a minute for each payment.
           </p>
+          <h3>Query parameters</h3>
+          <ParamGroups>
+            <ParamGroup title="Authentication" count={1} required={1} defaultOpen>
+              {entityRow}
+            </ParamGroup>
+          </ParamGroups>
+          <h3>Result</h3>
           <ResultSummary result={state.result} emptyText={resourcePath ? 'Not checked yet.' : 'Comes after step 1.'} />
         </Col>
         <Col sticky>
@@ -737,29 +844,16 @@ export function S2SFlow({ mode = 'start' }) {
           <Row>
             <Col>
               <p>
-                When the pre-authorization is approved, capture it to take the money. Send the payment ID from step 1 with payment type CP.
+                Initiate a server-to-server POST request over the pre-authorized payment, with payment type CP, to take the money.
                 {brand?.capture.length ? ` ${brand.name} allows ${brand.capture.join(' and ').toLowerCase()} captures.` : ''}
               </p>
-              <Properties>
-                <ParamRow
-                  name="amount"
-                  req="M"
-                  control={<AmountRow id="s2s-capture-amount" value={state.amounts?.capture || sentAmount} onChange={(v) => setAmount('capture', v)} />}
-                >
-                  The amount to capture: all of the pre-authorization, or part of it.
-                </ParamRow>
-                <ParamRow name="currency" req="M" control={<FixedValue>{sentCurrency}</FixedValue>}>
-                  The pre-authorization’s currency.
-                </ParamRow>
-                <ParamRow name="paymentType" req="M" control={<FixedValue>CP</FixedValue>}>
-                  CP captures the pre-authorization.
-                </ParamRow>
-                {config?.testMode && (
-                  <ParamRow name="testMode" control={<FixedValue>{config.testMode}</FixedValue>}>
-                    Test only: must match the pre-authorization, or the gateway rejects the capture.
-                  </ParamRow>
-                )}
-              </Properties>
+              <h3>Body parameters</h3>
+              {backOfficeGroups('capture', 'CP', {
+                amount: 'The amount to capture: all of the pre-authorization, or part of it.',
+                currency: 'The pre-authorization’s currency.',
+                paymentType: 'CP captures the pre-authorization.',
+                testMode: 'Test only: must match the pre-authorization, or the gateway rejects the capture.',
+              })}
               {!approved && <p className="text-sm text-zinc-500 dark:text-zinc-400">Available once the pre-authorization is approved.</p>}
             </Col>
             <Col sticky>
@@ -796,33 +890,21 @@ export function S2SFlow({ mode = 'start' }) {
       <Row>
         <Col>
           <p>
-            Optional. Refund a successful {flow.tx === 'PA' ? 'capture' : 'payment'} in full or in part: send its ID with payment type RF.
+            Optional. Initiate a back-office server-to-server POST request over the {flow.tx === 'PA' ? 'captured' : 'debit'} payment, with payment
+            type RF, to refund it in full or in part.
             {brand?.refunds.length ? ` ${brand.name} allows ${brand.refunds.join(', ').toLowerCase()} refunds.` : ''}
           </p>
           {brand && !brand.refunds.length ? (
             <Note>{brand.name} doesn’t support refunds through the API.</Note>
           ) : (
             <>
-              <Properties>
-                <ParamRow
-                  name="amount"
-                  req="M"
-                  control={<AmountRow id="s2s-refund-amount" value={state.amounts?.refund || sentAmount} onChange={(v) => setAmount('refund', v)} />}
-                >
-                  The amount to refund: all of it, or part of it.
-                </ParamRow>
-                <ParamRow name="currency" req="M" control={<FixedValue>{sentCurrency}</FixedValue>}>
-                  The payment’s currency.
-                </ParamRow>
-                <ParamRow name="paymentType" req="M" control={<FixedValue>RF</FixedValue>}>
-                  RF refunds the payment.
-                </ParamRow>
-                {config?.testMode && (
-                  <ParamRow name="testMode" control={<FixedValue>{config.testMode}</FixedValue>}>
-                    Test only: must match the original payment, or the gateway rejects the refund.
-                  </ParamRow>
-                )}
-              </Properties>
+              <h3>Body parameters</h3>
+              {backOfficeGroups('refund', 'RF', {
+                amount: 'The amount to refund: all of it, or part of it.',
+                currency: 'The payment’s currency.',
+                paymentType: 'RF refunds the payment.',
+                testMode: 'Test only: must match the original payment, or the gateway rejects the refund.',
+              })}
               {!refundReady && (
                 <p className="text-sm text-zinc-500 dark:text-zinc-400">Available once the {flow.tx === 'PA' ? 'capture' : 'payment'} is successful.</p>
               )}

@@ -9,7 +9,7 @@ import {
   DIAL_CODES,
   FieldBox,
   InsetField,
-  ReqTag,
+  ReqText,
   PhoneInput,
   StatusBadge,
   TextInput,
@@ -19,6 +19,7 @@ import {
   countryName,
 } from '@/components/forms'
 import { Monogram, SelectMenu } from '@/components/select'
+import { FIELD_DEFS } from '@/lib/brands'
 import { describeCode } from '@/lib/codes'
 import { CUSTOMER_FIELDS, cartSpec, cartTotal, fieldSpecs } from '@/lib/request'
 
@@ -194,7 +195,7 @@ export function MissingFieldsHint({ missing }) {
   if (!missing.length) return null
   return (
     <span className="text-xs text-zinc-400">
-      Fill in the mandatory {missing.length === 1 ? 'field' : 'fields'} first: {missing.slice(0, 3).join(', ')}
+      Fill in the required {missing.length === 1 ? 'field' : 'fields'} first: {missing.slice(0, 3).join(', ')}
       {missing.length > 3 ? ` and ${missing.length - 3} more` : ''}
     </span>
   )
@@ -235,7 +236,7 @@ export function BrandFacts({ brand }) {
 // A request parameter as a reference row: name, type, requirement, what it is, and its value
 export function ParamRow({ name, type = 'string', req, children, control }) {
   return (
-    <Property name={name} type={type} badge={req ? <ReqTag req={req} /> : null} control={control}>
+    <Property name={name} type={type} badge={req ? <ReqText req={req} /> : null} control={control}>
       {children}
     </Property>
   )
@@ -247,9 +248,12 @@ export function FixedValue({ children }) {
 }
 
 // The chosen brand's own fields as parameter rows with inputs
-export function BrandFieldRows({ form, setForm, catalogue, idPrefix, missing = [] }) {
+// filter: which of the brand's fields to show (one parameter group at a time)
+export function BrandFieldRows({ form, setForm, catalogue, idPrefix, missing = [], filter = () => true }) {
   let selected = form.brands.map((c) => catalogue.find((b) => b.code === c)).filter(Boolean)
-  let specs = fieldSpecs(form.brands, form.mode).filter((s) => !(form.extras.customer && CUSTOMER_FIELDS.some((f) => f.key === s.key)))
+  let specs = fieldSpecs(form.brands, form.mode)
+    .filter((s) => !(form.extras.customer && CUSTOMER_FIELDS.some((f) => f.key === s.key)))
+    .filter(filter)
   let setField = (k, v) => setForm({ ...form, fields: { ...form.fields, [k]: v } })
   let countries = [...new Set(selected.flatMap((b) => b.countries))]
   return specs.map((spec) => {
@@ -259,7 +263,7 @@ export function BrandFieldRows({ form, setForm, catalogue, idPrefix, missing = [
       <ParamRow
         key={spec.key}
         name={spec.key}
-        type={spec.type === 'country' ? 'country code' : spec.type === 'phone' ? 'phone' : 'string'}
+        type="string"
         req={spec.req}
         control={
           <FieldBox invalid={invalid}>
@@ -275,7 +279,7 @@ export function BrandFieldRows({ form, setForm, catalogue, idPrefix, missing = [
           </FieldBox>
         }
       >
-        {[spec.label, spec.hint].filter(Boolean).join('. ')}
+        {[spec.about || spec.label, spec.hint !== FIELD_DEFS[spec.key]?.hint && spec.hint].filter(Boolean).join(' ')}
       </ParamRow>
     )
   })
@@ -287,13 +291,8 @@ const cellInvalid = 'outline-rose-400 dark:outline-rose-400/60'
 
 export function Extras({ form, setForm, idPrefix, missing = [] }) {
   let setField = (k, v) => setForm({ ...form, fields: { ...form.fields, [k]: v } })
-  let setCart = (cart) => setForm({ ...form, cart })
   let cart = cartSpec(form.brands)
   let cartRequired = Boolean(cart?.required.length)
-  let withItemId = Boolean(cart?.fields.includes('merchantItemId'))
-  let cols = withItemId ? 'grid-cols-[1fr_6.5rem_3.5rem_5rem_2rem]' : 'grid-cols-[1fr_4rem_5.5rem_2rem]'
-  let setItem = (i, patch) => setCart(form.cart.map((x, j) => (j === i ? { ...x, ...patch } : x)))
-  let bad = (i, k) => missing.includes(`cart.items[${i}].${k}`)
   return (
     <div className="not-prose">
       <ToggleList>
@@ -346,6 +345,24 @@ export function Extras({ form, setForm, idPrefix, missing = [] }) {
             checked={cartRequired || form.extras.cart}
             onChange={(v) => setForm({ ...form, extras: { ...form.extras, cart: v } })}
           >
+            <CartEditor form={form} setForm={setForm} missing={missing} />
+          </ToggleRow>
+        )}
+      </ToggleList>
+    </div>
+  )
+}
+
+// The order's items, sent as cart.items[n].* (columns follow what the brands take)
+export function CartEditor({ form, setForm, missing = [] }) {
+  let cart = cartSpec(form.brands)
+  if (!cart) return null
+  let setCart = (items) => setForm({ ...form, cart: items })
+  let withItemId = cart.fields.includes('merchantItemId')
+  let cols = withItemId ? 'grid-cols-[1fr_6.5rem_3.5rem_5rem_2rem]' : 'grid-cols-[1fr_4rem_5.5rem_2rem]'
+  let setItem = (i, patch) => setCart(form.cart.map((x, j) => (j === i ? { ...x, ...patch } : x)))
+  let bad = (i, k) => missing.includes(`cart.items[${i}].${k}`)
+  return (
             <div className="space-y-2">
               <div className={clsx('grid gap-2 px-0.5 text-xs text-zinc-500 dark:text-zinc-400', cols)}>
                 <span>name</span>
@@ -395,10 +412,6 @@ export function Extras({ form, setForm, idPrefix, missing = [] }) {
                 </span>
               </div>
             </div>
-          </ToggleRow>
-        )}
-      </ToggleList>
-    </div>
   )
 }
 

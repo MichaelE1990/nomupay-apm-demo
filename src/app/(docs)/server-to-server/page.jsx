@@ -13,8 +13,8 @@ export default function ServerToServerPage() {
     <Article>
       <h1>Server-to-server</h1>
       <p className="lead">
-        Your server sends the payment straight to the gateway and handles the redirect itself. Choose the flow, build the request, send it, and use
-        the response in the next step.
+        Integrate payment brands with server-to-server requests: your server sends the payment data to the NomuPay gateway and handles the
+        shopper redirect. Select a flow, then build and send each request and use its response in the next step.
       </p>
       <Suspense>
         <S2SFlow />

@@ -58,30 +58,32 @@ export function Properties({ children, className }) {
   )
 }
 
+// A parameter as in an API reference: the name in bold mono, its type in grey,
+// the requirement on the right, then what it is and (in the guides) its value
 export function Property({ name, type, badge, children, control }) {
   return (
-    <li className="m-0 px-0 py-4 first:pt-0 last:pb-0">
-      <dl className="m-0 flex flex-wrap items-center gap-x-3 gap-y-2">
-        <dt className="sr-only">Name</dt>
-        <dd>
-          <code className="rounded-md bg-zinc-100 px-1.5 py-0.5 font-mono text-xs text-zinc-900 ring-1 ring-zinc-300 ring-inset dark:bg-zinc-700/15 dark:text-white dark:ring-white/10">
-            {name}
-          </code>
-        </dd>
-        {type && (
-          <>
-            <dt className="sr-only">Type</dt>
-            <dd className="font-mono text-xs text-zinc-400 dark:text-zinc-500">{type}</dd>
-          </>
-        )}
-        {badge && <dd>{badge}</dd>}
+    <li className="m-0 px-0 py-3.5 first:pt-0 last:pb-0">
+      <dl className="m-0">
+        <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
+          <dt className="sr-only">Name</dt>
+          <dd className="min-w-0 font-mono text-[0.8125rem] font-semibold break-all text-zinc-900 dark:text-white">{name}</dd>
+          {type && (
+            <>
+              <dt className="sr-only">Type</dt>
+              <dd className="font-mono text-xs text-zinc-400 dark:text-zinc-500">{type}</dd>
+            </>
+          )}
+          {badge && <dd className="ml-auto">{badge}</dd>}
+        </div>
         {children && (
           <>
             <dt className="sr-only">Description</dt>
-            <dd className="w-full flex-none text-sm text-zinc-600 dark:text-zinc-400 [&_code]:font-mono [&_code]:text-xs [&_code]:break-all [&_code]:text-zinc-900 dark:[&_code]:text-white">{children}</dd>
+            <dd className="mt-1 text-sm text-zinc-600 dark:text-zinc-400 [&_code]:font-mono [&_code]:text-xs [&_code]:break-all [&_code]:text-zinc-900 dark:[&_code]:text-white">
+              {children}
+            </dd>
           </>
         )}
-        {control && <dd className="w-full flex-none">{control}</dd>}
+        {control && <dd className="mt-2.5">{control}</dd>}
       </dl>
     </li>
   )
