@@ -3,7 +3,7 @@
 import { useSearchParams } from 'next/navigation'
 import { useEffect, useMemo, useRef, useState } from 'react'
 
-import { BrandFacts, BrandFieldRows, BrandSelect, CartEditor, ErrorNote, FixedValue, MissingFieldsHint, ParamRow, ResultSummary } from '@/components/builder'
+import { BrandFacts, BrandFieldRows, BrandSelect, CartEditor, ErrorNote, FixedValue, MissingFieldsHint, ParamRow } from '@/components/builder'
 import { CodeWindow, SendButton } from '@/components/CodeWindow'
 import { Col, Note, Properties, Property, Row } from '@/components/content'
 import { FieldBox, PanelStatus, Toggle, bareInputClass } from '@/components/forms'
@@ -38,13 +38,10 @@ const INITIAL = {
   returned: false,
 }
 
-const PAYMENT_PATH = /^\/v1\/payments\/[0-9a-f]{32}$/
 // The gateway allows two status requests a minute for each server-to-server payment
 const STATUS_LIMIT = 2
 const STATUS_WINDOW_MS = 60000
-const POLL_EVERY_MS = 30000
 const THROTTLED_TEXT = 'The gateway allows two status checks a minute for each payment.'
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 
 const HELP_CENTRE_URL = 'https://support.nomupay.com/hc/en-gb/articles/52156192050193-Ecommerce-Payment-Methods'
 const REFERENCE_URL = 'https://nomupay.docs.oppwa.com/reference/parameters'
@@ -184,7 +181,7 @@ export function S2SFlow({ mode = 'start' }) {
   let [origin, setOrigin] = useState('https://your-site.example')
   let [drawerOpen, setDrawerOpen] = useState(false)
   let statusRef = useRef(null)
-  let autoChecked = useRef(false)
+  let autoScrolled = useRef(false)
 
   useEffect(() => setOrigin(window.location.origin), [])
 
@@ -243,50 +240,46 @@ export function S2SFlow({ mode = 'start' }) {
     return recent.length < STATUS_LIMIT ? 0 : recent[0] + STATUS_WINDOW_MS - now + 250
   }
 
-  // quiet: background check (no busy state or errors); wait: hold until the limit allows it
-  async function checkStatus(path = resourcePath, { quiet = false, wait = false } = {}) {
+  // Sent only when the merchant clicks: one GET, within the gateway's two-a-minute limit
+  async function checkStatus(path = resourcePath) {
     if (!path) return null
     let ms = statusWait(path)
-    if (ms > 0 && (quiet || !wait)) {
-      if (!quiet) setError({ status: `${THROTTLED_TEXT} Try again in ${Math.ceil(ms / 1000)} seconds.` })
+    if (ms > 0) {
+      setError({ status: `${THROTTLED_TEXT} Try again in ${Math.ceil(ms / 1000)} seconds.` })
       return null
     }
-    if (!quiet) {
-      setBusy('status')
-      setError({})
-    }
+    setBusy('status')
+    setError({})
     try {
-      if (ms > 0) await sleep(ms)
       statusCalls.current[path] = [...(statusCalls.current[path] || []), Date.now()]
       let data = await getJson(`/api/status?resourcePath=${encodeURIComponent(path)}&entity=wallet`)
       // Too many requests says nothing about the payment: keep the last result
       if (data.status === 'throttled') {
-        if (!quiet) setError({ status: `${THROTTLED_TEXT} Wait a moment and check again.` })
+        setError({ status: `${THROTTLED_TEXT} Wait a moment and check again.` })
         return null
       }
       setState((s) => ({ ...s, result: data }))
       return data
     } catch (e) {
-      if (!quiet) setError({ status: e.message })
+      setError({ status: e.message })
       return null
     } finally {
-      if (!quiet) setBusy('')
+      setBusy('')
     }
   }
 
   let scrollToStatus = () => setTimeout(() => statusRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 350)
 
-  // Back on the return page after a full-page redirect: read the result straight away.
-  // Inside the drawer or a popup the demo page does this instead.
+  // Back on the return page after a full-page redirect: go to the status step, where
+  // the merchant sends the status request themselves
   useEffect(() => {
-    if (mode !== 'return' || autoChecked.current || !config?.configured || !ready || !resourcePath || isEmbedded()) return
-    autoChecked.current = true
-    checkStatus().then(scrollToStatus)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mode, config, resourcePath, ready])
+    if (mode !== 'return' || autoScrolled.current || !ready || !resourcePath || isEmbedded()) return
+    autoScrolled.current = true
+    scrollToStatus()
+  }, [mode, resourcePath, ready])
 
   let latest = useRef({})
-  latest.current = { checkStatus, resourcePath, paymentId }
+  latest.current = { paymentId }
 
   // The return page in the drawer (or popup) tells this page when the shopper is back
   useEffect(() => {
@@ -296,40 +289,15 @@ export function S2SFlow({ mode = 'start' }) {
     } catch {}
     function onMessage(e) {
       if (!allowed.includes(e.origin) || e.data?.type !== RETURN_MESSAGE) return
-      let { paymentId: current, resourcePath: path } = latest.current
+      let { paymentId: current } = latest.current
       if (current && e.data.id && e.data.id !== current) return
       setDrawerOpen(false)
       setState((s) => ({ ...s, returned: true }))
-      latest.current.checkStatus(PAYMENT_PATH.test(e.data.resourcePath || '') ? e.data.resourcePath : path, { wait: true }).then(scrollToStatus)
+      scrollToStatus()
     }
     window.addEventListener('message', onMessage)
     return () => window.removeEventListener('message', onMessage)
   }, [config, setState])
-
-  // While the drawer is open, also check the status every 30 seconds (inside the gateway's
-  // limit): once the shopper approves or declines, the drawer closes even if the payment
-  // page can't finish its redirect inside the frame
-  useEffect(() => {
-    if (!drawerOpen || !paymentId) return
-    let stopped = false
-    let path = `/v1/payments/${paymentId}`
-    let last = Date.now()
-    let timer = setInterval(async () => {
-      if (stopped || Date.now() - last < POLL_EVERY_MS) return
-      last = Date.now()
-      let data = await latest.current.checkStatus(path, { quiet: true })
-      if (!stopped && data && data.status !== 'pending') {
-        stopped = true
-        setDrawerOpen(false)
-        setState((s) => ({ ...s, returned: true }))
-        scrollToStatus()
-      }
-    }, 5000)
-    return () => {
-      stopped = true
-      clearInterval(timer)
-    }
-  }, [drawerOpen, paymentId, setState])
 
   function setFlow(next) {
     if (next.mode === flow.mode && next.tx === flow.tx) return
@@ -458,7 +426,7 @@ export function S2SFlow({ mode = 'start' }) {
     )
   let backOfficeGroups = (kind, type, text) => (
     <ParamGroups>
-      <ParamGroup title="Basic payment" defaultOpen>
+      <ParamGroup title="Basic payment">
         <ParamRow
           name="amount"
           type="decimal"
@@ -556,7 +524,7 @@ export function S2SFlow({ mode = 'start' }) {
             .
           </p>
           <ParamGroups key={`${brand?.code}-${flow.mode}-${flow.tx}`}>
-            <ParamGroup title="Basic payment" missing={missingIn('basic')} defaultOpen>
+            <ParamGroup title="Basic payment" missing={missingIn('basic')}>
               <ParamRow
                 name="amount"
                 type="decimal"
@@ -626,13 +594,13 @@ export function S2SFlow({ mode = 'start' }) {
               let list = specs.filter((x) => g.test(x.key))
               if (!list.length) return null
               return (
-                <ParamGroup key={g.id} title={g.title} missing={missingIn(g.id)} defaultOpen={list.some((x) => x.req !== 'O')}>
+                <ParamGroup key={g.id} title={g.title} missing={missingIn(g.id)}>
                   {fieldRows(g.id)}
                 </ParamGroup>
               )
             })}
             {cart && (
-              <ParamGroup title="Cart" missing={missingIn('cart')} defaultOpen={cartRequired}>
+              <ParamGroup title="Cart" missing={missingIn('cart')}>
                 <ParamRow
                   name="cart.items[n]"
                   type="array"
@@ -716,7 +684,7 @@ export function S2SFlow({ mode = 'start' }) {
               </p>
               <h3>Response parameters</h3>
               <ParamGroups>
-                <ParamGroup title="Redirect" defaultOpen>
+                <ParamGroup title="Redirect">
                   <Property name="redirect.url" type="url">
                     The payment brand’s page to send the shopper to.
                   </Property>
@@ -731,7 +699,7 @@ export function S2SFlow({ mode = 'start' }) {
               {paymentId && payment?.status === 'pending' && !redirect && (
                 <Note>There’s no redirect in this response, so the shopper approves the payment in their app. Check the status in the next step.</Note>
               )}
-              {state.returned && <Note>The shopper is back. The payment status is in the next step.</Note>}
+              {state.returned && <Note>The shopper is back. Send the status request in the next step.</Note>}
             </Col>
             <Col sticky>
               <CodeWindow
@@ -773,8 +741,6 @@ export function S2SFlow({ mode = 'start' }) {
               : 'Once the payment is processed, the shopper is redirected to your shopperResultUrl with the id and resourcePath parameters. Send a GET request to the resourcePath with your entityId to get the payment result. A payment can stay pending for a while: check again, or rely on the webhook in production.'}{' '}
             The gateway allows two status checks a minute for each payment.
           </p>
-          <h3>Result</h3>
-          <ResultSummary result={state.result} emptyText={resourcePath ? 'Not checked yet.' : 'Comes after step 1.'} />
         </Col>
         <Col sticky>
           <CodeWindow
@@ -784,9 +750,21 @@ export function S2SFlow({ mode = 'start' }) {
             code={statusCurl}
             html={highlightCurl(statusCurl)}
             footer={
-              <SendButton onClick={() => checkStatus()} disabled={!resourcePath || busy === 'status' || !config?.configured}>
-                {busy === 'status' ? 'Checking…' : state.result ? 'Check again' : 'Check status'}
-              </SendButton>
+              <div className="flex flex-wrap items-center gap-3">
+                <SendButton onClick={() => checkStatus()} disabled={!resourcePath || busy === 'status' || !config?.configured}>
+                  {busy === 'status' ? 'Sending…' : 'Send request'}
+                </SendButton>
+                {state.result && (
+                  <button
+                    type="button"
+                    onClick={() => checkStatus()}
+                    disabled={busy === 'status'}
+                    className="ml-auto text-xs font-medium text-zinc-400 transition hover:text-white disabled:opacity-50"
+                  >
+                    Check status
+                  </button>
+                )}
+              </div>
             }
           />
           <ErrorNote message={error.status} />
