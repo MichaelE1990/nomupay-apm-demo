@@ -29,7 +29,8 @@ function shortList(values, max = 3) {
 
 // Payment brand picker: one searchable menu instead of a grid of cards.
 // multiple adds chips in the field and checkboxes in the menu (COPYandPAY).
-export function BrandSelect({ id, brands, selected, onChange, multiple = false, currency, showDetails = true }) {
+// compact: just the name and code (where a facts table follows the select)
+export function BrandSelect({ id, brands, selected, onChange, multiple = false, currency, showDetails = true, compact = false }) {
   let withCards = brands.some((b) => b.type === 'card')
   let options = [...brands.filter((b) => b.type !== 'card'), ...brands.filter((b) => b.type === 'card')].map((b) => {
     let unsupported = multiple && currency && selected.includes(b.code) && !b.currencies.includes(currency)
@@ -39,8 +40,10 @@ export function BrandSelect({ id, brands, selected, onChange, multiple = false, 
       meta: b.code,
       group: withCards ? (b.type === 'card' ? 'Cards' : 'Payment brands') : undefined,
       keywords: [...b.countries, ...b.currencies, ...b.countries.map(countryName)].join(' '),
-      leading: <Monogram code={b.code} name={b.name} />,
-      trailing: <span className="hidden flex-none font-mono text-[0.6875rem] text-zinc-400 sm:inline dark:text-zinc-500">{shortList(b.currencies)}</span>,
+      leading: compact ? undefined : <Monogram code={b.code} name={b.name} />,
+      trailing: compact ? undefined : (
+        <span className="hidden flex-none font-mono text-[0.6875rem] text-zinc-400 sm:inline dark:text-zinc-500">{shortList(b.currencies)}</span>
+      ),
       description: unsupported ? <span className="text-amber-700 dark:text-amber-400">Doesn&rsquo;t support {currency}</span> : undefined,
     }
   })

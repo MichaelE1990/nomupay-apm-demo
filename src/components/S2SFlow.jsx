@@ -1,10 +1,11 @@
 'use client'
 
+import clsx from 'clsx'
 import { useSearchParams } from 'next/navigation'
 import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { BrandFacts, BrandFieldRows, BrandSelect, CartEditor, ErrorNote, FixedValue, MissingFieldsHint, ParamRow } from '@/components/builder'
-import { CodeWindow, SendButton } from '@/components/CodeWindow'
+import { CodeWindow, NewWindowIcon, RefreshIcon, SendButton, SplitButton } from '@/components/CodeWindow'
 import { Col, Note, Properties, Property, Row } from '@/components/content'
 import { FieldBox, PanelStatus, Toggle, bareInputClass } from '@/components/forms'
 import { Heading } from '@/components/Heading'
@@ -488,6 +489,7 @@ export function S2SFlow({ mode = 'start' }) {
               brands={eligible}
               selected={brand ? [brand.code] : []}
               showDetails={false}
+              compact
               onChange={([code]) =>
                 setState((s) => ({ ...s, form: withBrand(s.form, code, catalogue, flow.mode), payment: null, result: null, capture: null, refund: null }))
               }
@@ -686,16 +688,10 @@ export function S2SFlow({ mode = 'start' }) {
                 code={snippet}
                 html={highlightJs(snippet)}
                 footer={
-                  <div className="flex flex-wrap items-center gap-3">
-                    <SendButton onClick={() => setDrawerOpen(true)} disabled={!redirect}>
-                      Redirect the shopper
-                    </SendButton>
-                    {redirect && (
-                      <button type="button" onClick={openWindow} className="text-xs font-medium text-zinc-400 transition hover:text-white">
-                        or open it in a new window
-                      </button>
-                    )}
-                  </div>
+                  <SplitButton
+                    primary={{ label: 'Redirect', onClick: () => setDrawerOpen(true), disabled: !redirect }}
+                    secondary={{ label: 'Redirect in new window', icon: <NewWindowIcon className="size-3.5 flex-none" />, onClick: openWindow, disabled: !redirect }}
+                  />
                 }
               />
               <ErrorNote message={error.redirect} />
@@ -742,21 +738,19 @@ export function S2SFlow({ mode = 'start' }) {
             code={statusCurl}
             html={highlightCurl(statusCurl)}
             footer={
-              <div className="flex flex-wrap items-center gap-3">
-                <SendButton onClick={() => checkStatus()} disabled={!resourcePath || busy === 'status' || !config?.configured}>
-                  {busy === 'status' ? 'Sending…' : 'Send request'}
-                </SendButton>
-                {state.result && (
-                  <button
-                    type="button"
-                    onClick={() => checkStatus()}
-                    disabled={busy === 'status'}
-                    className="ml-auto text-xs font-medium text-zinc-400 transition hover:text-white disabled:opacity-50"
-                  >
-                    Check status
-                  </button>
-                )}
-              </div>
+              <SplitButton
+                primary={{
+                  label: busy === 'status' ? 'Sending…' : 'Send request',
+                  onClick: () => checkStatus(),
+                  disabled: !resourcePath || busy === 'status' || !config?.configured,
+                }}
+                secondary={{
+                  label: 'Check status',
+                  icon: <RefreshIcon className={clsx('size-3.5 flex-none', busy === 'status' && 'animate-spin')} />,
+                  onClick: () => checkStatus(),
+                  disabled: !state.result || busy === 'status',
+                }}
+              />
             }
           />
           <ErrorNote message={error.status} />

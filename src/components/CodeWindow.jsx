@@ -115,8 +115,58 @@ export function CodeWindow({ title, tag, label, code, html, empty, footer, statu
 }
 
 // Action inside a code panel footer: a small, quiet button that reads on the dark panel in both themes
+// The raised pill in a code panel footer (the primary action)
 const sendClass =
-  'inline-flex items-center justify-center rounded-md bg-white/10 px-2.5 py-1 text-xs font-medium text-white ring-1 ring-white/15 transition ring-inset hover:bg-white/15 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-400 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-white/10'
+  'inline-flex items-center justify-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-xs font-medium text-white shadow-sm ring-1 shadow-black/40 ring-white/15 transition ring-inset hover:bg-white/20 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-400 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-white/15'
+
+export function RefreshIcon(props) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" {...props}>
+      <path
+        d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99"
+        stroke="currentColor"
+        strokeWidth="1.75"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
+export function NewWindowIcon(props) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" {...props}>
+      <path
+        d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25"
+        stroke="currentColor"
+        strokeWidth="1.75"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
+// A raised primary action with a second one beside it, in one pill track
+// primary / secondary: { label, onClick, disabled, icon? }
+export function SplitButton({ primary, secondary }) {
+  return (
+    <div className="inline-flex max-w-full items-center rounded-full bg-white/5 p-0.5 ring-1 ring-white/10 ring-inset">
+      <button type="button" onClick={primary.onClick} disabled={primary.disabled} className={clsx(sendClass, 'flex-none')}>
+        {primary.label}
+      </button>
+      <button
+        type="button"
+        onClick={secondary.onClick}
+        disabled={secondary.disabled}
+        className="inline-flex min-w-0 items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium text-zinc-300 transition hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-400 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:text-zinc-300"
+      >
+        <span className="truncate">{secondary.label}</span>
+        {secondary.icon}
+      </button>
+    </div>
+  )
+}
 
 export function SendButton({ className, children, ...props }) {
   return (
