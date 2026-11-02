@@ -30,7 +30,7 @@ export const allSections = {
   ],
   // The steps follow the chosen flow; S2SFlow updates this list
   '/server-to-server': [
-    { id: 'how-it-works', title: 'How it works' },
+    { id: 'payment-workflow', title: 'Payment workflow' },
     { id: 'send-the-payment', step: 1, title: 'Perform debit payment', tag: 'POST' },
     { id: 'redirect-shopper', step: 2, title: 'Redirect shopper' },
     { id: 'get-the-payment-status', step: 3, title: 'Get the payment status', tag: 'GET' },

@@ -22,20 +22,16 @@ function ChevronDownIcon(props) {
 // ---------------------------------------------------------------------------
 
 export function ParamGroups({ children }) {
-  return <div className="not-prose my-6 border-y border-zinc-900/10 dark:border-white/10">{children}</div>
+  return <div className="not-prose my-6">{children}</div>
 }
 
 // One collapsible group: "Basic payment", "Customer", "Cart"…
-// required: how many of its parameters are mandatory; missing: how many still need a value
-export function ParamGroup({ title, count, required = 0, missing = 0, defaultOpen = false, children }) {
+// missing: how many of its required parameters still need a value
+export function ParamGroup({ title, missing = 0, defaultOpen = false, children }) {
   return (
     <Disclosure as="div" defaultOpen={defaultOpen} className="border-t border-zinc-900/10 first:border-t-0 dark:border-white/10">
       <DisclosureButton className="group flex w-full items-center gap-3 py-3.5 text-left">
         <span className="text-sm font-semibold text-zinc-900 dark:text-white">{title}</span>
-        <span className="text-xs text-zinc-400 tabular-nums dark:text-zinc-500">
-          {count} {count === 1 ? 'parameter' : 'parameters'}
-          {required > 0 && !missing ? ` · ${required} required` : ''}
-        </span>
         {missing > 0 && <span className="text-xs font-medium text-rose-600 dark:text-rose-400">{missing} to fill in</span>}
         <ChevronDownIcon className="ml-auto size-4 flex-none text-zinc-500 transition group-data-open:rotate-180 dark:text-zinc-400" />
       </DisclosureButton>
@@ -158,7 +154,7 @@ function FlowCard({ mode, selected, onSelect, tray }) {
 // modes: [{ value, title, description, flows: [{ value, title, types: ['PA','CP'] }] }]
 export function FlowCards({ modes, mode, tx, onChange }) {
   return (
-    <div role="radiogroup" aria-label="Payment flow" className="not-prose my-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
+    <div role="radiogroup" aria-label="Payment flow" className="not-prose my-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:max-w-none">
       {modes.map((m) => {
         let selected = m.value === mode
         return (

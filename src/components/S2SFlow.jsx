@@ -197,7 +197,7 @@ export function S2SFlow({ mode = 'start' }) {
   let steps = flowSteps(flow)
   let stepOf = (key) => steps.find((s) => s.key === key)
 
-  useSyncSections([{ id: 'how-it-works', title: 'How it works' }, ...steps.map((s) => ({ id: s.id, step: s.step, title: s.title, tag: s.tag }))])
+  useSyncSections([{ id: 'payment-workflow', title: 'Payment workflow' }, ...steps.map((s) => ({ id: s.id, step: s.step, title: s.title, tag: s.tag }))])
 
   // Keep the chosen brand valid for the flow
   useEffect(() => {
@@ -438,8 +438,6 @@ export function S2SFlow({ mode = 'start' }) {
   // The chosen brand's own fields, shown in their parameter groups
   let specs = brand ? fieldSpecs([brand.code], flow.mode) : []
   let missingIn = (group) => missing.filter((k) => groupOf(k) === group).length
-  let required = (list) => list.filter((x) => x.req === 'M').length
-  let basicSpecs = specs.filter((x) => groupOf(x.key) === 'basic')
   let fieldRows = (group) => (
     <BrandFieldRows
       form={{ ...form, mode: flow.mode }}
@@ -450,14 +448,9 @@ export function S2SFlow({ mode = 'start' }) {
       filter={(x) => groupOf(x.key) === group}
     />
   )
-  let entityRow = (
-    <ParamRow name="entityId" req="M" control={<FixedValue>{entityShown}</FixedValue>}>
-      The entity for the request. The demo’s server adds the real one; it’s masked here.
-    </ParamRow>
-  )
   let testModeGroup = (text) =>
     config?.testMode && (
-      <ParamGroup title="Testing" count={1}>
+      <ParamGroup title="Testing">
         <ParamRow name="testMode" req="T" control={<FixedValue>{config.testMode}</FixedValue>}>
           {text}
         </ParamRow>
@@ -465,10 +458,7 @@ export function S2SFlow({ mode = 'start' }) {
     )
   let backOfficeGroups = (kind, type, text) => (
     <ParamGroups>
-      <ParamGroup title="Authentication" count={1} required={1}>
-        {entityRow}
-      </ParamGroup>
-      <ParamGroup title="Basic payment" count={3} required={3} defaultOpen>
+      <ParamGroup title="Basic payment" defaultOpen>
         <ParamRow
           name="amount"
           type="decimal"
@@ -494,23 +484,22 @@ export function S2SFlow({ mode = 'start' }) {
         <Note tone="amber">Payment requests are off. Add ENTITY_ID and ACCESS_TOKEN in Vercel under Settings, Environment Variables, then redeploy.</Note>
       )}
 
-      {/* How it works: the payment flow and transaction flow, then the requests they make */}
-      <Heading level={2} id="how-it-works">
-        How it works
+      {/* Payment workflow: an overview, the use case to try, and the requests it makes */}
+      <Heading level={2} id="payment-workflow">
+        Payment workflow
       </Heading>
       <p>
-        Select your transaction flow. Be aware, some payment brands may not support your chosen flow: step 1 lists only the brands that support
-        it.
+        In a server-to-server integration the merchant server sends every request to the payment gateway itself. It initiates the payment with a
+        POST request, redirects the shopper to the payment brand when the response asks for it, and gets the payment status with a GET request.
+        Back-office requests on the same payment capture or refund it.
       </p>
-      <FlowCards
-        modes={MODES}
-        mode={flow.mode}
-        tx={flow.tx}
-        onChange={setFlow}
-      />
+      <h3>Use cases</h3>
+      <p>Choose how the shopper completes the payment, then the transaction flow. The steps below follow your choice.</p>
+      <FlowCards modes={MODES} mode={flow.mode} tx={flow.tx} onChange={setFlow} />
+      <h3>Transaction flow model</h3>
       <p>
-        The requests in this flow, between the shopper, the merchant server, the payment gateway and the payment brand. Numbered requests are the steps
-        below.
+        The requests in this flow, between the shopper, the merchant server, the payment gateway and the payment brand. Numbered requests are the
+        steps below.
       </p>
       <SequenceDiagram title={`${modeInfo.title} · ${flowInfo.title}`} messages={sequence(flow, steps)} />
 
@@ -544,7 +533,7 @@ export function S2SFlow({ mode = 'start' }) {
             />
             {brand && (
               <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
-                For more details on {brand.name}, refer to{' '}
+                See the required {brand.name} parameters below. For more details on {brand.name}, refer to{' '}
                 <a
                   href={HELP_CENTRE_URL}
                   target="_blank"
@@ -567,10 +556,7 @@ export function S2SFlow({ mode = 'start' }) {
             .
           </p>
           <ParamGroups key={`${brand?.code}-${flow.mode}-${flow.tx}`}>
-            <ParamGroup title="Authentication" count={1} required={1}>
-              {entityRow}
-            </ParamGroup>
-            <ParamGroup title="Basic payment" count={5 + basicSpecs.length} required={4 + required(basicSpecs)} missing={missingIn('basic')} defaultOpen>
+            <ParamGroup title="Basic payment" missing={missingIn('basic')} defaultOpen>
               <ParamRow
                 name="amount"
                 type="decimal"
@@ -630,7 +616,7 @@ export function S2SFlow({ mode = 'start' }) {
               {fieldRows('basic')}
             </ParamGroup>
             {flow.mode === 'async' && (
-              <ParamGroup title="Asynchronous payments" count={1} required={1}>
+              <ParamGroup title="Asynchronous payments">
                 <ParamRow name="shopperResultUrl" type="url" req="M" control={<FixedValue>{shopperResultUrl}</FixedValue>}>
                   Your page the shopper is sent back to after the payment brand. The gateway adds the payment’s id and resourcePath to it.
                 </ParamRow>
@@ -640,26 +626,13 @@ export function S2SFlow({ mode = 'start' }) {
               let list = specs.filter((x) => g.test(x.key))
               if (!list.length) return null
               return (
-                <ParamGroup
-                  key={g.id}
-                  title={g.title}
-                  count={list.length}
-                  required={required(list)}
-                  missing={missingIn(g.id)}
-                  defaultOpen={list.some((x) => x.req !== 'O')}
-                >
+                <ParamGroup key={g.id} title={g.title} missing={missingIn(g.id)} defaultOpen={list.some((x) => x.req !== 'O')}>
                   {fieldRows(g.id)}
                 </ParamGroup>
               )
             })}
             {cart && (
-              <ParamGroup
-                title="Cart"
-                count={cart.fields.length}
-                required={cartRequired ? cart.fields.length : 0}
-                missing={missingIn('cart')}
-                defaultOpen={cartRequired}
-              >
+              <ParamGroup title="Cart" missing={missingIn('cart')} defaultOpen={cartRequired}>
                 <ParamRow
                   name="cart.items[n]"
                   type="array"
@@ -743,7 +716,7 @@ export function S2SFlow({ mode = 'start' }) {
               </p>
               <h3>Response parameters</h3>
               <ParamGroups>
-                <ParamGroup title="Redirect" count={3} defaultOpen>
+                <ParamGroup title="Redirect" defaultOpen>
                   <Property name="redirect.url" type="url">
                     The payment brand’s page to send the shopper to.
                   </Property>
@@ -800,12 +773,6 @@ export function S2SFlow({ mode = 'start' }) {
               : 'Once the payment is processed, the shopper is redirected to your shopperResultUrl with the id and resourcePath parameters. Send a GET request to the resourcePath with your entityId to get the payment result. A payment can stay pending for a while: check again, or rely on the webhook in production.'}{' '}
             The gateway allows two status checks a minute for each payment.
           </p>
-          <h3>Query parameters</h3>
-          <ParamGroups>
-            <ParamGroup title="Authentication" count={1} required={1} defaultOpen>
-              {entityRow}
-            </ParamGroup>
-          </ParamGroups>
           <h3>Result</h3>
           <ResultSummary result={state.result} emptyText={resourcePath ? 'Not checked yet.' : 'Comes after step 1.'} />
         </Col>
