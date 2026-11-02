@@ -302,9 +302,10 @@ export function ReqTag({ req }) {
 // Requirement as plain text on the right of a parameter row, as in API references
 const REQ_TEXT = {
   M: ['Required', 'text-rose-700/75 dark:text-rose-300/70'],
-  C: ['Conditional', 'text-amber-600 dark:text-amber-400'],
+  C: ['Conditional', 'text-amber-700/75 dark:text-amber-300/70'],
   O: ['Optional', 'text-zinc-400 dark:text-zinc-500'],
   T: ['Test only', 'text-zinc-400 dark:text-zinc-500'],
+  A: ['Always', 'text-zinc-500 dark:text-zinc-400'],
 }
 
 export function ReqText({ req }) {

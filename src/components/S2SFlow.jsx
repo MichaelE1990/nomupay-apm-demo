@@ -7,7 +7,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { BrandFacts, BrandFieldRows, BrandSelect, CartEditor, ErrorNote, FixedValue, MissingFieldsHint, ParamRow } from '@/components/builder'
 import { CodeWindow, NewWindowIcon, RefreshIcon, SendButton, SplitButton } from '@/components/CodeWindow'
 import { Col, Note, Properties, Property, Row } from '@/components/content'
-import { FieldBox, PanelStatus, Toggle, bareInputClass } from '@/components/forms'
+import { FieldBox, PanelStatus, ReqText, Toggle, bareInputClass } from '@/components/forms'
 import { Heading } from '@/components/Heading'
 import { PaymentDrawer } from '@/components/PaymentDrawer'
 import { FlowCards, ParamGroup, ParamGroups, SequenceDiagram } from '@/components/s2sParts'
@@ -80,6 +80,70 @@ const FIELD_GROUPS = [
 function groupOf(key) {
   if (key.startsWith('cart.')) return 'cart'
   return FIELD_GROUPS.find((g) => g.test(key))?.id || 'basic'
+}
+
+// What the status response carries: the OPPWA "Payment Response Parameters", with the
+// resultDetails names from the NomuPay Wallets integration sheet ("Response field mapping").
+// req: A = always there, C = only in some responses
+function responseGroups(flow) {
+  return [
+    {
+      title: 'Basic payment',
+      rows: [
+        ['id', 'A', 'The payment’s ID. Use it to request the status again, and for a capture or refund.'],
+        ['paymentType', 'A', 'DB, PA, CP or RF: the type of the transaction you requested.'],
+        ['paymentBrand', 'A', 'The payment brand of the request.'],
+        ['amount', 'A', 'The amount approved by the payment brand.'],
+        ['currency', 'A', 'The currency of the request.'],
+        ['descriptor', 'C', 'The descriptor: the payment’s short ID followed by the merchant name.'],
+        ['merchantTransactionId', 'C', 'Your reference, when the request sent one.'],
+      ],
+    },
+    {
+      title: 'Result',
+      rows: [
+        ['result.code', 'A', 'The result of the request, for example 000.100.112 for a successful test payment or 000.200.000 while pending. See Result codes.'],
+        ['result.description', 'A', 'What the result code means.'],
+      ],
+    },
+    {
+      title: 'Result details',
+      rows: [
+        ['resultDetails.ExtendedDescription', 'C', 'The payment brand’s status, or the reason it gave.'],
+        ['resultDetails.ConnectorTxID1', 'C', 'The gateway’s ID for the transaction (the same as id).'],
+        ['resultDetails.ConnectorTxID2', 'C', 'The payment brand’s ID for this transaction. A refund gets a new one.'],
+        ['resultDetails.ConnectorTxID3', 'C', 'The payment brand’s ID for the payment. It stays the same for every transaction on the payment, so it links a refund to its payment.'],
+        ['resultDetails.AcquirerResponse', 'C', 'The status the payment brand returned.'],
+        ['resultDetails.ConnectorReasonCode', 'C', 'The payment brand’s reason code, for example succeeded, required_next_step, or why it declined.'],
+        ['resultDetails.AcquirerTimestamp', 'C', 'When the payment brand processed the transaction.'],
+        ['resultDetails.ConnectorErrorField', 'C', 'Only on errors: the request field the payment brand rejected.'],
+        ['resultDetails.ConnectorErrorFieldDetails', 'C', 'Only on errors: why that field was rejected.'],
+      ],
+    },
+    flow.mode === 'async' && {
+      title: 'Asynchronous payments',
+      rows: [
+        ['redirect.url', 'C', 'Only while the payment is pending: the payment brand’s page to send the shopper to.', 'url'],
+        ['redirect.parameters', 'C', 'Only while the payment is pending: the name and value pairs to pass with the redirect.', 'array'],
+      ],
+    },
+    {
+      title: 'Other',
+      rows: [
+        ['customer, billing, cart', 'C', 'The customer, billing and cart details, when the request sent them.', 'object'],
+        ['buildNumber', 'A', 'The gateway build that handled the request. Useful for support.'],
+        ['timestamp', 'A', 'When the response was generated.'],
+        ['ndc', 'A', 'An internal unique identifier for the request.'],
+      ],
+    },
+  ].filter(Boolean)
+}
+
+const valueAt = (obj, path) => {
+  if (!obj) return undefined
+  if (path.startsWith('resultDetails.')) return obj.resultDetails?.[path.slice(14)]
+  let v = path.split('.').reduce((o, k) => (o == null ? undefined : o[k]), obj)
+  return typeof v === 'object' && v !== null ? JSON.stringify(v) : v
 }
 
 // Who sends what to whom in the chosen flow; numbered requests link to their step
@@ -729,6 +793,32 @@ export function S2SFlow({ mode = 'start' }) {
               : 'Once the payment is processed, the shopper is redirected to your shopperResultUrl with the id and resourcePath parameters. Send a GET request to the resourcePath with your entityId to get the payment result. A payment can stay pending for a while: check again, or rely on the webhook in production.'}{' '}
             The gateway allows two status checks a minute for each payment.
           </p>
+          <h3>Response parameters</h3>
+          <p>
+            The same for every payment brand. What changes is the payment type, the redirect (only while an asynchronous payment is pending),
+            the customer and cart details you sent, and the result details, which follow the payment’s state. Result details appear when the
+            entity shows connector details in responses.
+          </p>
+          <ParamGroups>
+            {responseGroups(flow).map((g) => (
+              <ParamGroup key={g.title} title={g.title}>
+                {g.rows.map(([name, req, text, type = 'string']) => {
+                  let value = valueAt(state.result?.response, name)
+                  return (
+                    <Property
+                      key={name}
+                      name={name}
+                      type={type}
+                      badge={<ReqText req={req} />}
+                      control={value !== undefined && value !== '' ? <FixedValue>{String(value)}</FixedValue> : null}
+                    >
+                      {text}
+                    </Property>
+                  )
+                })}
+              </ParamGroup>
+            ))}
+          </ParamGroups>
         </Col>
         <Col sticky>
           <CodeWindow
