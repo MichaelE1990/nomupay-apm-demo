@@ -49,3 +49,40 @@ export async function getJson(url) {
 export function newMerchantTransactionId() {
   return `order-${Date.now().toString(36)}`
 }
+
+// The merchant's own test credentials, from the Playground. Kept for this browser tab
+// only (sessionStorage), so they survive the redirect to the payment page and back.
+const CREDS_KEY = 'nomupayApmDemo.credentials'
+export const EMPTY_CREDENTIALS = { useOwn: false, entityId: '', accessToken: '' }
+export const ENTITY_PATTERN = /^[a-f0-9]{32}$/
+export const TOKEN_PATTERN = /^[A-Za-z0-9+/=._-]{20,512}$/
+
+export function useSessionCredentials() {
+  let [creds, setCreds] = useState(EMPTY_CREDENTIALS)
+  let [ready, setReady] = useState(false)
+  useEffect(() => {
+    try {
+      let raw = window.sessionStorage.getItem(CREDS_KEY)
+      if (raw) setCreds({ ...EMPTY_CREDENTIALS, ...JSON.parse(raw) })
+    } catch {}
+    setReady(true)
+  }, [])
+  useEffect(() => {
+    if (!ready) return
+    try {
+      if (creds.useOwn || creds.entityId || creds.accessToken) window.sessionStorage.setItem(CREDS_KEY, JSON.stringify(creds))
+      else window.sessionStorage.removeItem(CREDS_KEY)
+    } catch {}
+  }, [creds, ready])
+  return [creds, setCreds]
+}
+
+// What goes to this demo's server with each request: nothing when using the demo's credentials
+export function credentialsPayload(creds) {
+  if (!creds?.useOwn) return undefined
+  return { entityId: creds.entityId.trim(), accessToken: creds.accessToken.trim() }
+}
+
+export function credentialsReady(creds) {
+  return !creds?.useOwn || (ENTITY_PATTERN.test(creds.entityId.trim()) && TOKEN_PATTERN.test(creds.accessToken.trim()))
+}

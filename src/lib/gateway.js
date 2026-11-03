@@ -52,8 +52,25 @@ export function publicBase(request) {
   return `${proto}://${host}`
 }
 
-export async function gateway(method, path, params, kind) {
-  let { token } = entity(kind)
+// Which credentials a request uses: the merchant's own test credentials from the
+// Playground, or the demo's. Own credentials only go to the test system's host.
+export function credentialsFor(input, kind = 'wallet') {
+  let own = input?.credentials
+  if (own && typeof own === 'object' && (own.entityId || own.accessToken)) {
+    if (!IS_TEST) return { error: 'Your own credentials can only be used on the test system.', status: 400 }
+    let id = String(own.entityId || '').trim()
+    let token = String(own.accessToken || '').trim()
+    if (!/^[a-f0-9]{32}$/.test(id)) return { error: 'Your entityId should be 32 characters: digits and the letters a to f.', status: 400 }
+    if (!/^[A-Za-z0-9+/=._-]{20,512}$/.test(token)) return { error: 'Your access token doesn’t look right. Copy it again from the Nomupay Dashboard.', status: 400 }
+    return { id, token, own: true }
+  }
+  let e = entity(kind)
+  if (!e.id || !e.token) return { error: 'ENTITY_ID and ACCESS_TOKEN are not set on the server.', status: 503 }
+  return { id: e.id, token: e.token, own: false }
+}
+
+export async function gateway(method, path, params, creds) {
+  let { token } = typeof creds === 'string' ? entity(creds) : creds
   let query = new URLSearchParams(params).toString()
   let url = method === 'GET' ? `${API_BASE_URL}${path}?${query}` : `${API_BASE_URL}${path}`
   let response = await fetch(url, {

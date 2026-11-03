@@ -14,13 +14,19 @@ A test bench for payment brands (APMs) and cards on the ACI/OPPWA gateway, in th
 
 **Server-to-server** (`/server-to-server`)
 
-*Payment workflow* comes first: an overview, then *Use cases* with two cards for the payment flow (Asynchronous, or Synchronous for Bizum and Swish with the shopper's mobile number). The chosen card opens a tray with its transaction flows (Debit, or Pre-authorization + Capture for PayPay; synchronous offers Debit only). Under *Transaction flow model*, a sequence diagram shows the requests between the shopper, the merchant server, the payment gateway and the payment brand for that flow; the numbered requests link to the steps, which follow the server-to-server guide on docs.oppwa.com:
+*Payment workflow* comes first: an overview, then *Transaction flow model*, a sequence diagram of the requests between the shopper, the merchant server, the payment gateway and the payment brand (the numbered requests link to the steps), then *Use cases* with two cards for the payment flow (Asynchronous, or Synchronous for Bizum and Swish with the shopper's mobile number). The chosen card opens a tray with its transaction flows (Debit, or Pre-authorization + Capture for PayPay; synchronous offers Debit only). The steps follow the server-to-server guide on docs.oppwa.com.
 
-1. **Perform debit payment** / **Pre-authorize payment**: `POST /v1/payments`. Pick the payment brand here (only brands that support the flow), with a link to the Help Centre list and the brand's currencies, countries, timeout, amount limits and refunds. The body parameters follow in collapsible groups named as in the [parameters reference](https://nomupay.docs.oppwa.com/reference/parameters) (Basic payment, Customer, Billing address, Bank account, Virtual account, Cart, Custom parameters, Testing). Only the brand's own fields from the KB fields mapping are listed and sent. The page stays on this step so the response can be read.
+Every step is laid out like an API reference: *Properties* (method and endpoint, base URL, content type), *Path parameters* where the URL takes the payment `id`, *Body parameters* in two collapsible groups (Basic payment and Testing), and *Response* with the response parameters. Each parameter shows its format and pattern from the [parameters reference](https://nomupay.docs.oppwa.com/reference/parameters) (e.g. `amount` N10.N2 `[0-9]{1,10}(\.[0-9]{2})?`), the requirement, the description and an example (the current value when there is one). Objects such as `result`, `resultDetails` and `redirect` open their child parameters.
+
+Request panels have cURL and JavaScript (Node.js fetch) tabs, kept in step across the page, with the request laid out like docs.oppwa.com (the URL, each parameter as `-d`, then the header). The **Playground** tab opens a settings drawer that holds everything the requests are built from: your own test credentials (entityId and access token, kept in this browser tab only and sent only to the test system), the use case, payment brand, currency and amount, the brand's own fields from the KB fields mapping, the cart, the capture and refund amounts, and test mode. Under each response, a note gives the result and the next step.
+
+1. **Perform debit payment** / **Pre-authorize payment**: `POST /v1/payments`. The page stays on this step so the response can be read.
 2. **Redirect shopper** (asynchronous only): the `redirect` object as a JS snippet. The payment page opens in a drawer, or a new window. The shopper returns to the production domain (deployment URLs are behind Vercel's login, which can't load inside the frame), and that page tells the demo, which closes the drawer and marks the redirect complete under the snippet; the page stays on step 2. The demo never requests the status by itself: the merchant sends it in step 3. The shopperResultUrl and entityId on screen are placeholders; the real values are added on the server.
-3. **Get the payment status**: `GET /v1/payments/{id}`, sent with *Send request*; once there's a reply, *Check status* sends it again for a pending payment. *Response parameters* lists what the reply carries, from the OPPWA Payment Response Parameters and the Wallets integration sheet's Response field mapping (ConnectorTxID1-3 and the other `resultDetails`), with the values from the last reply. The gateway allows two status requests a minute per payment (more get `800.120.100`), so the demo counts them and waits rather than going over.
+3. **Get the payment status**: `GET /v1/payments/{id}`, sent with *Send request*; once there's a reply, *Check status* sends it again for a pending payment. The response parameters come from the OPPWA Payment Response Parameters and the Wallets integration sheet's Response field mapping (ConnectorTxID1-3 and the other `resultDetails`). The gateway allows two status requests a minute per payment (more get `800.120.100`), so the demo counts them and waits rather than going over.
 4. **Capture the payment** (pre-authorization only): `POST /v1/payments/{id}` with `paymentType=CP`.
 5. **Manage the payment** (optional): a full or partial refund, `paymentType=RF`, for brands that allow refunds. Capture and refund send the same `testMode` as the payment, or the gateway answers `700.100.600`. Refunds come back pending (`000.200.001`) while the brand processes them.
+
+The sidebar is organised like a help centre: the Guides category, its sections (Introduction; Integrations), the articles in each, and the open article's chapters under it. Breadcrumbs above each article show the same path.
 
 The introduction covers getting started and credentials (entityId and the access token as a Bearer header, from the Credentials section of the Nomupay Dashboard), and links to both guides.
 
@@ -84,12 +90,13 @@ Next.js, Tailwind CSS and Headless UI. The layout, navigation, code panels and b
 
 | Route | What it does |
 |---|---|
-| `/` | Introduction: getting started, credentials, guides |
+| `/` | Overview: getting started, credentials, guides |
 | `/copyandpay`, `/copyandpay/return` | COPYandPAY guide; the return page is the widget's form action |
 | `/server-to-server`, `/server-to-server/return` | Server-to-server guide; the return page is the `shopperResultUrl`, and inside the drawer or popup it messages the guide instead |
 | `/checkout/{checkoutId}` | Checkout page running `paymentWidgets.js` |
 | `POST /api/checkouts` | Creates a COPYandPAY checkout |
-| `POST /api/payments` | Server-to-server payment |
+| `POST /api/payments` | Server-to-server payment (with your own test credentials when the body carries them) |
 | `POST /api/payments/{id}` | Capture (CP) or refund (RF) of an earlier payment |
 | `GET /api/status?resourcePath=…&entity=…` | Payment or checkout status |
+| `POST /api/status` | Payment status with your own test credentials, which stay out of the URL |
 | `GET /api/config` | Environment summary and payment method catalogue |

@@ -4,18 +4,27 @@ import clsx from 'clsx'
 import { useSearchParams } from 'next/navigation'
 import { useEffect, useMemo, useRef, useState } from 'react'
 
-import { BrandFacts, BrandFieldRows, BrandSelect, CartEditor, ErrorNote, FixedValue, MissingFieldsHint, ParamRow } from '@/components/builder'
-import { CodeWindow, NewWindowIcon, RefreshIcon, SendButton, SplitButton } from '@/components/CodeWindow'
-import { Col, Note, Properties, Property, Row } from '@/components/content'
-import { FieldBox, PanelStatus, ReqText, Toggle, bareInputClass } from '@/components/forms'
+import { ErrorNote } from '@/components/builder'
+import { CodeWindow, NewWindowIcon, RefreshIcon, SendButton, SplitButton, UrlLabel } from '@/components/CodeWindow'
+import { Col, Note, Row } from '@/components/content'
+import { StatusIcon } from '@/components/forms'
 import { Heading } from '@/components/Heading'
+import { ParamDoc, ParamList, RequestProperties } from '@/components/params'
 import { PaymentDrawer } from '@/components/PaymentDrawer'
+import { Playground } from '@/components/Playground'
 import { FlowCards, ParamGroup, ParamGroups, SequenceDiagram } from '@/components/s2sParts'
 import { useSyncSections } from '@/components/SectionProvider'
-import { SelectMenu } from '@/components/select'
-import { getJson, newMerchantTransactionId, postJson, usePersistentState } from '@/lib/flowState'
-import { buildCurl, highlightCurl, highlightJs, highlightJson } from '@/lib/highlight'
-import { RETURN_MESSAGE, redirectMethod, redirectSnippet, sendShopperToPopup } from '@/lib/redirect'
+import {
+  credentialsPayload,
+  credentialsReady,
+  newMerchantTransactionId,
+  postJson,
+  usePersistentState,
+  useSessionCredentials,
+} from '@/lib/flowState'
+import { highlightJs, highlightJson, requestCode } from '@/lib/highlight'
+import { REDIRECT_DOC, REQUEST_DOCS, RESPONSE_BASE, requestDoc } from '@/lib/paramDocs'
+import { RETURN_MESSAGE, redirectSnippet, sendShopperToPopup } from '@/lib/redirect'
 import { buildPaymentParams, cartSpec, cartTotal, fieldSpecs, missingFields, withBrandDefaults, withRequiredExtras } from '@/lib/request'
 import { useConfig } from '@/lib/useConfig'
 
@@ -68,88 +77,12 @@ const MODES = [
   },
 ]
 
-// Request parameter groups, named as in the parameters reference on docs.oppwa.com
-const FIELD_GROUPS = [
-  { id: 'customer', title: 'Customer', test: (k) => k.startsWith('customer.') },
-  { id: 'billing', title: 'Billing address', test: (k) => k.startsWith('billing.') },
-  { id: 'shipping', title: 'Shipping address', test: (k) => k.startsWith('shipping.') },
-  { id: 'bank', title: 'Bank account', test: (k) => k.startsWith('bankAccount.') },
-  { id: 'virtual', title: 'Virtual account', test: (k) => k.startsWith('virtualAccount.') },
-  { id: 'custom', title: 'Custom parameters', test: (k) => k.startsWith('customParameters[') },
-]
-function groupOf(key) {
-  if (key.startsWith('cart.')) return 'cart'
-  return FIELD_GROUPS.find((g) => g.test(key))?.id || 'basic'
-}
-
-// What the status response carries: the OPPWA "Payment Response Parameters", with the
-// resultDetails names from the NomuPay Wallets integration sheet ("Response field mapping").
-// req: A = always there, C = only in some responses
-function responseGroups(flow) {
-  return [
-    {
-      title: 'Basic payment',
-      rows: [
-        ['id', 'A', 'The payment’s ID. Use it to request the status again, and for a capture or refund.'],
-        ['paymentType', 'A', 'DB, PA, CP or RF: the type of the transaction you requested.'],
-        ['paymentBrand', 'A', 'The payment brand of the request.'],
-        ['amount', 'A', 'The amount approved by the payment brand.'],
-        ['currency', 'A', 'The currency of the request.'],
-        ['descriptor', 'C', 'The descriptor: the payment’s short ID followed by the merchant name.'],
-        ['merchantTransactionId', 'C', 'Your reference, when the request sent one.'],
-      ],
-    },
-    {
-      title: 'Result',
-      rows: [
-        ['result.code', 'A', 'The result of the request, for example 000.100.112 for a successful test payment or 000.200.000 while pending.'],
-        ['result.description', 'A', 'What the result code means.'],
-        ...(flow.mode === 'async'
-          ? [
-              ['redirect.url', 'C', 'Only while the payment is pending: the payment brand’s page to send the shopper to.', 'url'],
-              ['redirect.parameters', 'C', 'Only while the payment is pending: the name and value pairs to pass with the redirect.', 'array'],
-            ]
-          : []),
-      ],
-    },
-    {
-      title: 'Result details',
-      rows: [
-        ['resultDetails.ExtendedDescription', 'C', 'The payment brand’s status, or the reason it gave.'],
-        ['resultDetails.ConnectorTxID1', 'C', 'The gateway’s ID for the transaction (the same as id).'],
-        ['resultDetails.ConnectorTxID2', 'C', 'The payment brand’s ID for this transaction. A refund gets a new one.'],
-        ['resultDetails.ConnectorTxID3', 'C', 'The payment brand’s ID for the payment. It stays the same for every transaction on the payment, so it links a refund to its payment.'],
-        ['resultDetails.AcquirerResponse', 'C', 'The status the payment brand returned.'],
-        ['resultDetails.ConnectorReasonCode', 'C', 'The payment brand’s reason code, for example succeeded, required_next_step, or why it declined.'],
-        ['resultDetails.AcquirerTimestamp', 'C', 'When the payment brand processed the transaction.'],
-        ['resultDetails.ConnectorErrorField', 'C', 'Only on errors: the request field the payment brand rejected.'],
-        ['resultDetails.ConnectorErrorFieldDetails', 'C', 'Only on errors: why that field was rejected.'],
-      ],
-    },
-    {
-      title: 'Other',
-      rows: [
-        ['customer, billing, cart', 'C', 'The customer, billing and cart details, when the request sent them.', 'object'],
-        ['buildNumber', 'A', 'The gateway build that handled the request. Useful for support.'],
-        ['timestamp', 'A', 'When the response was generated.'],
-        ['ndc', 'A', 'An internal unique identifier for the request.'],
-      ],
-    },
-  ]
-}
-
-// Filled values in one line, for a closed group's header
-const preview = (...values) =>
-  values
-    .flat()
-    .filter((v) => v !== undefined && v !== null && String(v).trim() !== '')
-    .join(' · ')
-
-const valueAt = (obj, path) => {
-  if (!obj) return undefined
-  if (path.startsWith('resultDetails.')) return obj.resultDetails?.[path.slice(14)]
-  let v = path.split('.').reduce((o, k) => (o == null ? undefined : o[k]), obj)
-  return typeof v === 'object' && v !== null ? JSON.stringify(v) : v
+// paymentType values, as the parameters reference describes them
+const PAYMENT_TYPES = {
+  DB: 'DB, Debit: debits the account of the end customer and credits the merchant account.',
+  PA: 'PA, Preauthorization: a stand-alone authorisation. A Capture (CP) with reference to the Preauthorisation (PA) will confirm the payment.',
+  CP: 'CP, Capture: captures a preauthorized (PA) amount.',
+  RF: 'RF, Refund: credits the account of the end customer with a reference to a prior Debit (DB) or Credit (CD) transaction.',
 }
 
 // Who sends what to whom in the chosen flow; numbered requests link to their step
@@ -198,11 +131,6 @@ function isEmbedded() {
   return typeof document !== 'undefined' && document.documentElement.hasAttribute('data-embedded')
 }
 
-function panelStatus(data, pendingText) {
-  if (!data) return null
-  return <PanelStatus status={data.status}>{data.status === 'pending' && pendingText ? pendingText : undefined}</PanelStatus>
-}
-
 // The steps for the chosen flow, as in the server-to-server guide on docs.oppwa.com
 function flowSteps(flow) {
   return [
@@ -210,38 +138,111 @@ function flowSteps(flow) {
       key: 'send',
       id: 'send-the-payment',
       title: flow.tx === 'PA' ? 'Pre-authorize payment' : 'Perform debit payment',
-      summary: flow.tx === 'PA' ? 'Send the pre-authorization request with the brand’s fields.' : 'Send the debit request with the brand’s fields.',
       tag: 'POST',
-      tx: [flow.tx],
     },
-    flow.mode === 'async' && {
-      key: 'redirect',
-      id: 'redirect-shopper',
-      title: 'Redirect shopper',
-      summary: 'Send the shopper to the payment page to approve the payment.',
-    },
-    { key: 'status', id: 'get-the-payment-status', title: 'Get the payment status', summary: 'Find out if the payment was successful.', tag: 'GET' },
-    flow.tx === 'PA' && { key: 'capture', id: 'capture-the-payment', title: 'Capture the payment', summary: 'Send the capture request.', tag: 'POST', tx: ['CP'] },
-    { key: 'manage', id: 'manage-the-payment', title: 'Manage the payment', summary: 'Send a refund request.', tag: 'POST', tx: ['RF'], optional: true },
+    flow.mode === 'async' && { key: 'redirect', id: 'redirect-shopper', title: 'Redirect shopper' },
+    { key: 'status', id: 'get-the-payment-status', title: 'Get the payment status', tag: 'GET' },
+    flow.tx === 'PA' && { key: 'capture', id: 'capture-the-payment', title: 'Capture the payment', tag: 'POST' },
+    { key: 'manage', id: 'manage-the-payment', title: 'Manage the payment', tag: 'POST', optional: true },
   ]
     .filter(Boolean)
     .map((s, i) => ({ ...s, step: i + 1 }))
 }
 
-function AmountRow({ id, value, onChange, readOnly, invalid }) {
+// What comes after a request, under its response (and after the redirect)
+const NOTE_TONES = {
+  success: 'bg-green-50/70 text-green-900 ring-green-600/15 dark:bg-green-400/5 dark:text-green-200 dark:ring-green-400/15',
+  pending: 'bg-amber-50/60 text-amber-900 ring-amber-600/15 dark:bg-amber-400/5 dark:text-amber-200/90 dark:ring-amber-400/15',
+  failed: 'bg-rose-50/60 text-rose-900 ring-rose-600/15 dark:bg-rose-400/5 dark:text-rose-200 dark:ring-rose-400/15',
+}
+const NOTE_ICONS = {
+  success: 'text-green-600 dark:text-green-400',
+  pending: 'text-amber-600 dark:text-amber-400',
+  failed: 'text-rose-600 dark:text-rose-400',
+}
+
+function StepNote({ status, title, children }) {
+  let tone = NOTE_TONES[status] ? status : 'failed'
   return (
-    <FieldBox invalid={invalid}>
-      <input
-        id={id}
-        type="text"
-        inputMode="decimal"
-        autoComplete="off"
-        value={value}
-        readOnly={readOnly}
-        onChange={(e) => onChange(e.target.value)}
-        className={bareInputClass}
-      />
-    </FieldBox>
+    <div className={clsx('not-prose mt-4 flex items-start gap-2.5 rounded-xl px-4 py-3 text-sm ring-1 ring-inset', NOTE_TONES[tone])}>
+      <StatusIcon status={tone} className={clsx('mt-0.5 size-4 flex-none', NOTE_ICONS[tone])} />
+      <p className="min-w-0">
+        <span className="font-medium">{title}</span> {children}
+      </p>
+    </div>
+  )
+}
+
+function StepLink({ step }) {
+  if (!step) return null
+  return (
+    <a href={`#${step.id}`} className="font-medium underline decoration-current/30 underline-offset-2 hover:decoration-current">
+      step {step.step}
+    </a>
+  )
+}
+
+const resultText = (data) => {
+  let r = data?.response?.result
+  return r ? `${r.description || ''}${r.code ? ` (${r.code})` : ''}`.trim() : data?.response?.raw || ''
+}
+
+// Response parameters for a payment: the payment response from the parameters
+// reference, with the objects the request sent (customer, billing, cart…)
+function responseDocs({ redirect, sentParams = [], backOffice }) {
+  let objects = {}
+  for (let [key] of sentParams) {
+    let custom = key.match(/^customParameters\[(.+)\]$/)
+    if (custom) {
+      ;(objects.customParameters ||= []).push({ name: custom[1], ...REQUEST_DOCS.customParameters, req: 'C' })
+      continue
+    }
+    let m = key.match(/^(customer|billing|shipping|bankAccount|virtualAccount)\.(.+)$/)
+    if (m) (objects[m[1]] ||= []).push({ name: m[2], ...requestDoc(key), req: 'C' })
+    let c = key.match(/^cart\.items\[0\]\.(\w+)$/)
+    if (c) (objects.cart ||= []).push({ name: c[1], ...requestDoc(key), req: 'C' })
+  }
+  let objectDocs = Object.entries(objects).map(([name, children]) =>
+    name === 'cart'
+      ? { name, type: 'object', req: 'C', text: 'The cart, when the request sent one.', children: [{ name: 'items', type: 'array', req: 'C', text: 'The items in the cart.', children }] }
+      : { name, type: 'object', req: 'C', text: `The ${name} details, when the request sent them.`, children },
+  )
+  let B = RESPONSE_BASE
+  return [
+    B.id,
+    backOffice && {
+      name: 'referencedId',
+      format: 'AN32',
+      pattern: '[a-zA-Z0-9]{32}',
+      req: 'C',
+      text: 'In case of referenced payment (e.g., Capture or Refund), this field shows which payment was referenced.',
+      example: '8ac7a4a1a1a0e53501a1a12ca8c62c86',
+    },
+    B.paymentType,
+    B.paymentBrand,
+    B.amount,
+    B.currency,
+    B.descriptor,
+    !backOffice && B.merchantTransactionId,
+    B.result,
+    B.resultDetails,
+    redirect && B.redirect,
+    ...objectDocs,
+    B.buildNumber,
+    B.timestamp,
+    B.ndc,
+  ].filter(Boolean)
+}
+
+function ResponseGroup({ docs, response }) {
+  return (
+    <ParamGroups>
+      <ParamGroup title="Response parameters">
+        {docs.map((d) => (
+          <ParamDoc key={d.name} doc={d} value={response?.[d.name]} />
+        ))}
+      </ParamGroup>
+    </ParamGroups>
   )
 }
 
@@ -249,10 +250,13 @@ export function S2SFlow({ mode = 'start' }) {
   let config = useConfig()
   let search = useSearchParams()
   let [state, setState, ready] = usePersistentState(KEY, INITIAL)
+  let [creds, setCreds] = useSessionCredentials()
   let [busy, setBusy] = useState('')
   let [error, setError] = useState({})
   let [drawerOpen, setDrawerOpen] = useState(false)
+  let [playground, setPlayground] = useState({ open: false, focus: null })
   let autoScrolled = useRef(false)
+  let openPlayground = (focus = null) => setPlayground({ open: true, focus })
 
   let catalogue = useMemo(() => (config?.brands || []).filter((b) => b.type === 'wallet'), [config])
   let flow = state.flow || INITIAL.flow
@@ -287,6 +291,7 @@ export function S2SFlow({ mode = 'start' }) {
       { entityId: ENTITY_SHOWN, testMode: config.testMode, shopperResultUrl: SHOPPER_RESULT_URL_SHOWN },
     )
   }, [config, sendForm, form.merchantTransactionId, amount])
+  let sentValues = useMemo(() => Object.fromEntries(previewParams), [previewParams])
 
   let payment = state.payment
   let paymentId = payment?.response?.id
@@ -295,8 +300,14 @@ export function S2SFlow({ mode = 'start' }) {
   let returnId = search.get('id')
   let resourcePath =
     (mode === 'return' && (returnResourcePath || (returnId ? `/v1/payments/${returnId}` : null))) || (paymentId ? `/v1/payments/${paymentId}` : null)
+  let statusId = resourcePath?.match(/\/v1\/payments\/(\w+)/)?.[1]
   let sentAmount = payment?.response?.amount || amount
   let sentCurrency = payment?.response?.currency || form.currency
+
+  // Requests go out with the demo's credentials, or the merchant's own from the Playground
+  let credentials = credentialsPayload(creds)
+  let credsOk = credentialsReady(creds)
+  let canSend = Boolean(config && (config.configured || creds.useOwn) && credsOk)
 
   // Status requests made per payment in the last minute, to stay inside the gateway's limit
   let statusCalls = useRef({})
@@ -319,7 +330,8 @@ export function S2SFlow({ mode = 'start' }) {
     setError({})
     try {
       statusCalls.current[path] = [...(statusCalls.current[path] || []), Date.now()]
-      let data = await getJson(`/api/status?resourcePath=${encodeURIComponent(path)}&entity=wallet`)
+      // POST to this demo's server, so your own credentials stay out of the URL; it sends the GET
+      let data = await postJson('/api/status', { resourcePath: path, credentials })
       // Too many requests says nothing about the payment: keep the last result
       if (data.status === 'throttled') {
         setError({ status: `${THROTTLED_TEXT} Wait a moment and check again.` })
@@ -382,6 +394,18 @@ export function S2SFlow({ mode = 'start' }) {
     setError({})
   }
 
+  function setBrand(code) {
+    setState((s) => ({ ...s, form: withBrand(s.form, code, catalogue, flow.mode), payment: null, result: null, capture: null, refund: null, returned: false }))
+  }
+
+  function resetPlayground() {
+    setState((s) => ({
+      ...s,
+      form: withBrand({ ...INITIAL.form, brands: s.form.brands }, s.form.brands[0], catalogue, flow.mode),
+      amounts: { capture: '', refund: '' },
+    }))
+  }
+
   async function sendPayment() {
     setBusy('payment')
     setError({})
@@ -390,6 +414,7 @@ export function S2SFlow({ mode = 'start' }) {
         ...sendForm,
         amount,
         merchantTransactionId: form.merchantTransactionId || newMerchantTransactionId(),
+        credentials,
       })
       // Stay on step 1 so the response can be read; the next step is ready below
       setState((s) => ({
@@ -399,7 +424,6 @@ export function S2SFlow({ mode = 'start' }) {
         capture: null,
         refund: null,
         returned: false,
-        amounts: { capture: '', refund: '' },
       }))
     } catch (e) {
       setError({ payment: e.message })
@@ -420,7 +444,7 @@ export function S2SFlow({ mode = 'start' }) {
     setBusy(kind)
     setError({})
     try {
-      let data = await postJson(`/api/payments/${id}`, { paymentType, amount: value, currency: sentCurrency })
+      let data = await postJson(`/api/payments/${id}`, { paymentType, amount: value, currency: sentCurrency, credentials })
       setState((s) => ({ ...s, [kind]: data }))
     } catch (e) {
       setError({ [kind]: e.message })
@@ -435,31 +459,23 @@ export function S2SFlow({ mode = 'start' }) {
   }
 
   let apiHost = config?.apiHost || 'eu-test.oppwa.com'
-  let entityShown = ENTITY_SHOWN
-  let requestCurl = config ? buildCurl({ url: `https://${apiHost}/v1/payments`, params: previewParams }) : ''
-  let statusCurl = buildCurl({ method: 'GET', url: `https://${apiHost}${resourcePath || '/v1/payments/{id}'}`, params: [['entityId', entityShown]] })
+  let base = `https://${apiHost}`
+  let requestVariants = config ? requestCode({ url: `${base}/v1/payments`, params: previewParams }) : null
+  let statusVariants = requestCode({ method: 'GET', url: `${base}/v1/payments/${statusId || '{id}'}`, params: [['entityId', ENTITY_SHOWN]] })
   let snippet = redirectSnippet(redirect)
-  let redirectHost = ''
-  try {
-    redirectHost = redirect?.url ? new URL(redirect.url).host : ''
-  } catch {}
   let paidBrand = catalogue.find((b) => b.code === payment?.response?.paymentBrand)
   let paidBrandTitle = [paidBrand?.name || 'Payment page', payment?.response?.amount && `${payment.response.amount} ${payment.response.currency || ''}`]
     .filter(Boolean)
     .join(' · ')
-  let backOfficeCurl = (id, type, kind) =>
-    buildCurl({
-      url: `https://${apiHost}/v1/payments/${id || '{id}'}`,
-      params: [
-        ['entityId', entityShown],
-        ['amount', state.amounts?.[kind] || sentAmount],
-        ['currency', sentCurrency],
-        ['paymentType', type],
-        ...(config?.testMode ? [['testMode', config.testMode]] : []),
-      ],
-    })
-  let captureCurl = backOfficeCurl(paymentId, 'CP', 'capture')
-  let refundCurl = backOfficeCurl(refundTargetId, 'RF', 'refund')
+  let backOfficeParams = (type, kind) => [
+    ['entityId', ENTITY_SHOWN],
+    ['amount', state.amounts?.[kind] || sentAmount],
+    ['currency', sentCurrency],
+    ['paymentType', type],
+    ...(config?.testMode ? [['testMode', config.testMode]] : []),
+  ]
+  let captureVariants = requestCode({ url: `${base}/v1/payments/${paymentId || '{id}'}`, params: backOfficeParams('CP', 'capture') })
+  let refundVariants = requestCode({ url: `${base}/v1/payments/${refundTargetId || '{id}'}`, params: backOfficeParams('RF', 'refund') })
   let setAmount = (kind, v) => setState((s) => ({ ...s, amounts: { ...s.amounts, [kind]: v } }))
   let cart = cartSpec(form.brands)
   let cartRequired = Boolean(cart?.required.length)
@@ -470,58 +486,104 @@ export function S2SFlow({ mode = 'start' }) {
   let manage = stepOf('manage')
   let modeInfo = MODES.find((m) => m.value === flow.mode)
   let flowInfo = modeInfo.flows.find((f) => f.value === flow.tx)
+  let isAsync = flow.mode === 'async'
 
-  // The chosen brand's own fields, shown in their parameter groups
+  // Body parameters for step 1: the basic payment parameters, the brand's own fields
+  // (from the KB fields mapping) and its cart, with the formats from the reference
   let specs = brand ? fieldSpecs([brand.code], flow.mode) : []
-  let missingIn = (group) => missing.filter((k) => groupOf(k) === group).length
-  let basicSpecs = specs.filter((x) => groupOf(x.key) === 'basic')
-  let fieldRows = (group) => (
-    <BrandFieldRows
-      form={{ ...form, mode: flow.mode }}
-      setForm={({ mode: _mode, ...f }) => setForm(f)}
-      catalogue={catalogue}
-      idPrefix="s2s"
-      missing={missing}
-      filter={(x) => groupOf(x.key) === group}
-    />
+  let doc = (key, extra = {}) => ({ name: key, ...requestDoc(key), ...extra })
+  let bodyRows = [
+    { doc: doc('amount', { req: 'M' }), value: amount, note: sendForm.extras.cart ? 'Set by the cart total.' : null },
+    { doc: doc('currency', { req: 'M' }), value: form.currency, note: brand ? `${brand.name} takes ${brand.currencies.join(', ')}.` : null },
+    { doc: doc('paymentBrand', { req: 'M' }), value: brand?.code },
+    { doc: doc('paymentType', { req: 'M' }), value: flow.tx, note: PAYMENT_TYPES[flow.tx] },
+    { doc: doc('merchantTransactionId', { req: 'C' }), value: form.merchantTransactionId, note: 'The demo generates one if you leave it empty.' },
+    {
+      doc: doc('shopperResultUrl', { req: isAsync ? 'M' : 'C' }),
+      value: SHOPPER_RESULT_URL_SHOWN,
+      note: isAsync ? 'The gateway adds the payment’s id and resourcePath to it.' : 'Not used when there’s no redirect.',
+    },
+    ...specs.map((spec) => ({
+      doc: doc(spec.key, { req: spec.req }),
+      value: String(form.fields[spec.key] ?? '').trim(),
+      note: [spec.hint, spec.type === 'select' && spec.options.length <= 6 && `Values: ${spec.options.join(', ')}.`].filter(Boolean).join(' ') || null,
+      missing: missing.includes(spec.key),
+    })),
+    ...(cart
+      ? cart.fields.map((k) => ({
+          doc: doc(`cart.items[n].${k}`, { req: cartRequired ? 'M' : 'O' }),
+          value: sentValues[`cart.items[0].${k}`],
+          missing: cartRequired && missing.some((m) => m === 'cart.items' || m.endsWith(`].${k}`)),
+          note: k === 'name' && !cartRequired && !sendForm.extras.cart ? 'Not sent: switch the cart on in the Playground to send it.' : null,
+        }))
+      : []),
+  ]
+  let testModeRow = config?.testMode && (
+    <ParamGroup title="Testing">
+      <ParamDoc doc={{ name: 'testMode', ...REQUEST_DOCS.testMode, req: 'T' }} value={config.testMode} />
+    </ParamGroup>
   )
-  let testModeGroup = (text) =>
-    config?.testMode && (
-      <ParamGroup title="Testing" preview={config.testMode}>
-        <ParamRow name="testMode" req="T" control={<FixedValue>{config.testMode}</FixedValue>}>
-          {text}
-        </ParamRow>
-      </ParamGroup>
-    )
-  let backOfficeGroups = (kind, type, text) => (
+  let pathId = (value, note) => <ParamList className="not-prose my-6 border-y border-zinc-900/5 dark:border-white/5">
+    <ParamDoc doc={{ ...REQUEST_DOCS.id, name: 'id', req: 'M' }} value={value} note={note} />
+  </ParamList>
+  let backOfficeGroups = (kind, type, notes) => (
     <ParamGroups>
-      <ParamGroup title="Basic payment" preview={preview(`${state.amounts?.[kind] || sentAmount} ${sentCurrency}`, type)}>
-        <ParamRow
-          name="amount"
-          type="decimal"
-          req="M"
-          control={<AmountRow id={`s2s-${kind}-amount`} value={state.amounts?.[kind] || sentAmount} onChange={(v) => setAmount(kind, v)} />}
-        >
-          {text.amount}
-        </ParamRow>
-        <ParamRow name="currency" req="M" control={<FixedValue>{sentCurrency}</FixedValue>}>
-          {text.currency}
-        </ParamRow>
-        <ParamRow name="paymentType" req="M" control={<FixedValue>{type}</FixedValue>}>
-          {text.paymentType}
-        </ParamRow>
+      <ParamGroup title="Basic payment">
+        <ParamDoc doc={doc('amount', { req: 'M' })} value={state.amounts?.[kind] || sentAmount} note={notes.amount} />
+        <ParamDoc doc={doc('currency', { req: 'M' })} value={sentCurrency} note={notes.currency} />
+        <ParamDoc doc={doc('paymentType', { req: 'M' })} value={type} note={PAYMENT_TYPES[type]} />
       </ParamGroup>
-      {testModeGroup(text.testMode)}
+      {testModeRow}
     </ParamGroups>
   )
+  let playgroundLink = (focus, text = 'Playground') => (
+    <button type="button" onClick={() => openPlayground(focus)} className="font-semibold text-emerald-600 hover:text-emerald-500 dark:text-emerald-400 dark:hover:text-emerald-300">
+      {text}
+    </button>
+  )
+  let sendHint = !canSend ? (
+    <span className="text-xs text-zinc-400">
+      {config && !config.configured && !creds.useOwn ? 'Add your test credentials in the ' : 'Enter your test credentials in the '}
+      <button type="button" onClick={() => openPlayground('credentials')} className="font-medium text-zinc-200 underline decoration-white/30 underline-offset-2 hover:decoration-white">
+        Playground
+      </button>
+    </span>
+  ) : null
+
+  let pg = {
+    config,
+    creds,
+    setCreds,
+    flow,
+    setFlow,
+    eligible,
+    brand,
+    onBrand: setBrand,
+    catalogue,
+    form,
+    setForm,
+    amount,
+    cartDriven: sendForm.extras.cart,
+    missing,
+    cart,
+    cartRequired,
+    amounts: state.amounts || INITIAL.amounts,
+    setAmount,
+    sentAmount,
+    sentCurrency,
+    onReset: resetPlayground,
+  }
 
   return (
     <>
       {config && !config.configured && (
-        <Note tone="amber">Payment requests are off. Add ENTITY_ID and ACCESS_TOKEN in Vercel under Settings, Environment Variables, then redeploy.</Note>
+        <Note tone="amber">
+          The demo’s credentials aren’t set on this server. Use your own test credentials in the {playgroundLink('credentials')}, or add ENTITY_ID and
+          ACCESS_TOKEN in Vercel under Settings, Environment Variables, then redeploy.
+        </Note>
       )}
 
-      {/* Payment workflow: an overview, the use case to try, and the requests it makes */}
+      {/* Payment workflow: an overview, the requests in the flow, and the use case to try */}
       <Heading level={2} id="payment-workflow">
         Payment workflow
       </Heading>
@@ -530,20 +592,20 @@ export function S2SFlow({ mode = 'start' }) {
         POST request, redirects the shopper to the payment brand when the response asks for it, and gets the payment status with a GET request.
         Back-office requests on the same payment capture or refund it.
       </p>
-      <h3>Use cases</h3>
-      <p>Choose how the shopper completes the payment, then the transaction flow. The steps below follow your choice.</p>
-      <FlowCards modes={MODES} mode={flow.mode} tx={flow.tx} onChange={setFlow} />
       <h3>Transaction flow model</h3>
       <p>
         The requests in this flow, between the shopper, the merchant server, the payment gateway and the payment brand. Numbered requests are the
         steps below.
       </p>
       <SequenceDiagram title={`${modeInfo.title} · ${flowInfo.title}`} messages={sequence(flow, steps)} />
+      <h3>Use cases</h3>
+      <p>Choose how the shopper completes the payment, then the transaction flow. The steps below follow your choice.</p>
+      <FlowCards modes={MODES} mode={flow.mode} tx={flow.tx} onChange={setFlow} />
 
       <hr />
 
       {/* Send the payment */}
-      <Heading level={2} id={send.id} step={send.step} tag="POST" label="/v1/payments">
+      <Heading level={2} id={send.id} step={send.step} tag="POST">
         {send.title}
       </Heading>
       <Row>
@@ -555,160 +617,64 @@ export function S2SFlow({ mode = 'start' }) {
                 ? 'Initiate a server-to-server POST request with the required payment data, payment type PA and your shopperResultUrl. The response is pending and carries the redirect details for the next step. Once the shopper approves, the amount is reserved until you capture it.'
                 : 'Initiate a server-to-server POST request with the required payment data and your shopperResultUrl. The response is pending and carries the redirect details for the next step.'}
           </p>
-          <div className="not-prose mt-8">
-            <label htmlFor="s2s-brand" className="mb-2 block text-sm font-medium text-zinc-900 dark:text-white">
-              Payment brand
-            </label>
-            <BrandSelect
-              id="s2s-brand"
-              brands={eligible}
-              selected={brand ? [brand.code] : []}
-              showDetails={false}
-              compact
-              onChange={([code]) =>
-                setState((s) => ({ ...s, form: withBrand(s.form, code, catalogue, flow.mode), payment: null, result: null, capture: null, refund: null }))
-              }
-            />
-          </div>
-          <BrandFacts brand={brand} />
+          <h3>Properties</h3>
+          <RequestProperties method="POST" path="/v1/payments" base={base} />
           <h3>Body parameters</h3>
           <p>
-            Required and optional {brand ? `${brand.name} ` : ''}parameters. For further details refer to{' '}
+            Open the {playgroundLink('payment')} to choose the payment brand, currency and amount, fill in the brand’s fields, or use your own test
+            credentials. The parameters below are for {brand ? brand.name : 'the chosen payment brand'}. For further details refer to{' '}
             <a href={HELP_CENTRE_URL} target="_blank" rel="noreferrer">
               Ecommerce Payment Methods
             </a>
             .
           </p>
           <ParamGroups key={`${brand?.code}-${flow.mode}-${flow.tx}`}>
-            <ParamGroup
-              title="Basic payment"
-              missing={missingIn('basic')}
-              preview={preview(`${amount} ${form.currency}`, flow.tx, brand?.code, basicSpecs.map((x) => form.fields[x.key]))}
-            >
-              <ParamRow
-                name="amount"
-                type="decimal"
-                req="M"
-                control={<AmountRow id="s2s-amount" value={amount} readOnly={sendForm.extras.cart} onChange={(v) => setForm({ ...form, amount: v })} />}
-              >
-                The amount to charge, with two decimals.{sendForm.extras.cart ? ' Set by the cart total.' : ''}
-              </ParamRow>
-              <ParamRow
-                name="currency"
-                req="M"
-                control={
-                  <FieldBox>
-                    <SelectMenu
-                      id="s2s-currency"
-                      variant="bare"
-                      fullWidth
-                      className="-mx-1.5"
-                      aria-label="currency"
-                      options={(brand?.currencies || ['EUR']).map((c) => ({ value: c, label: c }))}
-                      value={form.currency}
-                      onChange={(v) => setForm({ ...form, currency: v })}
-                      searchPlaceholder="Search currencies"
-                      renderValue={(o) => <span className="flex-auto text-left font-mono text-sm text-zinc-900 dark:text-white">{o?.value || form.currency}</span>}
-                    />
-                  </FieldBox>
-                }
-              >
-                The three-letter ISO 4217 currency code.{brand ? ` ${brand.name} takes ${brand.currencies.join(', ')}.` : ''}
-              </ParamRow>
-              <ParamRow name="paymentBrand" req="M" control={<FixedValue>{brand?.code || '—'}</FixedValue>}>
-                The payment brand selected above.
-              </ParamRow>
-              <ParamRow name="paymentType" req="M" control={<FixedValue>{flow.tx}</FixedValue>}>
-                {flow.tx === 'PA' ? 'PA pre-authorizes the amount for a later capture.' : 'DB debits the shopper’s account.'} Set by the transaction flow.
-              </ParamRow>
-              <ParamRow
-                name="merchantTransactionId"
-                req="O"
-                control={
-                  <FieldBox>
-                    <input
-                      id="s2s-mtid"
-                      type="text"
-                      autoComplete="off"
-                      spellCheck="false"
-                      placeholder="Generated if empty"
-                      value={form.merchantTransactionId}
-                      onChange={(e) => setForm({ ...form, merchantTransactionId: e.target.value })}
-                      className={bareInputClass}
-                    />
-                  </FieldBox>
-                }
-              >
-                Your reference for the payment, often used for reconciliation.
-              </ParamRow>
-              <ParamRow name="shopperResultUrl" type="url" req="M" control={<FixedValue>{SHOPPER_RESULT_URL_SHOWN}</FixedValue>}>
-                Your page the shopper is sent back to after the payment brand. The gateway adds the payment’s id and resourcePath to it.
-                {flow.mode === 'sync' ? ' Not used when there’s no redirect.' : ''}
-              </ParamRow>
-              {fieldRows('basic')}
+            <ParamGroup title="Basic payment" missing={missing.length}>
+              {bodyRows.map((r) => (
+                <ParamDoc key={r.doc.name} doc={r.doc} value={r.value} note={r.note} missing={r.missing} onPlayground={() => openPlayground('fields')} />
+              ))}
             </ParamGroup>
-            {FIELD_GROUPS.map((g) => {
-              let list = specs.filter((x) => g.test(x.key))
-              if (!list.length) return null
-              return (
-                <ParamGroup key={g.id} title={g.title} missing={missingIn(g.id)} preview={preview(list.map((x) => form.fields[x.key]))}>
-                  {fieldRows(g.id)}
-                </ParamGroup>
-              )
-            })}
-            {cart && (
-              <ParamGroup
-                title="Cart"
-                missing={missingIn('cart')}
-                preview={sendForm.extras.cart ? `${form.cart.length} ${form.cart.length === 1 ? 'item' : 'items'} · ${cartTotal(form.cart)} ${form.currency}` : 'Not sent'}
-              >
-                <ParamRow
-                  wide
-                  name="cart.items[n]"
-                  type="array"
-                  req={cartRequired ? 'M' : 'O'}
-                  control={
-                    <div className="space-y-3">
-                      {!cartRequired && (
-                        <label className="flex items-center gap-3 text-sm text-zinc-700 dark:text-zinc-300">
-                          <Toggle
-                            checked={form.extras.cart}
-                            label="Send cart items"
-                            onChange={(v) => setForm({ ...form, extras: { ...form.extras, cart: v } })}
-                          />
-                          Send cart items
-                        </label>
-                      )}
-                      {sendForm.extras.cart && <CartEditor form={form} setForm={setForm} missing={missing} />}
-                    </div>
-                  }
-                >
-                  The items in the order, each with its {cart.fields.join(', ')}. When you send a cart, the amount is the cart total.
-                </ParamRow>
-              </ParamGroup>
-            )}
-            {testModeGroup('Test only: EXTERNAL sends the payment to the PPRO simulator. Leave it out in production.')}
+            {testModeRow}
           </ParamGroups>
+          <h3>Response</h3>
+          <p>
+            The payment the gateway returns.{' '}
+            {isAsync ? 'While it’s pending, redirect carries what the next step needs.' : 'There’s no redirect: it stays pending until the shopper approves.'}
+          </p>
+          <ResponseGroup docs={responseDocs({ redirect: isAsync, sentParams: previewParams })} response={payment?.response} />
         </Col>
         <Col sticky>
           <CodeWindow
             title="Request"
             tag="POST"
-            label="/v1/payments"
-            code={requestCurl}
-            html={highlightCurl(requestCurl)}
+            label={<UrlLabel base={base} path="/v1/payments" />}
+            variants={requestVariants}
+            lineNumbers
+            onPlayground={() => openPlayground()}
             empty="Loading…"
             footer={
               <div className="flex flex-wrap items-center gap-3">
-                <SendButton onClick={sendPayment} disabled={!config?.configured || !brand || missing.length > 0 || busy === 'payment'}>
+                <SendButton onClick={sendPayment} disabled={!canSend || !brand || missing.length > 0 || busy === 'payment'}>
                   {busy === 'payment' ? 'Sending…' : 'Send request'}
                 </SendButton>
-                <MissingFieldsHint missing={missing} />
+                {sendHint ||
+                  (missing.length > 0 && (
+                    <span className="text-xs text-zinc-400">
+                      Fill in {missing.length === 1 ? 'the required field' : `${missing.length} required fields`} in the{' '}
+                      <button
+                        type="button"
+                        onClick={() => openPlayground('fields')}
+                        className="font-medium text-zinc-200 underline decoration-white/30 underline-offset-2 hover:decoration-white"
+                      >
+                        Playground
+                      </button>
+                    </span>
+                  ))}
                 {payment && (
                   <button
                     type="button"
                     onClick={() => {
-                      setState((s) => ({ ...INITIAL, flow: s.flow, form: s.form }))
+                      setState((s) => ({ ...INITIAL, flow: s.flow, form: s.form, amounts: s.amounts }))
                       setError({})
                     }}
                     className="ml-auto text-xs font-medium text-zinc-400 transition hover:text-white"
@@ -722,11 +688,30 @@ export function S2SFlow({ mode = 'start' }) {
           <ErrorNote message={error.payment} />
           <CodeWindow
             title="Response"
-            status={panelStatus(payment, redirect ? 'Pending redirect' : 'Pending')}
             code={payment ? JSON.stringify(payment.response, null, 2) : ''}
             html={payment ? highlightJson(payment.response) : ''}
             empty="Response Details"
           />
+          {payment &&
+            (payment.status === 'pending' ? (
+              redirect ? (
+                <StepNote status="pending" title="Pending redirect.">
+                  Continue to <StepLink step={redirectStep} /> to redirect the shopper.
+                </StepNote>
+              ) : (
+                <StepNote status="pending" title="Pending.">
+                  The shopper approves the payment in the app. Continue to <StepLink step={status} /> to retrieve the payment status.
+                </StepNote>
+              )
+            ) : payment.status === 'success' ? (
+              <StepNote status="success" title="Successful.">
+                Continue to <StepLink step={status} /> to retrieve the payment status.
+              </StepNote>
+            ) : (
+              <StepNote status="failed" title="Rejected.">
+                {resultText(payment)}
+              </StepNote>
+            ))}
         </Col>
       </Row>
 
@@ -734,7 +719,7 @@ export function S2SFlow({ mode = 'start' }) {
       {redirectStep && (
         <>
           <hr />
-          <Heading level={2} id={redirectStep.id} step={redirectStep.step} label={redirect ? `${redirectMethod(redirect)} redirect.url` : 'redirect'}>
+          <Heading level={2} id={redirectStep.id} step={redirectStep.step}>
             {redirectStep.title}
           </Heading>
           <Row>
@@ -745,22 +730,17 @@ export function S2SFlow({ mode = 'start' }) {
                 drawer, so you stay on this page.
               </p>
               <h3>Response parameters</h3>
+              <p>The redirect object from step 1’s response.</p>
               <ParamGroups>
-                <ParamGroup title="Redirect" preview={redirect ? preview(redirectMethod(redirect), redirectHost) : null}>
-                  <Property split name="redirect.url" type="url" control={redirect && <FixedValue>{redirect.url}</FixedValue>}>
-                    The payment brand’s page to send the shopper to.
-                  </Property>
-                  <Property split name="redirect.method" type="string" control={redirect && <FixedValue>{redirectMethod(redirect)}</FixedValue>}>
-                    GET or POST. If it’s missing, use POST when there are parameters and GET when there aren’t.
-                  </Property>
-                  <Property
-                    split
-                    name="redirect.parameters"
-                    type="array"
-                    control={redirect && <FixedValue>{(redirect.parameters || []).map((x) => x.name).join(', ') || 'None'}</FixedValue>}
-                  >
-                    Name and value pairs to pass on unchanged: query parameters for GET, hidden form fields for POST.
-                  </Property>
+                <ParamGroup title="Redirect">
+                  {REDIRECT_DOC.children.map((d) => (
+                    <ParamDoc
+                      key={d.name}
+                      doc={d}
+                      prefix="redirect."
+                      value={d.name === 'method' ? redirect?.method : redirect?.[d.name]}
+                    />
+                  ))}
                 </ParamGroup>
               </ParamGroups>
               {paymentId && payment?.status === 'pending' && !redirect && (
@@ -782,19 +762,9 @@ export function S2SFlow({ mode = 'start' }) {
               />
               <ErrorNote message={error.redirect} />
               {(state.returned || (mode === 'return' && resourcePath)) && (
-                <div className="not-prose mt-4 flex items-start gap-2.5 rounded-xl bg-green-50/70 px-4 py-3 text-sm text-green-900 ring-1 ring-green-600/15 ring-inset dark:bg-green-400/5 dark:text-green-200 dark:ring-green-400/15">
-                  <svg viewBox="0 0 16 16" fill="none" aria-hidden="true" className="mt-0.5 size-4 flex-none text-green-600 dark:text-green-400">
-                    <circle cx="8" cy="8" r="6.25" stroke="currentColor" strokeWidth="1.25" />
-                    <path d="m5.75 8.25 1.5 1.5 3-3.25" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                  <p>
-                    <span className="font-medium">Redirect complete.</span> Continue to{' '}
-                    <a href={`#${status.id}`} className="font-medium underline decoration-green-600/30 underline-offset-2 hover:decoration-green-600">
-                      step {status.step}
-                    </a>{' '}
-                    to retrieve the payment status.
-                  </p>
-                </div>
+                <StepNote status="success" title="Redirect complete.">
+                  Continue to <StepLink step={status} /> to retrieve the payment status.
+                </StepNote>
               )}
             </Col>
           </Row>
@@ -804,7 +774,7 @@ export function S2SFlow({ mode = 'start' }) {
 
       {/* Payment status */}
       <hr />
-      <Heading level={2} id={status.id} step={status.step} tag="GET" label={resourcePath || '/v1/payments/{id}'}>
+      <Heading level={2} id={status.id} step={status.step} tag="GET">
         {status.title}
       </Heading>
       <Row>
@@ -815,78 +785,73 @@ export function S2SFlow({ mode = 'start' }) {
               : 'Once the payment is processed, the shopper is redirected to your shopperResultUrl with the id and resourcePath parameters. Send a GET request to the resourcePath with your entityId to get the payment result. A payment can stay pending for a while: check again, or rely on the webhook in production.'}{' '}
             The gateway allows two status checks a minute for each payment.
           </p>
-          <h3>Response parameters</h3>
+          <h3>Properties</h3>
+          <RequestProperties method="GET" path="/v1/payments/{id}" base={base} />
+          <h3>Path parameters</h3>
+          {pathId(statusId, `The id from step ${send.step}’s response.`)}
+          <h3>Response</h3>
           <p>
-            The same for every payment brand. What changes is the payment type, the redirect (only while an asynchronous payment is pending),
-            the customer and cart details you sent, and the result details, which follow the payment’s state. Result details appear when the
-            entity shows connector details in responses.
+            The same for every payment brand. What changes is the payment type, the redirect (only while an asynchronous payment is pending), the
+            customer and cart details you sent, and the result details, which follow the payment’s state.
           </p>
-          <ParamGroups>
-            {responseGroups(flow).map((g) => (
-              <ParamGroup
-                key={g.title}
-                title={g.title}
-                preview={
-                  state.result
-                    ? preview(
-                        g.rows
-                          .filter(([name]) => !['id', 'ndc', 'buildNumber'].includes(name))
-                          .slice(0, 3)
-                          .map(([name]) => valueAt(state.result.response, name)),
-                      )
-                    : null
-                }
-              >
-                {g.rows.map(([name, req, text, type = 'string']) => {
-                  let value = valueAt(state.result?.response, name)
-                  return (
-                    <Property
-                      split
-                      key={name}
-                      name={name}
-                      type={type}
-                      badge={<ReqText req={req} />}
-                      control={value !== undefined && value !== '' ? <FixedValue>{String(value)}</FixedValue> : null}
-                    >
-                      {text}
-                    </Property>
-                  )
-                })}
-              </ParamGroup>
-            ))}
-          </ParamGroups>
+          <ResponseGroup docs={responseDocs({ redirect: isAsync, sentParams: previewParams })} response={state.result?.response} />
         </Col>
         <Col sticky>
           <CodeWindow
             title="Request"
             tag="GET"
-            label={resourcePath || '/v1/payments/{id}'}
-            code={statusCurl}
-            html={highlightCurl(statusCurl)}
+            label={<UrlLabel base={base} path="/v1/payments/" id={statusId || ''} />}
+            variants={statusVariants}
+            lineNumbers
+            onPlayground={() => openPlayground('credentials')}
             footer={
-              <SplitButton
-                primary={{
-                  label: busy === 'status' ? 'Sending…' : 'Send request',
-                  onClick: () => checkStatus(),
-                  disabled: !resourcePath || busy === 'status' || !config?.configured,
-                }}
-                secondary={{
-                  label: 'Check status',
-                  icon: <RefreshIcon className={clsx('size-3.5 flex-none', busy === 'status' && 'animate-spin')} />,
-                  onClick: () => checkStatus(),
-                  disabled: !state.result || busy === 'status',
-                }}
-              />
+              <div className="flex flex-wrap items-center gap-3">
+                <SplitButton
+                  primary={{
+                    label: busy === 'status' ? 'Sending…' : 'Send request',
+                    onClick: () => checkStatus(),
+                    disabled: !resourcePath || busy === 'status' || !canSend,
+                  }}
+                  secondary={{
+                    label: 'Check status',
+                    icon: <RefreshIcon className={clsx('size-3.5 flex-none', busy === 'status' && 'animate-spin')} />,
+                    onClick: () => checkStatus(),
+                    disabled: !state.result || busy === 'status' || !canSend,
+                  }}
+                />
+                {sendHint}
+              </div>
             }
           />
           <ErrorNote message={error.status} />
           <CodeWindow
             title="Response"
-            status={panelStatus(state.result)}
             code={state.result ? JSON.stringify(state.result.response, null, 2) : ''}
             html={state.result ? highlightJson(state.result.response) : ''}
             empty="Response Details"
           />
+          {state.result &&
+            (state.result.status === 'success' ? (
+              <StepNote status="success" title="Successful.">
+                {capture ? (
+                  <>
+                    Continue to <StepLink step={capture} /> to capture the payment.
+                  </>
+                ) : (
+                  <>
+                    Optionally, continue to <StepLink step={manage} /> to refund it.
+                  </>
+                )}
+              </StepNote>
+            ) : state.result.status === 'pending' ? (
+              <StepNote status="pending" title="Still pending.">
+                {flow.mode === 'sync' ? 'The shopper hasn’t approved it yet. ' : ''}Check the status again in a moment.
+              </StepNote>
+            ) : (
+              <StepNote status="failed" title="Failed.">
+                {resultText(state.result)}
+              </StepNote>
+            ))}
         </Col>
       </Row>
 
@@ -894,45 +859,68 @@ export function S2SFlow({ mode = 'start' }) {
       {capture && (
         <>
           <hr />
-          <Heading level={2} id={capture.id} step={capture.step} tag="POST" label={`/v1/payments/${paymentId || '{id}'}`}>
+          <Heading level={2} id={capture.id} step={capture.step} tag="POST">
             {capture.title}
           </Heading>
           <Row>
             <Col>
               <p>
-                Initiate a server-to-server POST request over the pre-authorized payment, with payment type CP, to take the money.
+                Initiate a server-to-server POST request over the pre-authorized payment, with payment type CP. The reserved funds are transferred from
+                the shopper’s account to the merchant’s account.
                 {brand?.capture.length ? ` ${brand.name} allows ${brand.capture.join(' and ').toLowerCase()} captures.` : ''}
               </p>
+              <h3>Properties</h3>
+              <RequestProperties method="POST" path="/v1/payments/{id}" base={base} />
+              <h3>Path parameters</h3>
+              {pathId(paymentId, 'The id of the pre-authorization, from step 1’s response.')}
               <h3>Body parameters</h3>
+              <p>Set the capture amount in the {playgroundLink('back-office')}.</p>
               {backOfficeGroups('capture', 'CP', {
                 amount: 'The amount to capture: all of the pre-authorization, or part of it.',
                 currency: 'The pre-authorization’s currency.',
-                paymentType: 'CP captures the pre-authorization.',
-                testMode: 'Test only: must match the pre-authorization, or the gateway rejects the capture.',
               })}
+              <h3>Response</h3>
+              <ResponseGroup docs={responseDocs({ backOffice: true })} response={state.capture?.response} />
               {!approved && <p className="text-sm text-zinc-500 dark:text-zinc-400">Available once the pre-authorization is approved.</p>}
             </Col>
             <Col sticky>
               <CodeWindow
                 title="Request"
                 tag="POST"
-                label={`/v1/payments/${paymentId || '{id}'}`}
-                code={captureCurl}
-                html={highlightCurl(captureCurl)}
+                label={<UrlLabel base={base} path="/v1/payments/" id={paymentId || ''} />}
+                variants={captureVariants}
+                lineNumbers
+                onPlayground={() => openPlayground('back-office')}
                 footer={
-                  <SendButton onClick={() => backOffice('capture')} disabled={!approved || busy === 'capture'}>
-                    {busy === 'capture' ? 'Sending…' : 'Send request'}
-                  </SendButton>
+                  <div className="flex flex-wrap items-center gap-3">
+                    <SendButton onClick={() => backOffice('capture')} disabled={!approved || busy === 'capture' || !canSend}>
+                      {busy === 'capture' ? 'Sending…' : 'Send request'}
+                    </SendButton>
+                    {sendHint}
+                  </div>
                 }
               />
               <ErrorNote message={error.capture} />
               <CodeWindow
                 title="Response"
-                status={panelStatus(state.capture)}
                 code={state.capture ? JSON.stringify(state.capture.response, null, 2) : ''}
                 html={state.capture ? highlightJson(state.capture.response) : ''}
                 empty="Response Details"
               />
+              {state.capture &&
+                (state.capture.status === 'success' ? (
+                  <StepNote status="success" title="Captured.">
+                    Optionally, continue to <StepLink step={manage} /> to refund it.
+                  </StepNote>
+                ) : state.capture.status === 'pending' ? (
+                  <StepNote status="pending" title="Pending.">
+                    The payment brand is processing the capture.
+                  </StepNote>
+                ) : (
+                  <StepNote status="failed" title="Failed.">
+                    {resultText(state.capture)}
+                  </StepNote>
+                ))}
             </Col>
           </Row>
         </>
@@ -940,7 +928,7 @@ export function S2SFlow({ mode = 'start' }) {
 
       {/* Manage the payment: refund */}
       <hr />
-      <Heading level={2} id={manage.id} step={manage.step} tag="POST" label={`/v1/payments/${refundTargetId || '{id}'}`}>
+      <Heading level={2} id={manage.id} step={manage.step} tag="POST">
         {manage.title}
       </Heading>
       <Row>
@@ -954,21 +942,20 @@ export function S2SFlow({ mode = 'start' }) {
             <Note>{brand.name} doesn’t support refunds through the API.</Note>
           ) : (
             <>
+              <h3>Properties</h3>
+              <RequestProperties method="POST" path="/v1/payments/{id}" base={base} />
+              <h3>Path parameters</h3>
+              {pathId(refundTargetId, flow.tx === 'PA' ? 'The id of the capture, from its response.' : 'The id of the debit, from step 1’s response.')}
               <h3>Body parameters</h3>
+              <p>Set the refund amount in the {playgroundLink('back-office')}.</p>
               {backOfficeGroups('refund', 'RF', {
                 amount: 'The amount to refund: all of it, or part of it.',
                 currency: 'The payment’s currency.',
-                paymentType: 'RF refunds the payment.',
-                testMode: 'Test only: must match the original payment, or the gateway rejects the refund.',
               })}
+              <h3>Response</h3>
+              <ResponseGroup docs={responseDocs({ backOffice: true })} response={state.refund?.response} />
               {!refundReady && (
                 <p className="text-sm text-zinc-500 dark:text-zinc-400">Available once the {flow.tx === 'PA' ? 'capture' : 'payment'} is successful.</p>
-              )}
-              {state.refund?.status === 'pending' && (
-                <Note>
-                  The refund was accepted and is pending (000.200.001) while the payment brand processes it. The final result arrives by webhook in
-                  production.
-                </Note>
               )}
             </>
           )}
@@ -977,25 +964,42 @@ export function S2SFlow({ mode = 'start' }) {
           <CodeWindow
             title="Request"
             tag="POST"
-            label={`/v1/payments/${refundTargetId || '{id}'}`}
-            code={refundCurl}
-            html={highlightCurl(refundCurl)}
+            label={<UrlLabel base={base} path="/v1/payments/" id={refundTargetId || ''} />}
+            variants={refundVariants}
+            lineNumbers
+            onPlayground={() => openPlayground('back-office')}
             footer={
-              <SendButton onClick={() => backOffice('refund')} disabled={!refundReady || !brand?.refunds.length || busy === 'refund'}>
-                {busy === 'refund' ? 'Sending…' : 'Send request'}
-              </SendButton>
+              <div className="flex flex-wrap items-center gap-3">
+                <SendButton onClick={() => backOffice('refund')} disabled={!refundReady || !brand?.refunds.length || busy === 'refund' || !canSend}>
+                  {busy === 'refund' ? 'Sending…' : 'Send request'}
+                </SendButton>
+                {sendHint}
+              </div>
             }
           />
           <ErrorNote message={error.refund} />
           <CodeWindow
             title="Response"
-            status={panelStatus(state.refund)}
             code={state.refund ? JSON.stringify(state.refund.response, null, 2) : ''}
             html={state.refund ? highlightJson(state.refund.response) : ''}
             empty="Response Details"
           />
+          {state.refund &&
+            (state.refund.status === 'success' ? (
+              <StepNote status="success" title="Refunded." />
+            ) : state.refund.status === 'pending' ? (
+              <StepNote status="pending" title="Refund pending.">
+                The refund was accepted (000.200.001) while the payment brand processes it. The final result arrives by webhook in production.
+              </StepNote>
+            ) : (
+              <StepNote status="failed" title="Failed.">
+                {resultText(state.refund)}
+              </StepNote>
+            ))}
         </Col>
       </Row>
+
+      <Playground open={playground.open} focus={playground.focus} onClose={() => setPlayground((p) => ({ ...p, open: false }))} pg={pg} />
     </>
   )
 }

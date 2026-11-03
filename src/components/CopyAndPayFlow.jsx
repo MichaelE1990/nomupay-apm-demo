@@ -9,7 +9,7 @@ import { Col, Note, Properties, Property, Row } from '@/components/content'
 import { PanelStatus } from '@/components/forms'
 import { Heading } from '@/components/Heading'
 import { getJson, newMerchantTransactionId, postJson, usePersistentState } from '@/lib/flowState'
-import { buildCurl, highlightCurl, highlightHtml, highlightJson } from '@/lib/highlight'
+import { highlightHtml, highlightJson, requestCode } from '@/lib/highlight'
 import { buildPaymentParams, cartTotal, missingFields, usesCard, usesWallet, withBrandDefaults, withRequiredExtras } from '@/lib/request'
 import { useConfig } from '@/lib/useConfig'
 
@@ -142,12 +142,12 @@ export function CopyAndPayFlow({ mode = 'start' }) {
       })}`
     : null
 
-  let statusCurl = buildCurl({
+  let statusVariants = requestCode({
     method: 'GET',
     url: `https://${config?.apiHost || 'eu-test.oppwa.com'}${resourcePath || '/v1/checkouts/{id}/payment'}`,
     params: [['entityId', config?.entities?.[checkout?.entity || entityKind] || '{entityId}']],
   })
-  let requestCurl = config ? buildCurl({ url: `https://${config.apiHost}/v1/checkouts`, params: previewParams }) : ''
+  let requestVariants = config ? requestCode({ url: `https://${config.apiHost}/v1/checkouts`, params: previewParams }) : null
   let walletOnCardEntity = cardSelected && usesWallet(form.brands) && config?.entities?.cardDedicated
 
   return (
@@ -196,8 +196,8 @@ export function CopyAndPayFlow({ mode = 'start' }) {
             title="Request"
             tag="POST"
             label="/v1/checkouts"
-            code={requestCurl}
-            html={highlightCurl(requestCurl)}
+            variants={requestVariants}
+            lineNumbers
             empty="Loading…"
             footer={
               <div className="flex flex-wrap items-center gap-3">
@@ -289,8 +289,8 @@ export function CopyAndPayFlow({ mode = 'start' }) {
             title="Request"
             tag="GET"
             label={resourcePath || '/v1/checkouts/{id}/payment'}
-            code={statusCurl}
-            html={highlightCurl(statusCurl)}
+            variants={statusVariants}
+            lineNumbers
             footer={
               <SendButton onClick={checkStatus} disabled={!resourcePath || busy === 'status' || !config?.configured}>
                 {busy === 'status' ? 'Checking…' : state.result ? 'Check again' : 'Check status'}

@@ -21,26 +21,22 @@ function ChevronDownIcon(props) {
 // Request parameters, grouped as in the parameters reference on docs.oppwa.com
 // ---------------------------------------------------------------------------
 
-export function ParamGroups({ children }) {
-  return <div className="not-prose my-6">{children}</div>
+export function ParamGroups({ children, className }) {
+  return <div className={clsx('param-list not-prose my-6', className)}>{children}</div>
 }
 
-// One collapsible group: "Basic payment", "Customer", "Cart"…
-// missing: how many of its required parameters still need a value;
-// preview: the values in one line, shown while the group is closed
-export function ParamGroup({ title, missing = 0, preview, defaultOpen = false, children }) {
+// One collapsible group: "Basic payment", "Testing", "Response"
+// missing: how many of its required parameters still need a value
+export function ParamGroup({ title, missing = 0, defaultOpen = false, children }) {
   return (
     <Disclosure as="div" defaultOpen={defaultOpen} className="border-t border-zinc-900/10 first:border-t-0 dark:border-white/10">
       <DisclosureButton className="group flex w-full items-center gap-3 py-3.5 text-left">
         <span className="flex-none text-sm font-semibold text-zinc-900 dark:text-white">{title}</span>
         {missing > 0 && <span className="flex-none text-xs font-medium text-rose-700/75 dark:text-rose-300/70">{missing} to fill in</span>}
-        <span className="min-w-0 flex-1 truncate text-right font-mono text-xs text-zinc-400 group-data-open:invisible dark:text-zinc-500">
-          {preview}
-        </span>
-        <ChevronDownIcon className="size-4 flex-none text-zinc-500 transition group-data-open:rotate-180 dark:text-zinc-400" />
+        <ChevronDownIcon className="ml-auto size-4 flex-none text-zinc-500 transition group-data-open:rotate-180 dark:text-zinc-400" />
       </DisclosureButton>
-      <DisclosurePanel className="pb-5">
-        <ul role="list" className="m-0 list-none divide-y divide-zinc-900/5 border-t border-zinc-900/5 p-0 pt-3 dark:divide-white/5 dark:border-white/5">
+      <DisclosurePanel className="pb-3">
+        <ul role="list" className="m-0 list-none divide-y divide-zinc-900/5 border-t border-zinc-900/5 p-0 dark:divide-white/5 dark:border-white/5">
           {children}
         </ul>
       </DisclosurePanel>

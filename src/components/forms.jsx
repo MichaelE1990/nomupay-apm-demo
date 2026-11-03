@@ -391,7 +391,7 @@ const panelTone = {
   neutral: 'bg-white/5 text-zinc-400 ring-white/10',
 }
 
-function StatusIcon({ status, className }) {
+export function StatusIcon({ status, className }) {
   if (status === 'success')
     return (
       <svg viewBox="0 0 16 16" fill="none" aria-hidden="true" className={className}>

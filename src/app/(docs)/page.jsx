@@ -5,16 +5,16 @@ import { Properties, Property } from '@/components/content'
 import { Guides } from '@/components/Guides'
 import { Heading } from '@/components/Heading'
 import { HeroPattern } from '@/components/HeroPattern'
-import { buildCurl, highlightCurl } from '@/lib/highlight'
+import { requestCode } from '@/lib/highlight'
 
 export const metadata = {
-  title: 'Introduction',
+  title: 'Overview',
 }
 
 // Help Centre: where merchants find their credentials in the Nomupay Dashboard
 const CREDENTIALS_URL = 'https://support.nomupay.com/hc/en-gb/articles/8918887969297-Credential-Management'
 
-const example = buildCurl({
+const example = requestCode({
   method: 'GET',
   url: 'https://eu-test.oppwa.com/v1/payments/{id}',
   params: [['entityId', '{entity_id}']],
@@ -57,8 +57,8 @@ export default function Home() {
           Your access token, sent in the Authorization header with the Bearer scheme.
         </Property>
       </Properties>
-      <p>Here’s how to send both with cURL:</p>
-      <CodeWindow title="Example request with your credentials" code={example} html={highlightCurl(example)} />
+      <p>Here’s how to send both:</p>
+      <CodeWindow title="Example request" variants={example} lineNumbers />
       <p>
         Send test requests to eu-test.oppwa.com with your test credentials. Live requests go to eu-prod.oppwa.com with your live credentials.
       </p>

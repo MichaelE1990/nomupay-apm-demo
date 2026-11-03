@@ -4,6 +4,7 @@ import clsx from 'clsx'
 import { useEffect, useState } from 'react'
 
 import { Tag } from '@/components/Tag'
+import { useCodeLanguage, useRememberedCodeLanguage } from '@/lib/codeLanguage'
 
 // The template's original method colours (code panels keep the original look)
 const TAG_COLORS = { GET: 'emerald', POST: 'sky', PUT: 'amber', DELETE: 'rose' }
@@ -77,7 +78,39 @@ function CopyButton({ code }) {
   )
 }
 
-export function CodeWindow({ title, tag, label, code, html, empty, footer, status, className }) {
+// Numbered lines (request panels, as in the Stripe API reference). The highlighters
+// never open a span across lines, so the HTML can be split per line.
+function numbered(html) {
+  return html
+    .split('\n')
+    .map((line) => `<span class="cw-line">${line || ' '}</span>`)
+    .join('\n')
+}
+
+export function SlidersIcon(props) {
+  return (
+    <svg viewBox="0 0 16 16" fill="none" aria-hidden="true" {...props}>
+      <path
+        d="M2.75 4.5h6.5m3 0h1M2.75 11.5h1m3 0h6.5M10.75 3v3M5.25 10v3"
+        stroke="currentColor"
+        strokeWidth="1.25"
+        strokeLinecap="round"
+      />
+    </svg>
+  )
+}
+
+// variants: [{ lang, label, code, html }] shows language tabs (cURL, JavaScript);
+// onPlayground adds the Playground tab, which opens the request settings
+export function CodeWindow({ title, tag, label, code, html, variants, onPlayground, lineNumbers, empty, footer, status, className }) {
+  let lang = useCodeLanguage((s) => s.lang)
+  let setLang = useCodeLanguage((s) => s.setLang)
+  useRememberedCodeLanguage()
+  let current = variants ? variants.find((v) => v.lang === lang) || variants[0] : null
+  let shownCode = current ? current.code : code
+  let shownHtml = current ? current.html : (html ?? code)
+  let lines = shownCode ? shownCode.split('\n').length : 0
+
   return (
     <div
       className={clsx(
@@ -88,9 +121,41 @@ export function CodeWindow({ title, tag, label, code, html, empty, footer, statu
       <div className="flex min-h-[calc(--spacing(12)+1px)] flex-wrap items-center gap-x-4 border-b border-zinc-700 bg-zinc-800 px-4 dark:border-zinc-800 dark:bg-transparent">
         <h3 className="mr-auto py-3 text-xs font-semibold text-white">{title}</h3>
         {status}
+        {(variants || onPlayground) && (
+          <div role="tablist" aria-label={`${title} language`} className="-mb-px flex items-center gap-4 text-xs font-medium">
+            {variants?.map((v) => {
+              let on = v.lang === current.lang
+              return (
+                <button
+                  key={v.lang}
+                  type="button"
+                  role="tab"
+                  aria-selected={on}
+                  onClick={() => setLang(v.lang)}
+                  className={clsx(
+                    'border-b py-3 transition focus-visible:outline-none',
+                    on ? 'border-emerald-500 text-emerald-400' : 'border-transparent text-zinc-400 hover:text-zinc-300',
+                  )}
+                >
+                  {v.label}
+                </button>
+              )
+            })}
+            {onPlayground && (
+              <button
+                type="button"
+                onClick={onPlayground}
+                className="my-2 inline-flex items-center gap-1.5 rounded-full bg-white/5 px-2.5 py-1 text-zinc-200 ring-1 ring-white/10 transition ring-inset hover:bg-white/10 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-400"
+              >
+                <SlidersIcon className="size-3.5" />
+                Playground
+              </button>
+            )}
+          </div>
+        )}
       </div>
       {(tag || label) && (
-        <div className="flex h-9 items-center gap-2 border-y border-t-transparent border-b-white/7.5 bg-zinc-900 bg-white/2.5 px-4 dark:border-b-white/5 dark:bg-white/1">
+        <div className="flex h-9 min-w-0 items-center gap-2 border-y border-t-transparent border-b-white/7.5 bg-zinc-900 bg-white/2.5 px-4 dark:border-b-white/5 dark:bg-white/1">
           {tag && (
             <div className="dark flex">
               <Tag variant="small" color={TAG_COLORS[tag] || 'emerald'}>
@@ -98,17 +163,20 @@ export function CodeWindow({ title, tag, label, code, html, empty, footer, statu
               </Tag>
             </div>
           )}
-          {tag && label && <span className="h-0.5 w-0.5 rounded-full bg-zinc-500" />}
-          {label && <span className="truncate font-mono text-xs text-zinc-400">{label}</span>}
+          {tag && label && <span className="h-0.5 w-0.5 flex-none rounded-full bg-zinc-500" />}
+          {label && <span className="min-w-0 truncate font-mono text-xs text-zinc-400">{label}</span>}
         </div>
       )}
       <div className="group relative dark:bg-white/2.5">
-        {code ? (
+        {shownCode ? (
           <>
-            <pre className="max-h-[32rem] overflow-auto p-4 text-xs/5 text-white">
-              <code dangerouslySetInnerHTML={{ __html: html ?? code }} />
+            <pre
+              className={clsx('max-h-[32rem] overflow-auto p-4 text-xs/5 text-white', lineNumbers && 'cw-numbered')}
+              style={lineNumbers ? { '--cw-digits': `${String(lines).length}ch` } : undefined}
+            >
+              <code dangerouslySetInnerHTML={{ __html: lineNumbers ? numbered(shownHtml) : shownHtml }} />
             </pre>
-            <CopyButton code={code} />
+            <CopyButton code={shownCode} />
           </>
         ) : (
           <p className="p-4 text-xs/5 text-zinc-400">{empty}</p>
@@ -116,6 +184,19 @@ export function CodeWindow({ title, tag, label, code, html, empty, footer, statu
       </div>
       {footer && <div className="border-t border-white/7.5 bg-white/2.5 px-4 py-3 dark:border-white/5">{footer}</div>}
     </div>
+  )
+}
+
+// The request URL as docs.oppwa.com shows it, with the payment id marked
+export function UrlLabel({ base, path, id }) {
+  return (
+    <>
+      {base}
+      {path}
+      {id !== undefined && (
+        <span className={clsx('rounded px-1 py-0.5', id ? 'bg-white/10 text-zinc-200' : 'text-zinc-500')}>{id || '{id}'}</span>
+      )}
+    </>
   )
 }
 

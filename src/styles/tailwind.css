@@ -140,6 +140,29 @@
   --shiki-token-punctuation: oklch(92% 0.004 286.32);
 }
 
+/* Line numbers in request panels */
+.code-window .cw-numbered code {
+  counter-reset: cw-line;
+}
+.code-window .cw-line::before {
+  counter-increment: cw-line;
+  content: counter(cw-line);
+  display: inline-block;
+  width: var(--cw-digits, 1ch);
+  margin-right: 1.25rem;
+  text-align: right;
+  color: var(--color-zinc-600);
+  user-select: none;
+}
+
+/* Parameter listings: the system font at a smaller size, so long names and
+   patterns fit (the page itself stays Montserrat) */
+.param-list {
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', 'Noto Sans', Arial, sans-serif, 'Apple Color Emoji',
+    'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+}
+
 /* Server-to-server return page inside the payment drawer or a popup: show only the "you're back" panel */
 html[data-embedded] body {
   visibility: hidden;

@@ -1,14 +1,32 @@
-// Page sections shown under the active item in the sidebar (Protocol style)
+// The sidebar, organised like a help centre: a category, its sections, and the
+// articles in each section. The open article lists its own chapters (the page
+// sections below) under it.
 export const navigation = [
   {
     title: 'Guides',
-    links: [
-      { title: 'Introduction', href: '/' },
-      { title: 'COPYandPAY', href: '/copyandpay' },
-      { title: 'Server-to-server', href: '/server-to-server' },
+    sections: [
+      { title: 'Introduction', links: [{ title: 'Overview', href: '/' }] },
+      {
+        title: 'Integrations',
+        links: [
+          { title: 'COPYandPAY', href: '/copyandpay' },
+          { title: 'Server-to-server', href: '/server-to-server' },
+        ],
+      },
     ],
   },
 ]
+
+// Every article in sidebar order
+export const allPages = navigation.flatMap((category) => category.sections.flatMap((section) => section.links))
+
+// Category, section and article for a path (the breadcrumbs above an article)
+export function trail(pathname) {
+  for (let category of navigation)
+    for (let section of category.sections)
+      for (let link of section.links) if (link.href === pathname) return [category.title, section.title, link.title]
+  return null
+}
 
 export const allSections = {
   '/': [
