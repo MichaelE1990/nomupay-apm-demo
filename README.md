@@ -72,7 +72,7 @@ Set these in Vercel under **Settings → Environment Variables**, then redeploy.
 |---|---|---|
 | `ENTITY_ID` | Yes | Test entity with the payment brands enabled |
 | `ACCESS_TOKEN` | Yes | Bearer token for that entity |
-| `CARD_ENTITY_ID` | No | Entity used whenever a checkout includes cards. Falls back to `ENTITY_ID` |
+| `CARD_ENTITY_ID` | For cards | The card channel, used whenever a checkout includes cards and by Server-to-server cards. Falls back to `ENTITY_ID`, but the APM channel rejects card registrations (`100.150.203`) |
 | `CARD_ACCESS_TOKEN` | No | Token for `CARD_ENTITY_ID` if it differs. Falls back to `ACCESS_TOKEN` |
 | `API_HOST` | No | Defaults to `eu-test.oppwa.com` |
 | `TEST_MODE` | No | Defaults to `EXTERNAL` on test hosts (PPRO simulator), sent only when a payment brand is in the request. Set it empty to leave it out |

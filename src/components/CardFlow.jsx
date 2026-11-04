@@ -691,8 +691,15 @@ export function CardFlow() {
                   <>
                     {' '}
                     The entity created the registration but rejected it, which happens whatever the brand, test mode or 3D Secure option when the entity
-                    has no card registration (tokenisation) set up{creds.useOwn ? '' : ': the demo’s entity is the NomuPay Wallets one'}. Use a
-                    card-enabled NomuPay test entity in the {playgroundLink('credentials')}.
+                    isn’t a card channel with registration (tokenisation) set up
+                    {!creds.useOwn && !config?.entities?.cardDedicated ? (
+                      <>
+                        . This demo has no <code>CARD_ENTITY_ID</code> set, so cards are running on the APM (NomuPay Wallets) channel. Set it in
+                        Vercel, or enter a card channel in the {playgroundLink('credentials')}.
+                      </>
+                    ) : (
+                      <>. Check the entity is the card channel, in the {playgroundLink('credentials')}.</>
+                    )}
                   </>
                 )}
               </StepNote>
