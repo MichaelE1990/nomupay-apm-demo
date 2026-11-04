@@ -26,6 +26,18 @@ Request panels have cURL and JavaScript (Node.js fetch) tabs, kept in step acros
 4. **Capture the payment** (pre-authorization only): `POST /v1/payments/{id}` with `paymentType=CP`.
 5. **Manage the payment** (optional): a full or partial refund, `paymentType=RF`, for brands that allow refunds. Capture and refund send the same `testMode` as the payment, or the gateway answers `700.100.600`. Refunds come back pending (`000.200.001`) while the brand processes them.
 
+**Server-to-server cards** (`/server-to-server-cards`)
+
+Card-on-file for Visa and Mastercard on NomuPay, following the KB *Credential on File (COF) integration sheet* (scenarios 1.3/1.4 recurring, 1.7/1.8 unscheduled), the *NomuPay Integration Sheet* and docs.oppwa.com *Server-to-Server Registration Tokens > Tokenization during payment*. Use cases: *External 3D Secure* (the request carries 3D Secure results from your own MPI, the values from the docs sample, no redirect) or *Gateway 3D Secure* (browser data, `customer.ip` and a `shopperResultUrl`, with a redirect step and a status step), each as Debit or Pre-authorization + Capture.
+
+1. **Perform the initial payment** / **Pre-authorize the initial payment**: `POST /v1/payments` with the card, `createRegistration=true` and `standingInstruction` `INITIAL` / `CIT` (with `recurringType`, `frequency` and `expiry` for recurring). PA can send `customParameters[authorization_type]`.
+2. **Authenticate the shopper** and **Get the payment status** (gateway 3D Secure only).
+3. **Capture the payment** (pre-authorization only): `POST /v1/payments/{id}` with `paymentType=CP`. No card-on-file fields: NomuPay doesn't list scenario 1.10 and sends the Mastercard lifecycle TLID itself.
+4. **Send the repeated payment**: `POST /v1/registrations/{registrationId}/payments`, DB with `REPEATED` / `MIT`, no CVV or 3D Secure. `standingInstruction.initialTransactionId` and `agreementId` are optional over a registration; the Playground can send them.
+5. **Card-on-file identifiers**: a table of `registrationId`, `resultDetails.CardholderInitiatedTransactionID`, `resultDetails.LifecycleId` and the `standingInstruction` IDs for the initial and repeated payments, with a note explaining a missing LifecycleId (simulator vs `testMode=EXTERNAL`, or no connector details on the entity).
+
+Only the published test cards are accepted (NomuPay test data: 5555555555554444 and 4000000000000002, expiry 01/30, CVV 333; plus the 3D Secure testing guide's frictionless and challenge cards), and only on a test host. The CVV is masked in what the server sends back to the page. `testMode` is chosen in the Playground (EXTERNAL reaches NomuPay's test system; INTERNAL or not sent is the gateway's simulator) and capture and the repeated payment send the same value.
+
 The sidebar is organised like a help centre: the Guides category, its sections (Introduction; Integrations), the articles in each, and the open article's chapters under it. Breadcrumbs above each article show the same path.
 
 The introduction covers getting started and credentials (entityId and the access token as a Bearer header, from the Credentials section of the Nomupay Dashboard), and links to both guides.
@@ -35,7 +47,7 @@ The introduction covers getting started and credentials (entityId and the access
 The demo lists only the payment methods on the Help Centre's [Ecommerce Payment Methods](https://support.nomupay.com/hc/en-gb/articles/52156192050193-Ecommerce-Payment-Methods) list, which is production-based:
 
 - **Payment brands**: Afterpay (UK and US), Alipay, Alipay (HK), Alipay+, Atome, Bancontact, Bizum, Blik, Boost, Cebuana, DragonPay, DuitNow QR, ECPay, Eps, FPX, GCash, GrabPay, iDEAL, Konbini, MAE by Maybank, Maya, MB WAY, Multibanco, PayPay, Paysafecard, PayU, Przelewy 24, Satispay, SEPA Direct Debit, ShopeePay, Swish, Touch'n Go, Trustly, Twint, UPI, WeChat Pay and Wero.
-- **Cards**: Visa, Mastercard and Maestro (COPYandPAY only).
+- **Cards**: Visa, Mastercard and Maestro in COPYandPAY; Visa and Mastercard card-on-file in Server-to-server cards.
 
 UnionPay SecurePay is on the list but has no NomuPay Wallets brand in the Payment Knowledge Base, so it isn't in the demo.
 
@@ -99,4 +111,8 @@ Next.js, Tailwind CSS and Headless UI. The layout, navigation, code panels and b
 | `POST /api/payments/{id}` | Capture (CP) or refund (RF) of an earlier payment |
 | `GET /api/status?resourcePath=…&entity=…` | Payment or checkout status |
 | `POST /api/status` | Payment status with your own test credentials, which stay out of the URL |
+| `/server-to-server-cards` | Server-to-server cards guide (card-on-file) |
+| `POST /api/cards/payments` | Initial card payment with `createRegistration=true` (test cards and test host only) |
+| `POST /api/cards/payments/{id}` | Capture (CP) of a card pre-authorization |
+| `POST /api/cards/registrations/{id}/payments` | Repeated payment (MIT) over a registration |
 | `GET /api/config` | Environment summary and payment method catalogue |

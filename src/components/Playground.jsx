@@ -16,7 +16,7 @@ import { ENTITY_PATTERN, TOKEN_PATTERN } from '@/lib/flowState'
 // payment brand, currency and amount, the brand's own fields, the cart, the
 // back-office amounts and test mode. The page's requests update as values change.
 
-const CREDENTIALS_URL = 'https://support.nomupay.com/hc/en-gb/articles/8918887969297-Credential-Management'
+export const CREDENTIALS_URL = 'https://support.nomupay.com/hc/en-gb/articles/8918887969297-Credential-Management'
 
 function CheckCircleIcon(props) {
   return (
@@ -36,7 +36,7 @@ function AlertIcon(props) {
   )
 }
 
-function EyeIcon({ off, ...props }) {
+export function EyeIcon({ off, ...props }) {
   return (
     <svg viewBox="0 0 16 16" fill="none" aria-hidden="true" {...props}>
       <path d="M1.75 8S4 3.75 8 3.75 14.25 8 14.25 8 12 12.25 8 12.25 1.75 8 1.75 8Z" stroke="currentColor" strokeWidth="1.25" strokeLinejoin="round" />
@@ -47,7 +47,7 @@ function EyeIcon({ off, ...props }) {
 }
 
 // A status line in the settings, as in the design: green when all is well, amber to act on
-function Banner({ tone = 'green', children }) {
+export function Banner({ tone = 'green', children }) {
   return (
     <div
       className={clsx(
@@ -67,7 +67,7 @@ function Banner({ tone = 'green', children }) {
   )
 }
 
-function Section({ id, title, description, action, children }) {
+export function Section({ id, title, description, action, children }) {
   return (
     <section id={id} className="scroll-mt-4 space-y-4 px-5 py-5">
       <div className="flex items-start justify-between gap-4">
@@ -83,7 +83,7 @@ function Section({ id, title, description, action, children }) {
 }
 
 // Label on the left, control on the right (stacks on narrow screens)
-function Row({ label, htmlFor, hint, children }) {
+export function Row({ label, htmlFor, hint, children }) {
   return (
     <div className="grid grid-cols-1 items-center gap-x-4 gap-y-1.5 sm:grid-cols-[8rem_minmax(0,1fr)]">
       <div className="min-w-0">
@@ -100,7 +100,7 @@ function Row({ label, htmlFor, hint, children }) {
 const toNumber = (v) => Number(String(v ?? '').replace(/,/g, ''))
 
 // Minus, the value, plus: steps the amount by 1.00
-function Stepper({ id, value, onChange, readOnly }) {
+export function Stepper({ id, value, onChange, readOnly }) {
   let step = (d) => {
     let n = toNumber(value)
     if (!Number.isFinite(n)) n = 0
@@ -129,7 +129,7 @@ function Stepper({ id, value, onChange, readOnly }) {
   )
 }
 
-function TextField({ id, value, onChange, placeholder, mono = true, type = 'text', invalid, trailing }) {
+export function TextField({ id, value, onChange, placeholder, mono = true, type = 'text', invalid, trailing }) {
   return (
     <FieldBox invalid={invalid} className="flex items-center gap-2">
       <input

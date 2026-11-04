@@ -11,6 +11,7 @@ export const navigation = [
         links: [
           { title: 'COPYandPAY', href: '/copyandpay' },
           { title: 'Server-to-server', href: '/server-to-server' },
+          { title: 'Server-to-server cards', href: '/server-to-server-cards' },
         ],
       },
     ],
@@ -46,6 +47,13 @@ export const allSections = {
     { id: 'redirect-shopper', step: 2, title: 'Redirect shopper' },
     { id: 'get-the-payment-status', step: 3, title: 'Get the payment status', tag: 'GET' },
     { id: 'manage-the-payment', step: 4, title: 'Manage the payment', tag: 'POST' },
+  ],
+  // The steps follow the chosen flow; CardFlow updates this list
+  '/server-to-server-cards': [
+    { id: 'card-workflow', title: 'Payment workflow' },
+    { id: 'initial-payment', step: 1, title: 'Perform the initial payment', tag: 'POST' },
+    { id: 'repeated-payment', step: 2, title: 'Send the repeated payment', tag: 'POST' },
+    { id: 'card-on-file-identifiers', title: 'Card-on-file identifiers' },
   ],
 }
 

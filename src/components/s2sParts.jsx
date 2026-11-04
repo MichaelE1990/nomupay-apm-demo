@@ -118,7 +118,7 @@ function FlowCard({ mode, selected, onSelect, tray }) {
             : 'bg-zinc-50 hover:shadow-md hover:shadow-zinc-900/5 dark:bg-white/2.5 dark:hover:shadow-black/5',
         )}
       >
-        <ResourcePattern {...FLOW_PATTERNS[mode.value]} mouseX={mouseX} mouseY={mouseY} />
+        <ResourcePattern {...FLOW_PATTERNS[mode.icon || mode.value]} mouseX={mouseX} mouseY={mouseY} />
         <div
           className={clsx(
             'absolute inset-0 rounded-2xl ring-1 ring-inset',
@@ -133,7 +133,7 @@ function FlowCard({ mode, selected, onSelect, tray }) {
           className="relative flex w-full flex-col justify-start rounded-2xl px-4 pt-5 pb-4 text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-500"
         >
           <span className="flex items-start justify-between">
-            <ResourceIcon icon={FLOW_ICONS[mode.value]} />
+            <ResourceIcon icon={FLOW_ICONS[mode.icon || mode.value]} />
             <Radio on={selected} />
           </span>
           <span className="mt-6 block text-sm/7 font-semibold text-zinc-900 dark:text-white">{mode.title}</span>
@@ -151,7 +151,8 @@ function FlowCard({ mode, selected, onSelect, tray }) {
   )
 }
 
-// modes: [{ value, title, description, flows: [{ value, title, types: ['PA','CP'] }] }]
+// modes: [{ value, title, description, icon?, flows: [{ value, title, types: ['PA','CP'] }] }]
+// icon: 'async' (redirect) or 'sync' (no redirect); defaults to the mode's value
 export function FlowCards({ modes, mode, tx, onChange }) {
   return (
     <div role="radiogroup" aria-label="Payment flow" className="not-prose my-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:max-w-none">
@@ -300,7 +301,8 @@ function MessageRow({ message }) {
 }
 
 // messages: [{ from, to?, label, detail?, step?, href?, kind: 'request' | 'response' | 'note', optional? }]
-export function SequenceDiagram({ title, messages }) {
+// labels: optional lane names by lane id, e.g. { brand: 'NomuPay / card scheme' }
+export function SequenceDiagram({ title, messages, labels = {} }) {
   return (
     <figure className="not-prose my-6 overflow-hidden rounded-2xl xl:max-w-none bg-zinc-50 ring-1 ring-zinc-900/7.5 dark:bg-white/2.5 dark:ring-white/10">
       {title && (
@@ -319,7 +321,7 @@ export function SequenceDiagram({ title, messages }) {
           <div className="relative grid grid-cols-4 pb-5">
             {LANES.map((l) => (
               <div key={l.id} className="flex flex-col items-center gap-2">
-                <span className="text-xs font-semibold text-zinc-900 dark:text-white">{l.label}</span>
+                <span className="text-xs font-semibold text-zinc-900 dark:text-white">{labels[l.id] || l.label}</span>
                 <span aria-hidden="true" className={clsx('h-3 w-[3px] rounded-full', l.bar)} />
               </div>
             ))}

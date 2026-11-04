@@ -132,9 +132,84 @@ export const REQUEST_DOCS = {
   },
 }
 
+// Cards, card-on-file and 3D Secure (server-to-server cards). standingInstruction
+// values and conditions from the KB, Credential on File (COF) integration sheet;
+// the identifiers' mapping from the KB, NomuPay Integration Sheet
+export const CARD_REQUEST_DOCS = {
+  'card.number': { format: 'N19', pattern: '[0-9]{12,19}', text: 'The PAN or account number of the card.', example: '5555555555554444' },
+  'card.holder': { format: 'AN128', pattern: ANY(3, 128), text: 'Holder of the credit card account.', example: 'Test Shopper' },
+  'card.expiryMonth': { format: 'N2', pattern: '(0[1-9]|1[0-2])', text: 'The expiry month of the card.', example: '01' },
+  'card.expiryYear': { format: 'N4', pattern: '(19|20)([0-9]{2})', text: 'The expiry year of the card.', example: '2030' },
+  'card.cvv': { format: 'N4', pattern: '[0-9]{3,4}', text: 'The card security code or CVV. Sent on the initial payment only, never on a repeated MIT.', example: '333' },
+  createRegistration: {
+    format: 'A5',
+    pattern: 'true|false',
+    text: 'Stores the card with the payment. A successful payment returns a registrationId for later payments.',
+    example: 'true',
+  },
+  'standingInstruction.type': {
+    pattern: 'UNSCHEDULED|INSTALLMENT|RECURRING',
+    text: 'The type of card-on-file agreement.',
+    example: 'RECURRING',
+  },
+  'standingInstruction.mode': {
+    pattern: 'INITIAL|REPEATED',
+    text: 'INITIAL: the first payment of the series, with the CVV and 3D Secure. REPEATED: a subsequent payment, without shopper authentication data on an MIT.',
+    example: 'INITIAL',
+  },
+  'standingInstruction.source': { pattern: 'CIT|MIT', text: 'Who triggers the payment: the cardholder (CIT) or the merchant (MIT).', example: 'CIT' },
+  'standingInstruction.recurringType': {
+    pattern: 'STANDING_ORDER|SUBSCRIPTION',
+    text: 'Required for all Mastercard CIT and MIT recurring payments. SUBSCRIPTION: fixed amount and frequency. STANDING_ORDER: variable amount, fixed frequency.',
+    example: 'SUBSCRIPTION',
+  },
+  'standingInstruction.frequency': {
+    format: 'N4',
+    pattern: '[0-9]{4}',
+    text: 'The minimum number of days between payments. Mandatory when 3D Secure runs on a recurring payment; used in the 3D Secure request, not sent to NomuPay.',
+    example: '0030',
+  },
+  'standingInstruction.expiry': {
+    format: 'date',
+    pattern: 'yyyy-mm-dd',
+    text: 'Date after which no further payments are made. Mandatory when 3D Secure runs on a recurring payment; used in the 3D Secure request, not sent to NomuPay.',
+    example: '2035-12-31',
+  },
+  'standingInstruction.initialTransactionId': {
+    pattern: ANY(1, 64),
+    text: 'The scheme transaction ID from the initial CIT, returned in resultDetails.CardholderInitiatedTransactionID. Optional over a registration: the gateway adds it.',
+    example: '486292702388291',
+  },
+  'standingInstruction.agreementId': {
+    format: 'AN35',
+    pattern: ANY(1, 35),
+    text: 'Mastercard economically related TLID, returned in resultDetails.LifecycleId. With a registration, NomuPay fills it in automatically.',
+    example: 'f7t-wTAZTYSh0YaThWaxzw',
+  },
+  'customParameters[authorization_type]': {
+    pattern: 'FINAL_AUTHORIZATION|PRE_AUTHORIZATION',
+    text: 'PA only. On NomuPay a PA is a pre-authorisation by default; FINAL_AUTHORIZATION marks it as final, as card schemes expect for recurring payments.',
+    example: 'FINAL_AUTHORIZATION',
+  },
+  'threeDSecure.eci': { format: 'N2', pattern: '[0-9]{2}', text: 'The Electronic Commerce Indicator from the 3D Secure authentication.', example: '05' },
+  'threeDSecure.authenticationStatus': { pattern: 'Y|A|N|U|R', text: 'The 3D Secure transaction status. Y: authenticated.', example: 'Y' },
+  'threeDSecure.version': { pattern: '2.1.0|2.2.0', text: 'The 3D Secure protocol version.', example: '2.2.0' },
+  'threeDSecure.dsTransactionId': { format: 'AN36', text: 'The Directory Server transaction ID from the authentication.', example: 'c75f23af-9454-43f6-ba17-130ed529507e' },
+  'threeDSecure.acsTransactionId': { format: 'AN36', text: 'The ACS transaction ID from the authentication.', example: '2c42c553-176f-4f08-af6c-f9364ecbd0e8' },
+  'threeDSecure.verificationId': { format: 'AN128', text: 'The authentication value (CAVV or AAV) from the authentication.', example: 'MTIzNDU2Nzg5MDEyMzQ1Njc4OTA=' },
+  'threeDSecure.amount': { format: 'N10.N2', pattern: '[0-9]{1,10}(\\.[0-9]{2})?', text: 'The amount the shopper authenticated.', example: '10.00' },
+  'threeDSecure.currency': { format: 'A3', pattern: '[A-Z]{3}', text: 'The currency of the authenticated amount.', example: 'EUR' },
+  'threeDSecure.flow': { pattern: 'challenge|frictionless', text: 'How the authentication ran.', example: 'challenge' },
+  'customer.browser': {
+    text: 'Browser data for 3D Secure 2 when the gateway authenticates the shopper on a server-to-server request: read from the shopper’s browser.',
+  },
+}
+
 // Format of any name not listed (custom parameters share one format)
 export function requestDoc(key) {
   if (REQUEST_DOCS[key]) return REQUEST_DOCS[key]
+  if (CARD_REQUEST_DOCS[key]) return CARD_REQUEST_DOCS[key]
+  if (key.startsWith('customer.browser.')) return CARD_REQUEST_DOCS['customer.browser']
   if (key.startsWith('customParameters[')) return REQUEST_DOCS.customParameters
   let cart = key.match(/^cart\.items\[\d+\]\.(\w+)$/)
   if (cart) return REQUEST_DOCS[`cart.items[n].${cart[1]}`] || {}
@@ -255,3 +330,85 @@ export const RESPONSE_BASE = {
 }
 
 export const REDIRECT_DOC = REDIRECT
+
+// Card payment responses: resultDetails from the KB, NomuPay Integration Sheet >
+// Response Fields Mapping, plus the card-on-file objects
+export const CARD_RESULT_DETAILS = [
+  {
+    name: 'CardholderInitiatedTransactionID',
+    ...DETAIL,
+    req: 'C',
+    text: 'The scheme transaction ID (paymentMethod.scheme.transactionId). On a CIT, store it: it links later MITs to this payment.',
+    example: '486292702388291',
+  },
+  {
+    name: 'LifecycleId',
+    ...DETAIL,
+    req: 'C',
+    text: 'Mastercard TLID (paymentMethod.scheme.transactionLinkId). Without a registration, send it back as standingInstruction.agreementId on each MIT.',
+    example: 'f7t-wTAZTYSh0YaThWaxzw',
+  },
+  { name: 'AuthCode', ...DETAIL, req: 'C', text: 'The approval code from the scheme, when there is one.', example: '000001' },
+  { name: 'ConnectorTxID1', ...DETAIL, req: 'C', text: 'The identifier of the ACI transaction.', example: '8ac7a4a1a1a0e53501a1a1308cfc3851' },
+  { name: 'ConnectorTxID2', ...DETAIL, req: 'C', text: 'NomuPay’s reference for this transaction.' },
+  { name: 'ConnectorTxID3', ...DETAIL, req: 'C', text: 'NomuPay’s reference for the payment, the same for every transaction on it.' },
+  { name: 'AcquirerResponse', ...DETAIL, req: 'C', text: 'NomuPay’s status for the transaction.' },
+  { name: 'SchemeResponseCode', ...DETAIL, req: 'C', text: 'The response code as returned by the scheme.', example: '00' },
+  {
+    name: 'MerchantAdviceCode',
+    ...DETAIL,
+    req: 'C',
+    text: 'On a decline, whether and when to retry, e.g. 03 do not try again, 21 recurring payment cancelled, 24-30 retry after a set time (Mastercard).',
+    example: '02',
+  },
+  { name: 'ExtendedDescription', ...DETAIL, req: 'C', text: 'The status, or the reason in case of a decline.' },
+]
+
+export const CARD_RESPONSE = {
+  registrationId: {
+    name: 'registrationId',
+    format: 'AN32',
+    pattern: '[a-zA-Z0-9]{32}',
+    req: 'C',
+    text: 'The stored card, once the payment with createRegistration=true succeeds. Send repeated payments to /v1/registrations/{registrationId}/payments.',
+    example: '8ac7a4a2a162d40101a1688b2963127d',
+  },
+  card: {
+    name: 'card',
+    type: 'object',
+    req: 'C',
+    text: 'The card the payment used.',
+    children: [
+      { name: 'bin', format: 'N6', req: 'C', text: 'The first six digits of the card number.', example: '555555' },
+      { name: 'last4Digits', format: 'N4', req: 'C', text: 'The last four digits of the card number.', example: '4444' },
+      { name: 'holder', format: 'AN128', req: 'C', text: 'Holder of the card.', example: 'Test Shopper' },
+      { name: 'expiryMonth', format: 'N2', req: 'C', text: 'The expiry month.', example: '01' },
+      { name: 'expiryYear', format: 'N4', req: 'C', text: 'The expiry year.', example: '2030' },
+    ],
+  },
+  standingInstruction: {
+    name: 'standingInstruction',
+    type: 'object',
+    req: 'C',
+    text: 'The card-on-file details of the payment.',
+    children: [
+      { name: 'type', req: 'C', text: 'UNSCHEDULED, INSTALLMENT or RECURRING.', example: 'RECURRING' },
+      { name: 'mode', req: 'C', text: 'INITIAL or REPEATED.', example: 'INITIAL' },
+      { name: 'source', req: 'C', text: 'CIT or MIT.', example: 'CIT' },
+      { name: 'recurringType', req: 'C', text: 'SUBSCRIPTION or STANDING_ORDER.', example: 'SUBSCRIPTION' },
+      { name: 'initialTransactionId', req: 'C', text: 'The scheme transaction ID of the initial payment.', example: '486292702388291' },
+      { name: 'agreementId', req: 'C', text: 'Mastercard economically related TLID.', example: 'f7t-wTAZTYSh0YaThWaxzw' },
+    ],
+  },
+  threeDSecure: {
+    name: 'threeDSecure',
+    type: 'object',
+    req: 'C',
+    text: 'The 3D Secure result of the payment.',
+    children: [
+      { name: 'eci', format: 'N2', req: 'C', text: 'The Electronic Commerce Indicator.', example: '05' },
+      { name: 'authenticationStatus', req: 'C', text: 'The 3D Secure transaction status.', example: 'Y' },
+      { name: 'version', req: 'C', text: 'The 3D Secure version.', example: '2.2.0' },
+    ],
+  },
+}

@@ -105,7 +105,7 @@ export function validateInput(input, { flow }) {
   for (let code of brands) if (!getBrand(code)) return `Unknown payment method ${code}.`
   if (flow === 's2s') {
     if (brands.length !== 1) return 'Server-to-server takes one payment brand per payment.'
-    if (usesCard(brands)) return 'Cards are only available through COPYandPAY in this demo.'
+    if (usesCard(brands)) return 'Server-to-server cards have their own guide: /server-to-server-cards.'
     let brand = getBrand(brands[0])
     if (!['DB', 'PA'].includes(input.paymentType || 'DB')) return 'paymentType must be DB or PA.'
     if (!brand.paymentTypes.includes(input.paymentType || 'DB')) return `${brand.name} doesn't support pre-authorization.`

@@ -25,6 +25,15 @@ function ServerIcon(props) {
   )
 }
 
+function CardIcon(props) {
+  return (
+    <svg viewBox="0 0 20 20" aria-hidden="true" {...props}>
+      <rect x="2.75" y="4.75" width="14.5" height="10.5" rx="2" strokeWidth="1.25" />
+      <path fill="none" strokeWidth="1.25" strokeLinecap="round" d="M2.75 8.25h14.5M5.75 12.25h3" />
+    </svg>
+  )
+}
+
 const guides = [
   {
     href: '/copyandpay',
@@ -39,6 +48,13 @@ const guides = [
     description: 'Send the payment from your server, redirect the shopper to the payment brand, get the payment status and refund it.',
     icon: ServerIcon,
     pattern: { y: -6, squares: [[-1, 2], [1, 3]] },
+  },
+  {
+    href: '/server-to-server-cards',
+    name: 'Server-to-server cards',
+    description: 'Store a Visa or Mastercard test card with the initial payment, charge it again as an MIT, and check the card-on-file identifiers.',
+    icon: CardIcon,
+    pattern: { y: 32, squares: [[0, 2], [1, 4]] },
   },
 ]
 
