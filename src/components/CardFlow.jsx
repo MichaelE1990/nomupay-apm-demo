@@ -687,6 +687,14 @@ export function CardFlow() {
             ) : (
               <StepNote status="failed" title="Rejected.">
                 {resultText(payment)}
+                {payment.response?.result?.code === '100.150.203' && (
+                  <>
+                    {' '}
+                    The entity created the registration but rejected it, which happens whatever the brand, test mode or 3D Secure option when the entity
+                    has no card registration (tokenisation) set up{creds.useOwn ? '' : ': the demo’s entity is the NomuPay Wallets one'}. Use a
+                    card-enabled NomuPay test entity in the {playgroundLink('credentials')}.
+                  </>
+                )}
               </StepNote>
             ))}
         </Col>
