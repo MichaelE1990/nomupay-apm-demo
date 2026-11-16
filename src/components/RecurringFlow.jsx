@@ -610,7 +610,8 @@ export function RecurringFlow({ mode = 'start' }) {
             No registrationId came back: check the entity can store cards. Continue to <StepLink step={status} /> to read the payment.
           </>
         )}
-        {initial.response?.threeDSecure ? (
+        {/* The gateway echoes the challengeIndicator it was sent; authentication results mean 3-D Secure ran */}
+        {['eci', 'version', 'verificationId', 'dsTransactionId', 'authenticationStatus'].some((k) => initial.response?.threeDSecure?.[k]) ? (
           <> 3-D Secure ran without a challenge (ECI {initial.response.threeDSecure.eci || 'not given'}).</>
         ) : (
           <>
