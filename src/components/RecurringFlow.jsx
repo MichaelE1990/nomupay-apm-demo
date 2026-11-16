@@ -595,6 +595,20 @@ export function RecurringFlow({ mode = 'start' }) {
     ) : (
       <StepNote status="failed" title="Declined, nothing stored.">
         {resultText(initial)}
+        {initial.response?.result?.code === '100.150.203' && (
+          <>
+            {' '}
+            The entity rejected the registration: it isn’t a card channel with registrations (tokenisation) set up
+            {!creds.useOwn && !config?.entities?.cardDedicated ? (
+              <>
+                . No <code className="font-mono">CARD_ENTITY_ID</code> is set on this demo, so cards run on the APM channel. Set it in Vercel, or use a
+                card channel’s test credentials in the {playgroundLink('credentials')}.
+              </>
+            ) : (
+              <>. Check the entity is the card channel, in the {playgroundLink('credentials')}.</>
+            )}
+          </>
+        )}
       </StepNote>
     ))
 
