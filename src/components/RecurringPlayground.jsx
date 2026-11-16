@@ -23,11 +23,26 @@ const CUSTOMER_LABELS = {
   'customer.givenName': 'Given name',
   'customer.surname': 'Surname',
   'customer.email': 'Email',
+  'customer.mobile': 'Mobile',
   'billing.street1': 'Billing street',
   'billing.city': 'Billing city',
   'billing.postcode': 'Billing postcode',
   'billing.country': 'Billing country',
 }
+
+// threeDSecure.challengeIndicator, from the 3D Secure Request Parameters page
+const CHALLENGE_INDICATORS = [
+  { value: '', label: 'Not sent', description: 'The gateway uses 04 for an initial CIT' },
+  { value: '01', label: '01', description: 'No preference' },
+  { value: '02', label: '02', description: 'No challenge requested' },
+  { value: '03', label: '03', description: 'Challenge requested: merchant preference' },
+  { value: '04', label: '04', description: 'Challenge requested: mandate (initial CIT)' },
+  { value: '05', label: '05', description: 'No challenge: risk analysis done' },
+  { value: '06', label: '06', description: 'No challenge: data share only' },
+  { value: '07', label: '07', description: 'No challenge: SCA already done' },
+  { value: '08', label: '08', description: 'No challenge: whitelist exemption' },
+  { value: '09', label: '09', description: 'Challenge with a whitelist prompt' },
+]
 
 export const DECLINE_OPTIONS = [
   ...DECLINE_CODES.map((d) => ({ value: d.code, label: d.code, description: d.description, keywords: d.description })),
@@ -200,10 +215,35 @@ export function RecurringPlayground({ open, onClose, focus, pg }) {
 
       {/* 3-D Secure */}
       <Section id="pg-3ds" title="3-D Secure" description="The initial payment is the one the shopper authenticates. Subsequent payments carry no authentication data.">
-        <Row label="Browser data" hint="customer.ip and customer.browser.*">
+        <Row label="Challenge indicator" htmlFor="pg-3ds-indicator" hint="challengeIndicator">
+          <SelectMenu
+            id="pg-3ds-indicator"
+            options={CHALLENGE_INDICATORS}
+            value={form.threeDS.challengeIndicator ?? ''}
+            onChange={(challengeIndicator) => set3ds({ challengeIndicator })}
+          />
+        </Row>
+        <Row label="Browser data" hint="customer.browser.*">
           <Toggle checked={form.threeDS.browser} label="Send the shopper's browser data" onChange={(browser) => set3ds({ browser })} />
         </Row>
-        <Row label="Simulator flow" htmlFor="pg-3ds-flow" hint="customParameters[3DS2_flow]">
+        {form.threeDS.browser && (
+          <Row label="Challenge window" htmlFor="pg-3ds-window" hint="challengeWindow">
+            <SelectMenu
+              id="pg-3ds-window"
+              options={[
+                { value: '', label: 'Not sent' },
+                { value: '01', label: '01', description: '250 x 400' },
+                { value: '02', label: '02', description: '390 x 400' },
+                { value: '03', label: '03', description: '500 x 600' },
+                { value: '04', label: '04', description: '600 x 400' },
+                { value: '05', label: '05', description: 'Full screen' },
+              ]}
+              value={form.threeDS.challengeWindow ?? ''}
+              onChange={(challengeWindow) => set3ds({ challengeWindow })}
+            />
+          </Row>
+        )}
+        <Row label="Simulator flow" htmlFor="pg-3ds-flow" hint="3DS2_flow">
           <SelectMenu
             id="pg-3ds-flow"
             options={[
@@ -215,7 +255,7 @@ export function RecurringPlayground({ open, onClose, focus, pg }) {
             onChange={(flow3) => set3ds({ flow: flow3 })}
           />
         </Row>
-        <Row label="Any card enrolled" hint="customParameters[3DS2_enrolled]">
+        <Row label="Any card enrolled" hint="3DS2_enrolled">
           <Toggle checked={form.threeDS.enrolled} label="Treat any test card as enrolled" onChange={(enrolled) => set3ds({ enrolled })} />
         </Row>
       </Section>

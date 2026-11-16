@@ -60,6 +60,7 @@ const ENTITY_SHOWN = '{entity_id}'
 const IP_SHOWN = '{shopper_ip}'
 const NEGATIVE_TESTING_URL = 'https://support.nomupay.com/hc/en-gb/articles/29608579129233-Negative-Testing-Integration-Sheet'
 const COF_URL = 'https://nomupay.docs.oppwa.com/cof'
+const THREEDS_TESTING_URL = 'https://nomupay.docs.oppwa.com/tutorials/threeDSecure/TestingGuide'
 
 // The fourth party here is the card issuer, not a payment brand
 const LANES = [
@@ -235,7 +236,14 @@ export function RecurringFlow({ mode = 'start' }) {
   useEffect(() => setBrowser(collectBrowser()), [])
 
   let flow = state.flow || INITIAL.flow
-  let form = { ...INITIAL.form, ...state.form }
+  // Saved settings from an earlier visit, with any fields added since filled from the defaults
+  let saved = state.form || {}
+  let form = {
+    ...INITIAL.form,
+    ...saved,
+    threeDS: { ...INITIAL.form.threeDS, ...saved.threeDS },
+    customer: { ...INITIAL.form.customer, ...saved.customer, fields: { ...INITIAL.form.customer.fields, ...saved.customer?.fields } },
+  }
   let setForm = (f) => setState((s) => ({ ...s, form: f }))
   let action = form.manage?.action === 'delete' ? 'delete' : 'update'
   let steps = flowSteps(action)
@@ -516,10 +524,21 @@ export function RecurringFlow({ mode = 'start' }) {
       title: 'Customer & billing',
       rows: CUSTOMER_KEYS.map((k) => row(k, { doc: { req: 'C' } })),
     },
-    (form.threeDS.browser || form.threeDS.flow || form.threeDS.enrolled) && {
+    (form.threeDS.browser || form.threeDS.flow || form.threeDS.enrolled || form.threeDS.challengeIndicator) && {
       title: '3-D Secure',
       rows: [
-        ...(form.threeDS.browser ? [row('customer.ip', { doc: { req: 'C' }, note: 'Added on the server from the shopper’s request.' }), ...BROWSER_KEYS.map((k) => row(k, { doc: { req: 'C' } }))] : []),
+        form.threeDS.challengeIndicator &&
+          row('threeDSecure.challengeIndicator', {
+            doc: { req: 'O' },
+            note: form.threeDS.challengeIndicator === '04' ? 'Sent as 04: the gateway’s default for an initial CIT, sent here so it’s visible.' : null,
+          }),
+        ...(form.threeDS.browser
+          ? [
+              row('customer.ip', { doc: { req: 'M' }, note: 'Added on the server from the shopper’s request.' }),
+              ...BROWSER_KEYS.map((k) => row(k, { doc: { req: k.endsWith('screenColorDepth') ? 'O' : 'M' } })),
+              form.threeDS.challengeWindow && row('customer.browser.challengeWindow', { doc: { req: 'O' } }),
+            ]
+          : []),
         form.threeDS.enrolled && row('customParameters[3DS2_enrolled]', { doc: { req: 'T' } }),
         form.threeDS.flow && row('customParameters[3DS2_flow]', { doc: { req: 'T' } }),
       ].filter(Boolean),
@@ -591,6 +610,15 @@ export function RecurringFlow({ mode = 'start' }) {
             No registrationId came back: check the entity can store cards. Continue to <StepLink step={status} /> to read the payment.
           </>
         )}
+        {initial.response?.threeDSecure ? (
+          <> 3-D Secure ran without a challenge (ECI {initial.response.threeDSecure.eci || 'not given'}).</>
+        ) : (
+          <>
+            {' '}
+            There’s no threeDSecure object in the response, so 3-D Secure didn’t run on this entity and the challenge settings had no effect: ask
+            for 3-D Secure to be enabled on the card channel.
+          </>
+        )}
       </StepNote>
     ) : (
       <StepNote status="failed" title="Declined, nothing stored.">
@@ -598,7 +626,8 @@ export function RecurringFlow({ mode = 'start' }) {
         {initial.response?.result?.code === '100.150.203' && (
           <>
             {' '}
-            The entity rejected the registration: it isn’t a card channel with registrations (tokenisation) set up
+            The gateway rejected the registration before 3-D Secure started, which is why there was no challenge. The entity isn’t a card channel
+            with registrations (tokenisation) set up
             {!creds.useOwn && !config?.entities?.cardDedicated ? (
               <>
                 . No <code className="font-mono">CARD_ENTITY_ID</code> is set on this demo, so cards run on the APM channel. Set it in Vercel, or use a
@@ -647,6 +676,17 @@ export function RecurringFlow({ mode = 'start' }) {
       <h3>Use cases</h3>
       <p>Choose the type of agreement. The steps below follow your choice.</p>
       <FlowCards modes={MODES} mode={flow.mode} tx={flow.tx} onChange={setFlow} label="Agreement" trayLabel="Agreement type" />
+      <h3>Testing 3-D Secure</h3>
+      <p>
+        On the test system, 3-D Secure runs against a simulator. To get a challenge, use a challenge test card (Visa 4200000000000042, Mastercard
+        5200000000000015), or force one with <code>customParameters[3DS2_flow]=challenge</code> or <code>threeDSecure.challengeIndicator=04</code>{' '}
+        (see the{' '}
+        <a href={THREEDS_TESTING_URL} target="_blank" rel="noreferrer">
+          3D Secure Testing Guide
+        </a>
+        ). The demo sends 04 by default: it’s what the gateway uses for an initial payment that stores a card. Either way, the entity must be a card
+        channel with 3-D Secure enabled.
+      </p>
       <h3>Testing declines</h3>
       <p>
         On the test system, a payment is declined with any rejection result code you send as <code>card.holder</code> (see the{' '}

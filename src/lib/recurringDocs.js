@@ -66,6 +66,24 @@ export const REC_REQUEST_DOCS = {
   'customer.browser.javaEnabled': { pattern: 'true|false', text: 'Whether the browser can run Java, from navigator.javaEnabled().', example: 'false' },
   'customer.browser.javascriptEnabled': { pattern: 'true|false', text: 'Whether the browser can run JavaScript.', example: 'true' },
   'customer.browser.screenColorDepth': { pattern: '1|4|8|15|16|24|32|48', text: 'The screen colour depth in bits, from screen.colorDepth.', example: '24' },
+  'customer.browser.challengeWindow': {
+    format: 'N2',
+    pattern: '01|02|03|04|05',
+    text: 'The size of the challenge window: 01 = 250 x 400, 02 = 390 x 400, 03 = 500 x 600, 04 = 600 x 400, 05 = full screen.',
+    example: '05',
+  },
+  'customer.mobile': {
+    format: 'AN20',
+    pattern: '+ccc-nnnnnnnn',
+    text: 'The customer’s mobile number. For 3-D Secure, send at least one of customer.phone, customer.workPhone or customer.mobile: a country code of up to 3 digits, a dash, then up to 15 digits.',
+    example: '+44-7700900123',
+  },
+  'threeDSecure.challengeIndicator': {
+    format: 'N2',
+    pattern: '01|02|03|04|05|06|07|08|09',
+    text: 'The merchant’s challenge preference; the issuer still decides. 01 no preference, 02 no challenge requested, 03 challenge requested (merchant preference), 04 challenge requested (mandate, as on the initial CIT of an MIT agreement), 05 to 08 no challenge (risk analysis, data share, SCA already done, whitelist), 09 challenge with a whitelist prompt. Defaults to 04 on an initial CIT and with createRegistration=true; on the test system, 04 forces a challenge.',
+    example: '04',
+  },
   'customParameters[3DS2_enrolled]': { pattern: 'true', text: 'Test system only: any test card can be used for 3-D Secure, even one the simulator doesn’t list.' },
   'customParameters[3DS2_flow]': { pattern: 'challenge|frictionless', text: 'Test system only: forces a challenge or a frictionless 3-D Secure flow.' },
 }

@@ -70,10 +70,12 @@ export const AGREEMENTS = {
 
 export const RECURRING_TYPES = ['SUBSCRIPTION', 'STANDING_ORDER']
 
+// 3-D Secure needs an email, a phone (customer.phone, workPhone or mobile) and the billing address
 export const CUSTOMER_KEYS = [
   'customer.givenName',
   'customer.surname',
   'customer.email',
+  'customer.mobile',
   'billing.street1',
   'billing.city',
   'billing.postcode',
@@ -138,13 +140,16 @@ export function defaultForm() {
         'customer.givenName': 'Test',
         'customer.surname': 'Shopper',
         'customer.email': 'test.shopper@example.com',
+        'customer.mobile': '+44-7700900123',
         'billing.street1': '10 Ancoats Street',
         'billing.city': 'Manchester',
         'billing.postcode': 'M46AA',
         'billing.country': 'GB',
       },
     },
-    threeDS: { browser: true, flow: '', enrolled: false },
+    // challengeIndicator 04: challenge requested (mandate), as on an initial CIT for MIT payments.
+    // challengeWindow 05: the issuer's page fills the window (the drawer)
+    threeDS: { browser: true, flow: '', enrolled: false, challengeIndicator: '04', challengeWindow: '05' },
     testMode: '',
     repeated: { amount: '', sendInitialId: false, decline: false, code: '800.100.203', custom: '' },
     manage: { action: 'update', holder: '', expiryMonth: '', expiryYear: '' },
@@ -196,7 +201,9 @@ export function buildInitialParams(input, env) {
   if (input.threeDS?.browser) {
     params.push(['customer.ip', trim(env.ip)])
     for (let key of BROWSER_KEYS) params.push([key, trim(input.browser?.[key])])
+    params.push(['customer.browser.challengeWindow', trim(input.threeDS.challengeWindow)])
   }
+  params.push(['threeDSecure.challengeIndicator', trim(input.threeDS?.challengeIndicator)])
   if (input.threeDS?.enrolled) params.push(['customParameters[3DS2_enrolled]', 'true'])
   if (filled(input.threeDS?.flow)) params.push(['customParameters[3DS2_flow]', trim(input.threeDS.flow)])
   params.push(['shopperResultUrl', trim(env.shopperResultUrl)])
@@ -297,7 +304,10 @@ export function validateInitial(input) {
   if (input.customer?.on) {
     for (let k of CUSTOMER_KEYS) if (trim(input.customer.fields?.[k]).length > 128) return `${k} is too long.`
     if (!/^[A-Z]{2}$/.test(trim(input.customer.fields?.['billing.country']))) return 'billing.country must be a 2-letter code.'
+    if (!/^\+?\d{1,3}-\d{1,15}$/.test(trim(input.customer.fields?.['customer.mobile']))) return 'customer.mobile must look like +44-7700900123.'
   }
+  if (filled(input.threeDS?.challengeIndicator) && !/^0[1-9]$/.test(trim(input.threeDS.challengeIndicator))) return 'threeDSecure.challengeIndicator must be 01 to 09.'
+  if (filled(input.threeDS?.challengeWindow) && !/^0[1-5]$/.test(trim(input.threeDS.challengeWindow))) return 'customer.browser.challengeWindow must be 01 to 05.'
   if (input.threeDS?.browser) for (let k of BROWSER_KEYS) if (trim(input.browser?.[k]).length > 2048) return `${k} is too long.`
   if (filled(input.threeDS?.flow) && !['challenge', 'frictionless'].includes(trim(input.threeDS.flow))) return 'customParameters[3DS2_flow] must be challenge or frictionless.'
   return null
