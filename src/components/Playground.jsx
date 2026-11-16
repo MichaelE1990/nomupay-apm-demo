@@ -7,7 +7,6 @@ import { useEffect, useState } from 'react'
 import { BrandFacts, BrandSelect, CartEditor, RequiredFields } from '@/components/builder'
 import { SlidersIcon } from '@/components/CodeWindow'
 import { FieldBox, InsetField, Toggle, bareInputClass } from '@/components/forms'
-import { CopyValue } from '@/components/params'
 import { SelectMenu } from '@/components/select'
 import { ENTITY_PATTERN, TOKEN_PATTERN } from '@/lib/flowState'
 
@@ -85,7 +84,7 @@ export function Section({ id, title, description, action, children }) {
 // Label on the left, control on the right (stacks on narrow screens)
 export function Row({ label, htmlFor, hint, children }) {
   return (
-    <div className="grid grid-cols-1 items-center gap-x-4 gap-y-1.5 sm:grid-cols-[8rem_minmax(0,1fr)]">
+    <div className="grid grid-cols-1 items-center gap-x-4 gap-y-1.5 sm:grid-cols-[10rem_minmax(0,1fr)]">
       <div className="min-w-0">
         <label htmlFor={htmlFor} className="block text-[0.8125rem] font-medium text-zinc-900 dark:text-white">
           {label}
@@ -167,8 +166,6 @@ function outsideLimits(brand, currency, amount) {
 // readyText: the green line once the merchant's own credentials are filled in
 export function CredentialsSection({ creds, setCreds, config, readyText = 'Using your test credentials. Your payment brands must be enabled on this entity.' }) {
   let [showToken, setShowToken] = useState(false)
-  let host = config?.apiHost || 'eu-test.oppwa.com'
-  let base = `https://${host}`
   let entityOk = ENTITY_PATTERN.test(creds.entityId.trim())
   let tokenOk = TOKEN_PATTERN.test(creds.accessToken.trim())
   let ownReady = entityOk && tokenOk
@@ -231,12 +228,6 @@ export function CredentialsSection({ creds, setCreds, config, readyText = 'Using
           </p>
         </div>
       )}
-      <Row label="Base URL">
-        <FieldBox className="flex items-center gap-2 py-1.5">
-          <code className="min-w-0 flex-auto truncate font-mono text-[0.8125rem] text-zinc-700 dark:text-zinc-300">{base}</code>
-          <CopyValue value={base} label="base URL" />
-        </FieldBox>
-      </Row>
     </Section>
   )
 }
@@ -260,7 +251,7 @@ export function PlaygroundShell({ open, onClose, focus, onReset, children }) {
         <div className="pointer-events-none fixed inset-y-0 right-0 flex max-w-full sm:pl-10">
           <DialogPanel
             transition
-            className="pointer-events-auto flex h-full w-screen max-w-md flex-col bg-white shadow-xl ring-1 ring-zinc-900/10 transition duration-300 ease-in-out data-closed:translate-x-full dark:bg-zinc-900 dark:ring-white/10"
+            className="pointer-events-auto flex h-full w-screen max-w-xl flex-col bg-white shadow-xl ring-1 ring-zinc-900/10 transition duration-300 ease-in-out data-closed:translate-x-full dark:bg-zinc-900 dark:ring-white/10"
           >
             <div className="flex items-start gap-4 border-b border-zinc-900/7.5 px-5 py-4 dark:border-white/10">
               <div className="min-w-0 flex-auto">

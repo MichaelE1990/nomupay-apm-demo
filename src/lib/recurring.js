@@ -127,7 +127,7 @@ export function defaultForm() {
   return {
     preset: 'VISA',
     paymentBrand: 'VISA',
-    card: { number: '4200000000000000', holder: 'Test Shopper', expiryMonth: '12', expiryYear: String(new Date().getFullYear() + 3), cvv: '123' },
+    card: { number: '4200000000000000', holder: 'John Doe', expiryMonth: '12', expiryYear: String(new Date().getFullYear() + 3), cvv: '123' },
     amount: '10.00',
     currency: 'EUR',
     paymentType: 'DB',
@@ -137,9 +137,9 @@ export function defaultForm() {
     customer: {
       on: true,
       fields: {
-        'customer.givenName': 'Test',
-        'customer.surname': 'Shopper',
-        'customer.email': 'test.shopper@example.com',
+        'customer.givenName': 'John',
+        'customer.surname': 'Doe',
+        'customer.email': 'john.doe@example.com',
         'customer.mobile': '+44-7700900123',
         'billing.street1': '10 Ancoats Street',
         'billing.city': 'Manchester',
@@ -151,8 +151,7 @@ export function defaultForm() {
     // challengeWindow 05: the issuer's page fills the window (the drawer)
     threeDS: { browser: true, flow: '', enrolled: false, challengeIndicator: '04', challengeWindow: '05' },
     testMode: '',
-    repeated: { amount: '', sendInitialId: false, decline: false, code: '800.100.203', custom: '' },
-    manage: { action: 'update', holder: '', expiryMonth: '', expiryYear: '' },
+    repeated: { amount: '', decline: false, code: '800.100.203', custom: '' },
   }
 }
 
@@ -212,9 +211,10 @@ export function buildInitialParams(input, env) {
 }
 
 /**
- * A subsequent payment: POST /v1/registrations/{id}/payments as REPEATED MIT.
- * declineCode: sent as card.holder, the test system's negative testing trigger.
- * @param {object} input  { type, recurringType, amount, currency, merchantTransactionId, initialTransactionId, declineCode, testMode }
+ * A subsequent payment on the stored card: POST /v1/registrations/{id}/payments as REPEATED MIT.
+ * The registration carries the card, so there's no card data (and no card.holder): on the
+ * test system, a decline code in card.holder is ignored on these payments.
+ * @param {object} input  { type, recurringType, amount, currency, merchantTransactionId, testMode }
  */
 export function buildRepeatedParams(input, env) {
   let params = [
@@ -223,26 +223,42 @@ export function buildRepeatedParams(input, env) {
     ['currency', trim(input.currency)],
     ['paymentType', 'DB'],
     ...agreementParams(input.type, input.recurringType, 'REPEATED', 'MIT'),
-    ['standingInstruction.initialTransactionId', trim(input.initialTransactionId)],
     ['merchantTransactionId', trim(input.merchantTransactionId)],
-    ['card.holder', trim(input.declineCode)],
   ]
   if (filled(input.testMode)) params.push(['testMode', trim(input.testMode)])
   return params.filter(([, v]) => v !== '')
 }
 
 /**
- * Manage the registration: update the stored card (POST /v1/registrations/{id})
- * or delete it (DELETE /v1/registrations/{id}).
- * @param {object} input  { action: 'update' | 'delete', card{ holder, expiryMonth, expiryYear } }
+ * A subsequent payment with the card details: POST /v1/payments as REPEATED MIT, as a
+ * merchant that stores the card itself sends it. No CVV (the shopper isn't there). For
+ * decline testing, card.holder carries the result code (negative testing).
+ * @param {object} input  { type, recurringType, paymentBrand, card{ number, expiryMonth, expiryYear },
+ *                          holder, amount, currency, initialTransactionId, merchantTransactionId, testMode }
  */
-export function buildManageParams(input, env) {
-  let params = [['entityId', env.entityId]]
-  if (input.action !== 'delete') {
-    let card = input.card || {}
-    params.push(['card.holder', trim(card.holder)], ['card.expiryMonth', trim(card.expiryMonth)], ['card.expiryYear', trim(card.expiryYear)])
-  }
+export function buildRepeatedCardParams(input, env) {
+  let card = input.card || {}
+  let params = [
+    ['entityId', env.entityId],
+    ['amount', trim(input.amount)],
+    ['currency', trim(input.currency)],
+    ['paymentBrand', trim(input.paymentBrand)],
+    ['paymentType', 'DB'],
+    ['card.number', trim(card.number).replace(/\s+/g, '')],
+    ['card.holder', trim(input.holder)],
+    ['card.expiryMonth', trim(card.expiryMonth)],
+    ['card.expiryYear', trim(card.expiryYear)],
+    ...agreementParams(input.type, input.recurringType, 'REPEATED', 'MIT'),
+    ['standingInstruction.initialTransactionId', trim(input.initialTransactionId)],
+    ['merchantTransactionId', trim(input.merchantTransactionId)],
+  ]
+  if (filled(input.testMode)) params.push(['testMode', trim(input.testMode)])
   return params.filter(([, v]) => v !== '')
+}
+
+/** Delete the registration: DELETE /v1/registrations/{id}. The gateway has no request to change a stored card. */
+export function buildDeleteParams(env) {
+  return [['entityId', env.entityId]]
 }
 
 /** Mandatory fields still empty on the initial payment, as parameter names */
@@ -313,24 +329,22 @@ export function validateInitial(input) {
   return null
 }
 
-/** Server-side check of a subsequent payment input */
+/** Server-side check of a subsequent payment on the registration */
 export function validateRepeated(input) {
-  let error = checkCommon(input) || checkAgreement(input.type, input.recurringType)
-  if (error) return error
-  if (filled(input.initialTransactionId) && !/^[\w.\-]{1,64}$/.test(trim(input.initialTransactionId))) return 'standingInstruction.initialTransactionId has unexpected characters.'
-  if (filled(input.declineCode) && !DECLINE_CODE.test(trim(input.declineCode))) return 'The decline code must look like 800.100.203, and can’t be a success or pending code (000.xxx.xxx).'
-  return null
+  return checkCommon(input) || checkAgreement(input.type, input.recurringType)
 }
 
-/** Server-side check of a registration update or delete */
-export function validateManage(input) {
-  if (!['update', 'delete'].includes(input.action)) return 'action must be update or delete.'
-  if (input.action === 'delete') return null
+/** Server-side check of a subsequent payment with the card details */
+export function validateRepeatedCard(input) {
+  let error = checkCommon(input) || checkAgreement(input.type, input.recurringType)
+  if (error) return error
+  if (!RECURRING_BRANDS.some((b) => b.code === input.paymentBrand)) return 'paymentBrand must be VISA or MASTER.'
   let card = input.card || {}
-  if (!filled(card.holder) && !filled(card.expiryMonth) && !filled(card.expiryYear)) return 'Give a new card.holder or expiry date to update.'
-  if (filled(card.holder) && !/^[\s\S]{3,128}$/.test(trim(card.holder))) return 'card.holder must be 3 to 128 characters.'
-  if (filled(card.expiryMonth) && !/^(0[1-9]|1[0-2])$/.test(trim(card.expiryMonth))) return 'card.expiryMonth must be 01 to 12.'
-  if (filled(card.expiryYear) && !/^20\d{2}$/.test(trim(card.expiryYear))) return 'card.expiryYear must be a year like 2029.'
+  if (!/^\d{12,19}$/.test(trim(card.number).replace(/\s+/g, ''))) return 'card.number must be 12 to 19 digits.'
+  if (!/^(0[1-9]|1[0-2])$/.test(trim(card.expiryMonth))) return 'card.expiryMonth must be 01 to 12.'
+  if (!/^20\d{2}$/.test(trim(card.expiryYear))) return 'card.expiryYear must be a year like 2029.'
+  if (!/^[\s\S]{3,128}$/.test(trim(input.holder))) return 'card.holder must be 3 to 128 characters.'
+  if (filled(input.initialTransactionId) && !/^[\w.\-]{1,64}$/.test(trim(input.initialTransactionId))) return 'standingInstruction.initialTransactionId has unexpected characters.'
   return null
 }
 

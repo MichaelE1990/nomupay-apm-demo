@@ -27,7 +27,7 @@ export async function POST(request) {
   )
   try {
     let { httpStatus, data, status } = await gateway('POST', '/v1/payments', params, creds)
-    return Response.json({ request: { method: 'POST', path: '/v1/payments', params: masked(params) }, entity: 'card', httpStatus, status, response: data })
+    return Response.json({ request: { method: 'POST', path: '/v1/payments', params: masked(params) }, entity: 'recurring', httpStatus, status, response: data })
   } catch (e) {
     return Response.json({ error: `Couldn't reach the gateway: ${e.message}` }, { status: 502 })
   }

@@ -57,7 +57,7 @@ export const allSections = {
     { id: 'authenticate-the-shopper', step: 2, title: 'Authenticate the shopper' },
     { id: 'get-the-payment-status', step: 3, title: 'Get the payment status', tag: 'GET' },
     { id: 'send-a-subsequent-payment', step: 4, title: 'Send a subsequent payment', tag: 'POST' },
-    { id: 'manage-the-registration', step: 5, title: 'Manage the registration', tag: 'POST' },
+    { id: 'delete-the-registration', step: 5, title: 'Delete the registration', tag: 'DELETE' },
   ],
 }
 

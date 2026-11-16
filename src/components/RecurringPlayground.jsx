@@ -1,22 +1,57 @@
 'use client'
 
-import { Banner, CredentialsSection, PlaygroundShell, Row, Section, Stepper, TextField } from '@/components/Playground'
-import { Toggle } from '@/components/forms'
+import clsx from 'clsx'
+
+import { Banner, PlaygroundShell, Row, Section, Stepper, TextField } from '@/components/Playground'
+import { SegmentedControl, Toggle } from '@/components/forms'
 import { SelectMenu } from '@/components/select'
 import { AGREEMENTS, CUSTOMER_KEYS, DECLINE_CODES, RECURRING_BRANDS, RECURRING_CURRENCIES, TEST_CARDS } from '@/lib/recurring'
 
-// The Playground for the recurring guide: everything its requests are built from
+// The Playground for the recurring guide sets up the initial payment: the agreement, the
+// card, the shopper and 3-D Secure. The demo always runs on the test system's 3DV2 card
+// channel with its own access token, so there are no credentials to enter. The subsequent
+// payment and the registration have their own controls in steps 4 and 5.
 
-const USE_CASES = [
-  { value: 'scheduled:RECURRING', label: 'Scheduled · Subscription' },
-  { value: 'scheduled:INSTALLMENT', label: 'Scheduled · Installments' },
-  { value: 'unscheduled:UNSCHEDULED', label: 'Unscheduled · Card on file' },
-]
+export function CalendarIcon(props) {
+  return (
+    <svg viewBox="0 0 20 20" aria-hidden="true" {...props}>
+      <rect x="3.25" y="4.25" width="13.5" height="12.5" rx="2" strokeWidth="1.25" fill="none" />
+      <path fill="none" strokeWidth="1.25" strokeLinecap="round" d="M3.25 8.25h13.5M7 2.75v3M13 2.75v3M6.75 11.25h1.5M11.75 11.25h1.5M6.75 14h1.5" />
+    </svg>
+  )
+}
+
+export function CardIcon(props) {
+  return (
+    <svg viewBox="0 0 20 20" aria-hidden="true" {...props}>
+      <rect x="2.75" y="4.75" width="14.5" height="10.5" rx="2" strokeWidth="1.25" fill="none" />
+      <path fill="none" strokeWidth="1.25" strokeLinecap="round" d="M2.75 8.25h14.5M5.75 12.25h3" />
+    </svg>
+  )
+}
+
+// The two use cases, each with its agreement types (standingInstruction.type)
+export const USE_CASES = {
+  scheduled: {
+    label: 'Scheduled',
+    icon: CalendarIcon,
+    text: 'The merchant charges the stored card on a schedule the shopper agreed to.',
+    examples: 'a monthly membership, a streaming subscription, or one purchase paid in 3 installments.',
+    types: ['RECURRING', 'INSTALLMENT'],
+  },
+  unscheduled: {
+    label: 'Unscheduled',
+    icon: CardIcon,
+    text: 'The merchant charges the stored card when it’s needed, with no fixed schedule or amount.',
+    examples: 'an account top-up when the balance runs low, or usage charged after the fact.',
+    types: ['UNSCHEDULED'],
+  },
+}
 
 const RECURRING_TYPE_OPTIONS = [
   { value: '', label: 'Not sent' },
-  { value: 'SUBSCRIPTION', label: 'SUBSCRIPTION' },
-  { value: 'STANDING_ORDER', label: 'STANDING_ORDER' },
+  { value: 'SUBSCRIPTION', label: 'SUBSCRIPTION', description: 'Fixed amount at a fixed interval' },
+  { value: 'STANDING_ORDER', label: 'STANDING_ORDER', description: 'Variable amount at a fixed interval' },
 ]
 
 const CUSTOMER_LABELS = {
@@ -49,15 +84,57 @@ export const DECLINE_OPTIONS = [
   { value: 'custom', label: 'Another result code', description: 'Type any rejection code' },
 ]
 
-// pg: { config, creds, setCreds, flow, setFlow, form, setForm, missing, onReset, initialAmount, initialCurrency }
+// Agreement types under a use case, as radio cards (like the use case trays on the page)
+function AgreementTypes({ types, value, onChange }) {
+  return (
+    <div role="radiogroup" aria-label="Agreement type" className={clsx('grid gap-2', types.length > 1 && 'sm:grid-cols-2')}>
+      {types.map((t) => {
+        let on = t === value
+        let a = AGREEMENTS[t]
+        return (
+          <button
+            key={t}
+            type="button"
+            role="radio"
+            aria-checked={on}
+            onClick={() => !on && onChange(t)}
+            className={clsx(
+              'flex items-start gap-3 rounded-xl px-3 py-2.5 text-left ring-1 transition',
+              on
+                ? 'bg-emerald-50/60 ring-emerald-500 dark:bg-emerald-400/5 dark:ring-emerald-400/60'
+                : 'ring-zinc-900/10 hover:bg-zinc-50 dark:ring-white/10 dark:hover:bg-white/2.5',
+            )}
+          >
+            <span
+              className={clsx(
+                'mt-0.5 flex size-4 flex-none items-center justify-center rounded-full ring-1',
+                on ? 'bg-emerald-500 ring-emerald-500' : 'ring-zinc-300 dark:ring-white/20',
+              )}
+            >
+              {on && <span className="size-1.5 rounded-full bg-white" />}
+            </span>
+            <span className="min-w-0 flex-auto">
+              <span className="flex items-baseline justify-between gap-2">
+                <span className="text-[0.8125rem] font-medium text-zinc-900 dark:text-white">{a.title}</span>
+                <code className="font-mono text-[0.6875rem] text-zinc-400">{t}</code>
+              </span>
+              <span className="mt-0.5 block text-xs/5 text-zinc-500 dark:text-zinc-400">{a.text}</span>
+            </span>
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
+// pg: { flow, setFlow, form, setForm, missing, onReset }
 export function RecurringPlayground({ open, onClose, focus, pg }) {
   let { form, setForm, flow, missing } = pg
   let set = (patch) => setForm({ ...form, ...patch })
   let setCard = (patch) => setForm({ ...form, card: { ...form.card, ...patch } })
   let setAgreement = (patch) => setForm({ ...form, agreement: { ...form.agreement, ...patch } })
-  let setRepeated = (patch) => setForm({ ...form, repeated: { ...form.repeated, ...patch } })
-  let setManage = (patch) => setForm({ ...form, manage: { ...form.manage, ...patch } })
   let set3ds = (patch) => setForm({ ...form, threeDS: { ...form.threeDS, ...patch } })
+  let useCase = USE_CASES[flow.mode] || USE_CASES.scheduled
   let needs = AGREEMENTS[flow.tx]?.needs || []
   let invalid = (key) => missing.includes(key)
   let preset = TEST_CARDS.find((c) => c.value === form.preset)
@@ -75,26 +152,22 @@ export function RecurringPlayground({ open, onClose, focus, pg }) {
 
   return (
     <PlaygroundShell open={open} onClose={onClose} focus={focus} onReset={pg.onReset}>
-      <CredentialsSection
-        creds={pg.creds}
-        setCreds={pg.setCreds}
-        config={pg.config}
-        readyText="Using your test credentials. Cards and stored cards (registrations) must be enabled on this entity."
-      />
+      <div className="px-5 py-4">
+        <Banner>Runs on the test system’s card channel with 3-D Secure 2 (Demo Channel - 3DV2), with the demo’s credentials.</Banner>
+      </div>
 
-      {/* The agreement */}
+      {/* The agreement: the use case, its agreement type, and the fields that type needs */}
       <Section id="pg-agreement" title="Agreement" description="The recurring agreement the payments belong to (standingInstruction).">
-        <Row label="Use case" htmlFor="pg-use-case">
-          <SelectMenu
-            id="pg-use-case"
-            options={USE_CASES}
-            value={`${flow.mode}:${flow.tx}`}
-            onChange={(v) => {
-              let [mode, tx] = v.split(':')
-              pg.setFlow({ mode, tx })
-            }}
-          />
-        </Row>
+        <SegmentedControl
+          label="Use case"
+          options={Object.entries(USE_CASES).map(([value, u]) => ({ value, label: u.label, icon: <u.icon className="size-4 flex-none stroke-current" /> }))}
+          value={flow.mode}
+          onChange={(mode) => pg.setFlow({ mode, tx: USE_CASES[mode].types[0] })}
+        />
+        <p className="text-xs/5 text-zinc-500 dark:text-zinc-400">
+          {useCase.text} For example, {useCase.examples}
+        </p>
+        {useCase.types.length > 1 && <AgreementTypes types={useCase.types} value={flow.tx} onChange={(tx) => pg.setFlow({ mode: flow.mode, tx })} />}
         <Row label="recurringType" htmlFor="pg-recurring-type" hint="Required for Mastercard">
           <SelectMenu
             id="pg-recurring-type"
@@ -105,7 +178,7 @@ export function RecurringPlayground({ open, onClose, focus, pg }) {
           />
         </Row>
         {needs.includes('frequency') && (
-          <Row label="frequency" htmlFor="pg-frequency" hint="Days, 4 digits">
+          <Row label="frequency" htmlFor="pg-frequency" hint="Days between payments">
             <TextField id="pg-frequency" value={form.agreement.frequency} placeholder="0030" invalid={invalid('standingInstruction.frequency')} onChange={(frequency) => setAgreement({ frequency })} />
           </Row>
         )}
@@ -115,7 +188,7 @@ export function RecurringPlayground({ open, onClose, focus, pg }) {
           </Row>
         )}
         {needs.includes('numberOfInstallments') && (
-          <Row label="numberOfInstallments" htmlFor="pg-installments">
+          <Row label="numberOfInstallments" htmlFor="pg-installments" hint="Payments in the plan">
             <TextField
               id="pg-installments"
               value={form.agreement.numberOfInstallments}
@@ -125,13 +198,13 @@ export function RecurringPlayground({ open, onClose, focus, pg }) {
             />
           </Row>
         )}
-        <Row label="Customer ID" htmlFor="pg-customer-id" hint="Your ID for the shopper">
+        <Row label="Customer ID" htmlFor="pg-customer-id" hint="customer.merchantCustomerId">
           <TextField id="pg-customer-id" value={form.merchantCustomerId} placeholder="Not sent if empty" onChange={(merchantCustomerId) => set({ merchantCustomerId })} />
         </Row>
       </Section>
 
-      {/* The initial payment and the card */}
-      <Section id="pg-payment" title="Initial payment" description="The card the shopper enters, and the first payment of the agreement.">
+      {/* The card and the initial payment */}
+      <Section id="pg-payment" title="Card & initial payment" description="The card the shopper enters, and the first payment of the agreement.">
         <Row label="Test card" htmlFor="pg-test-card">
           <SelectMenu
             id="pg-test-card"
@@ -157,17 +230,15 @@ export function RecurringPlayground({ open, onClose, focus, pg }) {
             onChange={(number) => setForm({ ...form, preset: TEST_CARDS.find((c) => c.number === number.replace(/\s+/g, ''))?.value || 'CUSTOM', card: { ...form.card, number } })}
           />
         </Row>
-        <Row label="card.holder" htmlFor="pg-card-holder" hint="A decline code here declines the initial payment">
-          <TextField id="pg-card-holder" value={form.card.holder} placeholder="Test Shopper" mono={false} invalid={invalid('card.holder')} onChange={(holder) => setCard({ holder })} />
+        <Row label="card.holder" htmlFor="pg-card-holder">
+          <TextField id="pg-card-holder" value={form.card.holder} placeholder="John Doe" mono={false} invalid={invalid('card.holder')} onChange={(holder) => setCard({ holder })} />
         </Row>
-        <Row label="Expiry" htmlFor="pg-card-month" hint="Month and year">
-          <div className="grid grid-cols-2 gap-2">
+        <Row label="Expiry and CVV" htmlFor="pg-card-month" hint="MM, YYYY, CVV">
+          <div className="grid grid-cols-3 gap-2">
             <TextField id="pg-card-month" value={form.card.expiryMonth} placeholder="12" invalid={invalid('card.expiryMonth')} onChange={(expiryMonth) => setCard({ expiryMonth })} />
             <TextField id="pg-card-year" value={form.card.expiryYear} placeholder="2029" invalid={invalid('card.expiryYear')} onChange={(expiryYear) => setCard({ expiryYear })} />
+            <TextField id="pg-card-cvv" value={form.card.cvv} placeholder="123" invalid={invalid('card.cvv')} onChange={(cvv) => setCard({ cvv })} />
           </div>
-        </Row>
-        <Row label="card.cvv" htmlFor="pg-card-cvv">
-          <TextField id="pg-card-cvv" value={form.card.cvv} placeholder="123" invalid={invalid('card.cvv')} onChange={(cvv) => setCard({ cvv })} />
         </Row>
         <Row label="Payment type" htmlFor="pg-payment-type">
           <SelectMenu
@@ -189,14 +260,18 @@ export function RecurringPlayground({ open, onClose, focus, pg }) {
         <Row label="Merchant transaction ID" htmlFor="pg-mtid">
           <TextField id="pg-mtid" value={form.merchantTransactionId} placeholder="Generated if empty" onChange={(merchantTransactionId) => set({ merchantTransactionId })} />
         </Row>
-        {preset && preset.value !== 'CUSTOM' && <Banner>{preset.label}: {preset.note.toLowerCase()}.</Banner>}
+        {preset && preset.value !== 'CUSTOM' && (
+          <Banner>
+            {preset.label}: {preset.note.toLowerCase()}.
+          </Banner>
+        )}
       </Section>
 
       {/* Customer and billing */}
       <Section
         id="pg-customer"
         title="Customer & billing"
-        description="Recommended for 3-D Secure, and used by risk checks."
+        description="3-D Secure needs an email, a phone number and the billing address."
         action={<Toggle checked={form.customer.on} label="Send customer and billing details" onChange={(on) => setForm({ ...form, customer: { ...form.customer, on } })} />}
       >
         {form.customer.on &&
@@ -216,12 +291,22 @@ export function RecurringPlayground({ open, onClose, focus, pg }) {
       {/* 3-D Secure */}
       <Section id="pg-3ds" title="3-D Secure" description="The initial payment is the one the shopper authenticates. Subsequent payments carry no authentication data.">
         <Row label="Challenge indicator" htmlFor="pg-3ds-indicator" hint="challengeIndicator">
+          <SelectMenu id="pg-3ds-indicator" options={CHALLENGE_INDICATORS} value={form.threeDS.challengeIndicator ?? ''} onChange={(challengeIndicator) => set3ds({ challengeIndicator })} />
+        </Row>
+        <Row label="Simulator flow" htmlFor="pg-3ds-flow" hint="3DS2_flow">
           <SelectMenu
-            id="pg-3ds-indicator"
-            options={CHALLENGE_INDICATORS}
-            value={form.threeDS.challengeIndicator ?? ''}
-            onChange={(challengeIndicator) => set3ds({ challengeIndicator })}
+            id="pg-3ds-flow"
+            options={[
+              { value: '', label: 'Not sent', description: 'The test card and indicator decide' },
+              { value: 'frictionless', label: 'frictionless' },
+              { value: 'challenge', label: 'challenge' },
+            ]}
+            value={form.threeDS.flow}
+            onChange={(flow3) => set3ds({ flow: flow3 })}
           />
+        </Row>
+        <Row label="Any card enrolled" hint="3DS2_enrolled">
+          <Toggle checked={form.threeDS.enrolled} label="Treat any test card as enrolled" onChange={(enrolled) => set3ds({ enrolled })} />
         </Row>
         <Row label="Browser data" hint="customer.browser.*">
           <Toggle checked={form.threeDS.browser} label="Send the shopper's browser data" onChange={(browser) => set3ds({ browser })} />
@@ -243,78 +328,6 @@ export function RecurringPlayground({ open, onClose, focus, pg }) {
             />
           </Row>
         )}
-        <Row label="Simulator flow" htmlFor="pg-3ds-flow" hint="3DS2_flow">
-          <SelectMenu
-            id="pg-3ds-flow"
-            options={[
-              { value: '', label: 'Not sent', description: 'The test card decides' },
-              { value: 'frictionless', label: 'frictionless' },
-              { value: 'challenge', label: 'challenge' },
-            ]}
-            value={form.threeDS.flow}
-            onChange={(flow3) => set3ds({ flow: flow3 })}
-          />
-        </Row>
-        <Row label="Any card enrolled" hint="3DS2_enrolled">
-          <Toggle checked={form.threeDS.enrolled} label="Treat any test card as enrolled" onChange={(enrolled) => set3ds({ enrolled })} />
-        </Row>
-      </Section>
-
-      {/* Subsequent payments */}
-      <Section id="pg-subsequent" title="Subsequent payment" description="The merchant-initiated payments on the stored card.">
-        <Row label="Amount" htmlFor="pg-repeated-amount" hint="Empty: the initial amount">
-          <TextField
-            id="pg-repeated-amount"
-            value={form.repeated.amount}
-            placeholder={pg.initialAmount}
-            onChange={(amount) => setRepeated({ amount })}
-            trailing={<span className="flex-none font-mono text-xs text-zinc-400">{pg.initialCurrency}</span>}
-          />
-        </Row>
-        <Row label="initialTransactionId" hint="From the initial response">
-          <Toggle checked={form.repeated.sendInitialId} label="Send standingInstruction.initialTransactionId" onChange={(sendInitialId) => setRepeated({ sendInitialId })} />
-        </Row>
-        <Row label="Simulate a decline" hint="Sends the code as card.holder">
-          <Toggle checked={form.repeated.decline} label="Simulate a decline on the subsequent payment" onChange={(decline) => setRepeated({ decline })} />
-        </Row>
-        {form.repeated.decline && (
-          <Row label="Result code" htmlFor="pg-decline-code">
-            <SelectMenu id="pg-decline-code" options={DECLINE_OPTIONS} value={form.repeated.code} searchable onChange={(code) => setRepeated({ code })} searchPlaceholder="Search codes" />
-          </Row>
-        )}
-        {form.repeated.decline && form.repeated.code === 'custom' && (
-          <Row label="Custom code" htmlFor="pg-decline-custom">
-            <TextField id="pg-decline-custom" value={form.repeated.custom} placeholder="800.100.171" onChange={(custom) => setRepeated({ custom })} />
-          </Row>
-        )}
-      </Section>
-
-      {/* Manage the registration */}
-      <Section id="pg-manage" title="Registration" description="Update the stored card, or delete the registration.">
-        <Row label="Action" htmlFor="pg-manage-action">
-          <SelectMenu
-            id="pg-manage-action"
-            options={[
-              { value: 'update', label: 'Update the stored card', meta: 'POST' },
-              { value: 'delete', label: 'Delete the registration', meta: 'DELETE' },
-            ]}
-            value={form.manage.action}
-            onChange={(action) => setManage({ action })}
-          />
-        </Row>
-        {form.manage.action === 'update' && (
-          <>
-            <Row label="New card.holder" htmlFor="pg-manage-holder" hint="Try a decline code">
-              <TextField id="pg-manage-holder" value={form.manage.holder} placeholder="800.100.203" onChange={(holder) => setManage({ holder })} />
-            </Row>
-            <Row label="New expiry" htmlFor="pg-manage-month" hint="Month and year">
-              <div className="grid grid-cols-2 gap-2">
-                <TextField id="pg-manage-month" value={form.manage.expiryMonth} placeholder="MM" onChange={(expiryMonth) => setManage({ expiryMonth })} />
-                <TextField id="pg-manage-year" value={form.manage.expiryYear} placeholder="YYYY" onChange={(expiryYear) => setManage({ expiryYear })} />
-              </div>
-            </Row>
-          </>
-        )}
       </Section>
 
       {/* Testing */}
@@ -331,9 +344,6 @@ export function RecurringPlayground({ open, onClose, focus, pg }) {
             onChange={(testMode) => set({ testMode })}
           />
         </Row>
-        <p className="text-xs/5 text-zinc-500 dark:text-zinc-400">
-          Negative testing (a decline code in card.holder) runs on the test system’s acquirer simulator.
-        </p>
       </Section>
     </PlaygroundShell>
   )
