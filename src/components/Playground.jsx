@@ -47,7 +47,7 @@ function EyeIcon({ off, ...props }) {
 }
 
 // A status line in the settings, as in the design: green when all is well, amber to act on
-function Banner({ tone = 'green', children }) {
+export function Banner({ tone = 'green', children }) {
   return (
     <div
       className={clsx(
@@ -67,7 +67,7 @@ function Banner({ tone = 'green', children }) {
   )
 }
 
-function Section({ id, title, description, action, children }) {
+export function Section({ id, title, description, action, children }) {
   return (
     <section id={id} className="scroll-mt-4 space-y-4 px-5 py-5">
       <div className="flex items-start justify-between gap-4">
@@ -83,7 +83,7 @@ function Section({ id, title, description, action, children }) {
 }
 
 // Label on the left, control on the right (stacks on narrow screens)
-function Row({ label, htmlFor, hint, children }) {
+export function Row({ label, htmlFor, hint, children }) {
   return (
     <div className="grid grid-cols-1 items-center gap-x-4 gap-y-1.5 sm:grid-cols-[8rem_minmax(0,1fr)]">
       <div className="min-w-0">
@@ -100,7 +100,7 @@ function Row({ label, htmlFor, hint, children }) {
 const toNumber = (v) => Number(String(v ?? '').replace(/,/g, ''))
 
 // Minus, the value, plus: steps the amount by 1.00
-function Stepper({ id, value, onChange, readOnly }) {
+export function Stepper({ id, value, onChange, readOnly }) {
   let step = (d) => {
     let n = toNumber(value)
     if (!Number.isFinite(n)) n = 0
@@ -129,7 +129,7 @@ function Stepper({ id, value, onChange, readOnly }) {
   )
 }
 
-function TextField({ id, value, onChange, placeholder, mono = true, type = 'text', invalid, trailing }) {
+export function TextField({ id, value, onChange, placeholder, mono = true, type = 'text', invalid, trailing }) {
   return (
     <FieldBox invalid={invalid} className="flex items-center gap-2">
       <input
@@ -163,19 +163,87 @@ function outsideLimits(brand, currency, amount) {
   return null
 }
 
-// pg: everything the drawer reads and changes (see S2SFlow)
-export function Playground({ open, onClose, focus, pg }) {
+// Credentials: the demo's test entity, or the merchant's own (kept in this tab only)
+// readyText: the green line once the merchant's own credentials are filled in
+export function CredentialsSection({ creds, setCreds, config, readyText = 'Using your test credentials. Your payment brands must be enabled on this entity.' }) {
   let [showToken, setShowToken] = useState(false)
-  let { creds, setCreds, config, flow, brand, form, setForm, missing } = pg
   let host = config?.apiHost || 'eu-test.oppwa.com'
   let base = `https://${host}`
   let entityOk = ENTITY_PATTERN.test(creds.entityId.trim())
   let tokenOk = TOKEN_PATTERN.test(creds.accessToken.trim())
   let ownReady = entityOk && tokenOk
-  let limit = outsideLimits(brand, form.currency, pg.amount)
-  let fieldMissing = missing.filter((k) => !k.startsWith('cart.')).length
+  return (
+    <Section
+      id="pg-credentials"
+      title="Credentials"
+      description="The demo’s test entity, or your own from the Nomupay Dashboard."
+      action={<Toggle checked={creds.useOwn} label="Use your own test credentials" onChange={(useOwn) => setCreds({ ...creds, useOwn })} />}
+    >
+      {!creds.useOwn ? (
+        <Banner>Using the demo’s test credentials.</Banner>
+      ) : ownReady ? (
+        <Banner>{readyText}</Banner>
+      ) : (
+        <Banner tone="amber">Enter your entityId and access token to send requests with them.</Banner>
+      )}
+      {creds.useOwn && (
+        <div className="space-y-3">
+          <InsetField htmlFor="pg-entity" name="entityId" req="M" invalid={Boolean(creds.entityId) && !entityOk}>
+            <input
+              id="pg-entity"
+              type="text"
+              autoComplete="off"
+              spellCheck="false"
+              placeholder="32 characters, 0-9 and a-f"
+              value={creds.entityId}
+              onChange={(e) => setCreds({ ...creds, entityId: e.target.value })}
+              className={clsx(bareInputClass, 'font-mono text-[0.8125rem]')}
+            />
+          </InsetField>
+          <InsetField htmlFor="pg-token" name="Access token" req="M" invalid={Boolean(creds.accessToken) && !tokenOk}>
+            <div className="flex items-center gap-2">
+              <input
+                id="pg-token"
+                type={showToken ? 'text' : 'password'}
+                autoComplete="off"
+                spellCheck="false"
+                placeholder="Bearer token"
+                value={creds.accessToken}
+                onChange={(e) => setCreds({ ...creds, accessToken: e.target.value })}
+                className={clsx(bareInputClass, 'font-mono text-[0.8125rem]')}
+              />
+              <button
+                type="button"
+                aria-label={showToken ? 'Hide the access token' : 'Show the access token'}
+                onClick={() => setShowToken(!showToken)}
+                className="flex-none text-zinc-400 transition hover:text-zinc-700 dark:hover:text-zinc-200"
+              >
+                <EyeIcon off={showToken} className="size-4" />
+              </button>
+            </div>
+          </InsetField>
+          <p className="text-xs/5 text-zinc-500 dark:text-zinc-400">
+            Kept in this browser tab only, and sent with each request to the test system. The code on the page keeps showing{' '}
+            <code className="font-mono">{'{entity_id}'}</code> and <code className="font-mono">{'{access_token}'}</code>.{' '}
+            <a href={CREDENTIALS_URL} target="_blank" rel="noreferrer" className="font-medium text-emerald-600 hover:text-emerald-500 dark:text-emerald-400">
+              Retrieve your Test Credentials ↗
+            </a>
+          </p>
+        </div>
+      )}
+      <Row label="Base URL">
+        <FieldBox className="flex items-center gap-2 py-1.5">
+          <code className="min-w-0 flex-auto truncate font-mono text-[0.8125rem] text-zinc-700 dark:text-zinc-300">{base}</code>
+          <CopyValue value={base} label="base URL" />
+        </FieldBox>
+      </Row>
+    </Section>
+  )
+}
 
-  // Open at the section the merchant came for (the back-office amounts, say)
+// The drawer itself: header, the sections, and the reset / done footer.
+// Opens at the section the merchant came for (pg-{focus}), the back-office amounts, say.
+export function PlaygroundShell({ open, onClose, focus, onReset, children }) {
   useEffect(() => {
     if (!open || !focus) return
     let t = setTimeout(() => document.getElementById(`pg-${focus}`)?.scrollIntoView({ block: 'start' }), 320)
@@ -213,80 +281,48 @@ export function Playground({ open, onClose, focus, pg }) {
               </button>
             </div>
 
-            <div className="flex-auto divide-y divide-zinc-900/7.5 overflow-y-auto dark:divide-white/10">
-              {/* Credentials */}
-              <Section
-                id="pg-credentials"
-                title="Credentials"
-                description="The demo’s test entity, or your own from the Nomupay Dashboard."
-                action={
-                  <Toggle
-                    checked={creds.useOwn}
-                    label="Use your own test credentials"
-                    onChange={(useOwn) => setCreds({ ...creds, useOwn })}
-                  />
-                }
-              >
-                {!creds.useOwn ? (
-                  <Banner>Using the demo’s test credentials.</Banner>
-                ) : ownReady ? (
-                  <Banner>Using your test credentials. Your payment brands must be enabled on this entity.</Banner>
-                ) : (
-                  <Banner tone="amber">Enter your entityId and access token to send requests with them.</Banner>
-                )}
-                {creds.useOwn && (
-                  <div className="space-y-3">
-                    <InsetField htmlFor="pg-entity" name="entityId" req="M" invalid={Boolean(creds.entityId) && !entityOk}>
-                      <input
-                        id="pg-entity"
-                        type="text"
-                        autoComplete="off"
-                        spellCheck="false"
-                        placeholder="32 characters, 0-9 and a-f"
-                        value={creds.entityId}
-                        onChange={(e) => setCreds({ ...creds, entityId: e.target.value })}
-                        className={clsx(bareInputClass, 'font-mono text-[0.8125rem]')}
-                      />
-                    </InsetField>
-                    <InsetField htmlFor="pg-token" name="Access token" req="M" invalid={Boolean(creds.accessToken) && !tokenOk}>
-                      <div className="flex items-center gap-2">
-                        <input
-                          id="pg-token"
-                          type={showToken ? 'text' : 'password'}
-                          autoComplete="off"
-                          spellCheck="false"
-                          placeholder="Bearer token"
-                          value={creds.accessToken}
-                          onChange={(e) => setCreds({ ...creds, accessToken: e.target.value })}
-                          className={clsx(bareInputClass, 'font-mono text-[0.8125rem]')}
-                        />
-                        <button
-                          type="button"
-                          aria-label={showToken ? 'Hide the access token' : 'Show the access token'}
-                          onClick={() => setShowToken(!showToken)}
-                          className="flex-none text-zinc-400 transition hover:text-zinc-700 dark:hover:text-zinc-200"
-                        >
-                          <EyeIcon off={showToken} className="size-4" />
-                        </button>
-                      </div>
-                    </InsetField>
-                    <p className="text-xs/5 text-zinc-500 dark:text-zinc-400">
-                      Kept in this browser tab only, and sent with each request to the test system. The code on the page keeps showing{' '}
-                      <code className="font-mono">{'{entity_id}'}</code> and <code className="font-mono">{'{access_token}'}</code>.{' '}
-                      <a href={CREDENTIALS_URL} target="_blank" rel="noreferrer" className="font-medium text-emerald-600 hover:text-emerald-500 dark:text-emerald-400">
-                        Retrieve your Test Credentials ↗
-                      </a>
-                    </p>
-                  </div>
-                )}
-                <Row label="Base URL">
-                  <FieldBox className="flex items-center gap-2 py-1.5">
-                    <code className="min-w-0 flex-auto truncate font-mono text-[0.8125rem] text-zinc-700 dark:text-zinc-300">{base}</code>
-                    <CopyValue value={base} label="base URL" />
-                  </FieldBox>
-                </Row>
-              </Section>
+            <div className="flex-auto divide-y divide-zinc-900/7.5 overflow-y-auto dark:divide-white/10">{children}</div>
 
+            <div className="flex items-center justify-between gap-4 border-t border-zinc-900/7.5 px-5 py-3 dark:border-white/10">
+              <button
+                type="button"
+                onClick={onReset}
+                className="text-sm font-medium text-zinc-500 transition hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white"
+              >
+                Reset to defaults
+              </button>
+              <button
+                type="button"
+                onClick={onClose}
+                className="rounded-full bg-emerald-500 px-3.5 py-1.5 text-sm font-medium text-white transition hover:bg-emerald-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-500"
+              >
+                Done
+              </button>
+            </div>
+          </DialogPanel>
+        </div>
+      </div>
+    </Dialog>
+  )
+}
+
+// pg: everything the drawer reads and changes (see S2SFlow)
+export function Playground({ open, onClose, focus, pg }) {
+  let { creds, setCreds, config, flow, brand, form, setForm, missing } = pg
+  let limit = outsideLimits(brand, form.currency, pg.amount)
+  let fieldMissing = missing.filter((k) => !k.startsWith('cart.')).length
+
+  return (
+    <PlaygroundShell open={open} onClose={onClose} focus={focus} onReset={pg.onReset}>
+      <CredentialsSection creds={creds} setCreds={setCreds} config={config} />
+      <PlaygroundBody pg={pg} flow={flow} brand={brand} form={form} setForm={setForm} missing={missing} limit={limit} fieldMissing={fieldMissing} config={config} />
+    </PlaygroundShell>
+  )
+}
+
+function PlaygroundBody({ pg, flow, brand, form, setForm, missing, limit, fieldMissing, config }) {
+  return (
+    <>
               {/* Payment */}
               <Section id="pg-payment" title="Payment" description="The use case, payment brand and amount.">
                 <Row label="Use case" htmlFor="pg-use-case">
@@ -400,27 +436,6 @@ export function Playground({ open, onClose, focus, pg }) {
                   </Row>
                 </Section>
               )}
-            </div>
-
-            <div className="flex items-center justify-between gap-4 border-t border-zinc-900/7.5 px-5 py-3 dark:border-white/10">
-              <button
-                type="button"
-                onClick={pg.onReset}
-                className="text-sm font-medium text-zinc-500 transition hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white"
-              >
-                Reset to defaults
-              </button>
-              <button
-                type="button"
-                onClick={onClose}
-                className="rounded-full bg-emerald-500 px-3.5 py-1.5 text-sm font-medium text-white transition hover:bg-emerald-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-500"
-              >
-                Done
-              </button>
-            </div>
-          </DialogPanel>
-        </div>
-      </div>
-    </Dialog>
+    </>
   )
 }

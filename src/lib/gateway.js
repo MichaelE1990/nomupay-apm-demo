@@ -72,7 +72,8 @@ export function credentialsFor(input, kind = 'wallet') {
 export async function gateway(method, path, params, creds) {
   let { token } = typeof creds === 'string' ? entity(creds) : creds
   let query = new URLSearchParams(params).toString()
-  let url = method === 'GET' ? `${API_BASE_URL}${path}?${query}` : `${API_BASE_URL}${path}`
+  // GET and DELETE carry the parameters in the query string, POST in a form body
+  let url = method === 'POST' ? `${API_BASE_URL}${path}` : `${API_BASE_URL}${path}?${query}`
   let response = await fetch(url, {
     method,
     headers: {
@@ -93,8 +94,14 @@ export async function gateway(method, path, params, creds) {
   return { httpStatus: response.status, data, status: classify(data.result?.code) }
 }
 
+// What the demo echoes back about a request: entity IDs and card data masked
 export function masked(params) {
-  return params.map(([k, v]) => [k, k === 'entityId' ? maskEntity(v) : v])
+  return params.map(([k, v]) => {
+    if (k === 'entityId') return [k, maskEntity(v)]
+    if (k === 'card.number') return [k, `${String(v).slice(0, 6)}••••••${String(v).slice(-4)}`]
+    if (k === 'card.cvv') return [k, '•••']
+    return [k, v]
+  })
 }
 
 /** Validate a payment input from the browser. Returns an error message or null. */

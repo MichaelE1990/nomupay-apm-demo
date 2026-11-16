@@ -6,7 +6,9 @@ const span = (token, html) => `<span style="color:var(--shiki-token-${token})">$
 
 // The request as docs.oppwa.com shows it: the URL, each parameter as -d, then the header
 export function buildCurl({ method = 'POST', url, params = [], token = '{access_token}' }) {
-  const lines = [method === 'GET' ? `curl -G ${url} \\` : `curl ${url} \\`]
+  // -G sends the -d parameters in the query string (GET, and DELETE with -X)
+  const head = method === 'GET' ? 'curl -G' : method === 'DELETE' ? 'curl -X DELETE -G' : 'curl'
+  const lines = [`${head} ${url} \\`]
   params.forEach(([k, v]) => lines.push(` -d "${k}=${String(v).replace(/"/g, '\\"')}" \\`))
   lines.push(` -H "Authorization: Bearer ${token}"`)
   return lines.join('\n')
@@ -18,15 +20,16 @@ export function buildJs({ method = 'POST', url, params = [], token = '{access_to
   const q = (s) => `'${String(s).replace(/\\/g, '\\\\').replace(/'/g, "\\'")}'`
   const key = (k) => (/^[A-Za-z_$][\w$]*$/.test(k) ? k : q(k))
   const auth = `  headers: { Authorization: ${q(`Bearer ${token}`)} },`
-  if (method === 'GET')
+  if (method === 'GET' || method === 'DELETE')
     return [
       `const url = new URL(${q(url)})`,
       ...params.map(([k, v]) => `url.searchParams.set(${q(k)}, ${q(v)})`),
       '',
       'const response = await fetch(url, {',
+      ...(method === 'DELETE' ? ["  method: 'DELETE',"] : []),
       auth,
       '})',
-      'const payment = await response.json()',
+      `const ${method === 'DELETE' ? 'result' : 'payment'} = await response.json()`,
     ].join('\n')
   return [
     `const response = await fetch(${q(url)}, {`,
@@ -54,7 +57,7 @@ export function highlightCurl(code) {
   return code
     .split('\n')
     .map((line) => {
-      const head = line.match(/^(curl)( -G)?( \S+)( \\)?$/)
+      const head = line.match(/^(curl)((?: -X [A-Z]+)?(?: -G)?)( \S+)( \\)?$/)
       if (head) return `${span('keyword', 'curl')}${head[2] ? span('parameter', head[2]) : ''}${esc(head[3])}${head[4] ? esc(head[4]) : ''}`
       const flag = line.match(/^(\s*)(-[A-Za-z])( )(".*")( \\)?$/)
       if (flag) return `${esc(flag[1])}${span('parameter', flag[2])} ${span('string', esc(flag[4]))}${flag[5] ? esc(flag[5]) : ''}`

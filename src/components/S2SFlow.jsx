@@ -161,7 +161,7 @@ const NOTE_ICONS = {
   failed: 'text-rose-600 dark:text-rose-400',
 }
 
-function StepNote({ status, title, children }) {
+export function StepNote({ status, title, children }) {
   let tone = NOTE_TONES[status] ? status : 'failed'
   return (
     <div className={clsx('not-prose mt-4 flex items-start gap-2.5 rounded-xl px-4 py-3 text-sm ring-1 ring-inset', NOTE_TONES[tone])}>
@@ -173,7 +173,7 @@ function StepNote({ status, title, children }) {
   )
 }
 
-function StepLink({ step }) {
+export function StepLink({ step }) {
   if (!step) return null
   return (
     <a href={`#${step.id}`} className="font-medium underline decoration-current/30 underline-offset-2 hover:decoration-current">
@@ -182,7 +182,7 @@ function StepLink({ step }) {
   )
 }
 
-const resultText = (data) => {
+export const resultText = (data) => {
   let r = data?.response?.result
   return r ? `${r.description || ''}${r.code ? ` (${r.code})` : ''}`.trim() : data?.response?.raw || ''
 }

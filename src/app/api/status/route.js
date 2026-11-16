@@ -29,12 +29,14 @@ export async function GET(request) {
   return status(path, kind, creds)
 }
 
-// The same with the merchant's own test credentials, which stay out of the URL
+// The same with the merchant's own test credentials, which stay out of the URL.
+// entity: 'card' reads a card payment (recurring) with the demo's card entity
 export async function POST(request) {
   let input = await request.json().catch(() => ({}))
-  let creds = credentialsFor(input, 'wallet')
+  let kind = input.entity === 'card' ? 'card' : 'wallet'
+  let creds = credentialsFor(input, kind)
   if (creds.error) return Response.json({ error: creds.error }, { status: creds.status })
   let path = pathFrom(input.resourcePath, input.id)
   if (!path) return Response.json({ error: 'Give a 32-character payment ID or a resourcePath.' }, { status: 400 })
-  return status(path, 'wallet', creds)
+  return status(path, kind, creds)
 }

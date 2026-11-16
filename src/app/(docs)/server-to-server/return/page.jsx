@@ -5,7 +5,7 @@ import { ReturnBridge } from '@/components/ReturnBridge'
 import { S2SFlow } from '@/components/S2SFlow'
 
 export const metadata = {
-  title: 'Server-to-server',
+  title: 'Nomupay PPRO Server to Server APMs',
   robots: { index: false },
 }
 
@@ -19,7 +19,7 @@ export default function ServerToServerReturnPage() {
     <Article>
       <script dangerouslySetInnerHTML={{ __html: EMBED_SCRIPT }} />
       <ReturnBridge />
-      <h1>Server-to-server</h1>
+      <h1>Nomupay PPRO Server to Server APMs</h1>
       <p className="lead">
         The shopper is back from the payment page. The status step reads the result with the payment ID the gateway added to this address.
       </p>

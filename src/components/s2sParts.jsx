@@ -118,7 +118,7 @@ function FlowCard({ mode, selected, onSelect, tray }) {
             : 'bg-zinc-50 hover:shadow-md hover:shadow-zinc-900/5 dark:bg-white/2.5 dark:hover:shadow-black/5',
         )}
       >
-        <ResourcePattern {...FLOW_PATTERNS[mode.value]} mouseX={mouseX} mouseY={mouseY} />
+        <ResourcePattern {...(mode.pattern || FLOW_PATTERNS[mode.value] || FLOW_PATTERNS.async)} mouseX={mouseX} mouseY={mouseY} />
         <div
           className={clsx(
             'absolute inset-0 rounded-2xl ring-1 ring-inset',
@@ -133,7 +133,7 @@ function FlowCard({ mode, selected, onSelect, tray }) {
           className="relative flex w-full flex-col justify-start rounded-2xl px-4 pt-5 pb-4 text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-500"
         >
           <span className="flex items-start justify-between">
-            <ResourceIcon icon={FLOW_ICONS[mode.value]} />
+            <ResourceIcon icon={mode.icon || FLOW_ICONS[mode.value] || RedirectIcon} />
             <Radio on={selected} />
           </span>
           <span className="mt-6 block text-sm/7 font-semibold text-zinc-900 dark:text-white">{mode.title}</span>
@@ -151,10 +151,11 @@ function FlowCard({ mode, selected, onSelect, tray }) {
   )
 }
 
-// modes: [{ value, title, description, flows: [{ value, title, types: ['PA','CP'] }] }]
-export function FlowCards({ modes, mode, tx, onChange }) {
+// modes: [{ value, title, description, icon?, pattern?, flows: [{ value, title, types: ['PA','CP'] }] }]
+// trayLabel: the heading over each card's options
+export function FlowCards({ modes, mode, tx, onChange, label = 'Payment flow', trayLabel = 'Transaction flow' }) {
   return (
-    <div role="radiogroup" aria-label="Payment flow" className="not-prose my-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:max-w-none">
+    <div role="radiogroup" aria-label={label} className="not-prose my-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:max-w-none">
       {modes.map((m) => {
         let selected = m.value === mode
         return (
@@ -165,8 +166,8 @@ export function FlowCards({ modes, mode, tx, onChange }) {
             onSelect={() => onChange({ mode: m.value, tx: m.flows.some((f) => f.value === tx) ? tx : m.flows[0].value })}
             tray={
               <div className="px-4 pt-3.5 pb-4">
-                <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">Transaction flow</p>
-                <div role="radiogroup" aria-label={`${m.title}: transaction flow`} className="mt-2 grid gap-1">
+                <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">{trayLabel}</p>
+                <div role="radiogroup" aria-label={`${m.title}: ${trayLabel.toLowerCase()}`} className="mt-2 grid gap-1">
                   {m.flows.map((f) => {
                     let on = selected && f.value === tx
                     return (
@@ -209,8 +210,8 @@ export const LANES = [
   { id: 'gateway', label: 'Payment gateway', bar: 'bg-sky-500 dark:bg-sky-400' },
   { id: 'brand', label: 'Payment brand', bar: 'bg-violet-500 dark:bg-violet-400' },
 ]
-const laneIndex = (id) => LANES.findIndex((l) => l.id === id)
-const laneCenter = (i) => `${((i + 0.5) / LANES.length) * 100}%`
+const laneIndex = (lanes, id) => lanes.findIndex((l) => l.id === id)
+const laneCenter = (lanes, i) => `${((i + 0.5) / lanes.length) * 100}%`
 
 function ArrowHead({ dir }) {
   return (
@@ -260,9 +261,9 @@ function MessageBox({ message, maxWidth }) {
   )
 }
 
-function MessageRow({ message }) {
-  let a = laneIndex(message.from)
-  let b = laneIndex(message.to || message.from)
+function MessageRow({ message, lanes }) {
+  let a = laneIndex(lanes, message.from)
+  let b = laneIndex(lanes, message.to || message.from)
   let lo = Math.min(a, b)
   let hi = Math.max(a, b)
   let span = hi - lo + 1
@@ -276,8 +277,8 @@ function MessageRow({ message }) {
         <span
           key={i}
           aria-hidden="true"
-          className={clsx('absolute inset-y-1 w-[3px] -translate-x-1/2 rounded-full opacity-80', LANES[i].bar)}
-          style={{ left: laneCenter(i) }}
+          className={clsx('absolute inset-y-1 w-[3px] -translate-x-1/2 rounded-full opacity-80', lanes[i].bar)}
+          style={{ left: laneCenter(lanes, i) }}
         />
       ))}
       <div className="relative flex justify-center" style={{ gridColumn: `${lo + 1} / ${hi + 2}` }}>
@@ -300,7 +301,8 @@ function MessageRow({ message }) {
 }
 
 // messages: [{ from, to?, label, detail?, step?, href?, kind: 'request' | 'response' | 'note', optional? }]
-export function SequenceDiagram({ title, messages }) {
+// lanes: four lifelines, LANES unless the flow has other parties (a card issuer, say)
+export function SequenceDiagram({ title, messages, lanes = LANES }) {
   return (
     <figure className="not-prose my-6 overflow-hidden rounded-2xl xl:max-w-none bg-zinc-50 ring-1 ring-zinc-900/7.5 dark:bg-white/2.5 dark:ring-white/10">
       {title && (
@@ -310,14 +312,14 @@ export function SequenceDiagram({ title, messages }) {
         <div className="relative min-w-[44rem] px-2 pt-4 pb-5">
           {/* Lifelines */}
           <div aria-hidden="true" className="pointer-events-none absolute inset-x-2 top-12 bottom-3 grid grid-cols-4">
-            {LANES.map((l) => (
+            {lanes.map((l) => (
               <div key={l.id} className="flex justify-center">
                 <span className="w-px bg-zinc-300 dark:bg-white/15" />
               </div>
             ))}
           </div>
           <div className="relative grid grid-cols-4 pb-5">
-            {LANES.map((l) => (
+            {lanes.map((l) => (
               <div key={l.id} className="flex flex-col items-center gap-2">
                 <span className="text-xs font-semibold text-zinc-900 dark:text-white">{l.label}</span>
                 <span aria-hidden="true" className={clsx('h-3 w-[3px] rounded-full', l.bar)} />
@@ -326,7 +328,7 @@ export function SequenceDiagram({ title, messages }) {
           </div>
           <ol role="list" className="relative m-0 list-none p-0">
             {messages.map((m, i) => (
-              <MessageRow key={i} message={m} />
+              <MessageRow key={i} message={m} lanes={lanes} />
             ))}
           </ol>
         </div>

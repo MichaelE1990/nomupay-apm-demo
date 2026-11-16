@@ -7,11 +7,15 @@ export const navigation = [
     sections: [
       { title: 'Introduction', links: [{ title: 'Overview', href: '/' }] },
       {
-        title: 'Integrations',
+        title: 'Alternative Payment Methods',
         links: [
-          { title: 'COPYandPAY', href: '/copyandpay' },
-          { title: 'Server-to-server', href: '/server-to-server' },
+          { title: 'Nomupay PPRO Copy & Pay', href: '/copyandpay' },
+          { title: 'Nomupay PPRO Server to Server APMs', href: '/server-to-server' },
         ],
+      },
+      {
+        title: 'Recurring Payments',
+        links: [{ title: 'Nomupay Server to Server Recurring Payments', href: '/recurring-payments' }],
       },
     ],
   },
@@ -46,6 +50,14 @@ export const allSections = {
     { id: 'redirect-shopper', step: 2, title: 'Redirect shopper' },
     { id: 'get-the-payment-status', step: 3, title: 'Get the payment status', tag: 'GET' },
     { id: 'manage-the-payment', step: 4, title: 'Manage the payment', tag: 'POST' },
+  ],
+  '/recurring-payments': [
+    { id: 'recurring-workflow', title: 'Recurring workflow' },
+    { id: 'send-the-initial-payment', step: 1, title: 'Send the initial payment', tag: 'POST' },
+    { id: 'authenticate-the-shopper', step: 2, title: 'Authenticate the shopper' },
+    { id: 'get-the-payment-status', step: 3, title: 'Get the payment status', tag: 'GET' },
+    { id: 'send-a-subsequent-payment', step: 4, title: 'Send a subsequent payment', tag: 'POST' },
+    { id: 'manage-the-registration', step: 5, title: 'Manage the registration', tag: 'POST' },
   ],
 }
 

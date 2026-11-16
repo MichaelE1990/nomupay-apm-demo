@@ -4,7 +4,7 @@ import { Article } from '@/components/Article'
 import { CopyAndPayFlow } from '@/components/CopyAndPayFlow'
 
 export const metadata = {
-  title: 'COPYandPAY',
+  title: 'Nomupay PPRO Copy & Pay',
   robots: { index: false },
 }
 
@@ -12,7 +12,7 @@ export const metadata = {
 export default function CopyAndPayReturnPage() {
   return (
     <Article>
-      <h1>COPYandPAY</h1>
+      <h1>Nomupay PPRO Copy &amp; Pay</h1>
       <p className="lead">
         The shopper is back from the payment page. Step 3 reads the result with the <code>resourcePath</code> the widget added to this URL.
       </p>

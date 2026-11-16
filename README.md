@@ -4,7 +4,9 @@ A test bench for payment brands (APMs) and cards on the ACI/OPPWA gateway, in th
 
 ## Guides
 
-**COPYandPAY** (`/copyandpay`)
+The sidebar has two sections of guides: **Alternative Payment Methods** (Nomupay PPRO Copy & Pay, Nomupay PPRO Server to Server APMs) and **Recurring Payments** (Nomupay Server to Server Recurring Payments).
+
+**Nomupay PPRO Copy & Pay** (`/copyandpay`)
 
 1. **Prepare the checkout**: `POST /v1/checkouts`. Choose any mix of payment brands and cards in the multi-select, set the amount, and add extras:
    - *Customer & billing details* adds `customer.*`, `billing.*` and `shipping.*`
@@ -12,7 +14,7 @@ A test bench for payment brands (APMs) and cards on the ACI/OPPWA gateway, in th
 2. **Render the payment form**: the HTML for `paymentWidgets.js` with the real `checkoutId`, `integrity` and `data-brands`, and a checkout page that runs it.
 3. **Get the payment result**: `GET /v1/checkouts/{id}/payment`, read automatically when the shopper comes back.
 
-**Server-to-server** (`/server-to-server`)
+**Nomupay PPRO Server to Server APMs** (`/server-to-server`)
 
 *Payment workflow* comes first: an overview, then *Transaction flow model*, a sequence diagram of the requests between the shopper, the merchant server, the payment gateway and the payment brand (the numbered requests link to the steps), then *Use cases* with two cards for the payment flow (Asynchronous, or Synchronous for Bizum and Swish with the shopper's mobile number). The chosen card opens a tray with its transaction flows (Debit, or Pre-authorization + Capture for PayPay; synchronous offers Debit only). The steps follow the server-to-server guide on docs.oppwa.com.
 
@@ -26,7 +28,19 @@ Request panels have cURL and JavaScript (Node.js fetch) tabs, kept in step acros
 4. **Capture the payment** (pre-authorization only): `POST /v1/payments/{id}` with `paymentType=CP`.
 5. **Manage the payment** (optional): a full or partial refund, `paymentType=RF`, for brands that allow refunds. Capture and refund send the same `testMode` as the payment, or the gateway answers `700.100.600`. Refunds come back pending (`000.200.001`) while the brand processes them.
 
-The sidebar is organised like a help centre: the Guides category, its sections (Introduction; Integrations), the articles in each, and the open article's chapters under it. Breadcrumbs above each article show the same path.
+**Nomupay Server to Server Recurring Payments** (`/recurring-payments`)
+
+Card on file with cards (Visa, Mastercard) on the card entity, following the Card on File and Server-to-Server Registration Tokens guides on docs.oppwa.com. *Recurring workflow* explains the two phases (initial CIT, subsequent MIT), with a sequence diagram (shopper, merchant server, payment gateway, card issuer) and *Use cases*: Scheduled payments (Subscription `RECURRING`, Installments `INSTALLMENT`) or Unscheduled card on file (`UNSCHEDULED`).
+
+1. **Send the initial payment**: `POST /v1/payments` with the card, `standingInstruction.mode=INITIAL`, `source=CIT`, the agreement type (plus `recurringType`, `frequency`, `expiry`, `numberOfInstallments` where they apply) and `createRegistration=true`. Customer, billing and the browser data for 3-D Secure 2 (`customer.ip`, `customer.browser.*`) are sent by default. Test cards include 3-D Secure frictionless and challenge cards, and the 3DS simulator's `customParameters[3DS2_flow]` / `[3DS2_enrolled]` can be set in the Playground.
+2. **Authenticate the shopper**: only when step 1 is pending with a redirect; the issuer's page opens in the drawer and returns to `/recurring-payments/return`.
+3. **Get the payment status**: `GET /v1/payments/{id}` on the card entity; once approved it carries the `registrationId`.
+4. **Send a subsequent payment**: `POST /v1/registrations/{id}/payments` with `standingInstruction.mode=REPEATED`, `source=MIT` (optionally `initialTransactionId`). *Simulate a decline* sends a result code as `card.holder`, the negative testing trigger from the Help Centre's Negative Testing Integration Sheet (any rejection code; not `000.xxx.xxx`). Every subsequent payment is listed in a table with the code sent and the result.
+5. **Manage the registration** (optional): update the stored card (`POST /v1/registrations/{id}` with new `card.holder` / expiry) or delete it (`DELETE /v1/registrations/{id}`), then send another subsequent payment to see the failure.
+
+Card details are only accepted when `API_HOST` is a test host, and the card number and CVV are masked in what the demo echoes back.
+
+The sidebar is organised like a help centre: the Guides category, its sections (Introduction; Alternative Payment Methods; Recurring Payments), the articles in each, and the open article's chapters under it. Breadcrumbs above each article show the same path.
 
 The introduction covers getting started and credentials (entityId and the access token as a Bearer header, from the Credentials section of the Nomupay Dashboard), and links to both guides.
 
@@ -93,10 +107,14 @@ Next.js, Tailwind CSS and Headless UI. The layout, navigation, code panels and b
 | `/` | Overview: getting started, credentials, guides |
 | `/copyandpay`, `/copyandpay/return` | COPYandPAY guide; the return page is the widget's form action |
 | `/server-to-server`, `/server-to-server/return` | Server-to-server guide; the return page is the `shopperResultUrl`, and inside the drawer or popup it messages the guide instead |
+| `/recurring-payments`, `/recurring-payments/return` | Recurring payments guide; the return page is the `shopperResultUrl` after 3-D Secure |
 | `/checkout/{checkoutId}` | Checkout page running `paymentWidgets.js` |
 | `POST /api/checkouts` | Creates a COPYandPAY checkout |
 | `POST /api/payments` | Server-to-server payment (with your own test credentials when the body carries them) |
 | `POST /api/payments/{id}` | Capture (CP) or refund (RF) of an earlier payment |
+| `POST /api/recurring/payments` | Recurring initial payment (CIT) with `createRegistration=true`, on the card entity |
+| `POST /api/recurring/registrations/{id}/payments` | Recurring subsequent payment (MIT) on a registration, with an optional decline code as `card.holder` |
+| `POST /api/recurring/registrations/{id}` | Update (`action: update`) or delete (`action: delete`) a registration |
 | `GET /api/status?resourcePath=…&entity=…` | Payment or checkout status |
-| `POST /api/status` | Payment status with your own test credentials, which stay out of the URL |
+| `POST /api/status` | Payment status with your own test credentials, which stay out of the URL (`entity: card` for card payments) |
 | `GET /api/config` | Environment summary and payment method catalogue |

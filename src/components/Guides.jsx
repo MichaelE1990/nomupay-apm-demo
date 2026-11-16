@@ -25,20 +25,41 @@ function ServerIcon(props) {
   )
 }
 
+function RepeatIcon(props) {
+  return (
+    <svg viewBox="0 0 20 20" aria-hidden="true" {...props}>
+      <path
+        fill="none"
+        strokeWidth="1.25"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M4.25 9.25A5.75 5.75 0 0 1 14.6 5.8l1.15 1.2m0-3.25V7h-3.25M15.75 10.75A5.75 5.75 0 0 1 5.4 14.2l-1.15-1.2m0 3.25V13H7.5"
+      />
+    </svg>
+  )
+}
+
 const guides = [
   {
     href: '/copyandpay',
-    name: 'COPYandPAY',
+    name: 'Nomupay PPRO Copy & Pay',
     description: 'Create a checkout, render the hosted payment form with cards and payment brands, and get the payment result.',
     icon: WidgetIcon,
     pattern: { y: 16, squares: [[0, 1], [1, 3]] },
   },
   {
     href: '/server-to-server',
-    name: 'Server-to-server',
+    name: 'Nomupay PPRO Server to Server APMs',
     description: 'Send the payment from your server, redirect the shopper to the payment brand, get the payment status and refund it.',
     icon: ServerIcon,
     pattern: { y: -6, squares: [[-1, 2], [1, 3]] },
+  },
+  {
+    href: '/recurring-payments',
+    name: 'Nomupay Server to Server Recurring Payments',
+    description: 'Store a card with an initial payment, charge it again without the shopper, and simulate declines on the subsequent payments.',
+    icon: RepeatIcon,
+    pattern: { y: 22, squares: [[0, 2], [1, 4]] },
   },
 ]
 
