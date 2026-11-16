@@ -10,7 +10,7 @@ export async function POST(request, { params: routeParams }) {
   let { id } = await routeParams
   if (!REGISTRATION_ID.test(id || '')) return Response.json({ error: 'The registrationId must be 32 characters.' }, { status: 400 })
   let input = await request.json().catch(() => ({}))
-  let creds = credentialsFor(input, 'card')
+  let creds = credentialsFor({}, 'recurring')
   if (creds.error) return Response.json({ error: creds.error }, { status: creds.status })
   let error = validateManage(input)
   if (error) return Response.json({ error }, { status: 400 })

@@ -15,7 +15,7 @@ export async function POST(request) {
   // Card data only ever goes to the test system from this demo
   if (!IS_TEST) return Response.json({ error: 'The recurring guide only runs against the test system.' }, { status: 400 })
   let input = await request.json().catch(() => ({}))
-  let creds = credentialsFor(input, 'card')
+  let creds = credentialsFor({}, 'recurring')
   if (creds.error) return Response.json({ error: creds.error }, { status: creds.status })
   let error = validateInitial(input)
   if (error) return Response.json({ error }, { status: 400 })

@@ -345,7 +345,7 @@ export function RecurringFlow({ mode = 'start' }) {
     setError({})
     try {
       statusCalls.current[path] = [...(statusCalls.current[path] || []), Date.now()]
-      let data = await postJson('/api/status', { resourcePath: path, credentials, entity: 'card' })
+      let data = await postJson('/api/status', { resourcePath: path, entity: 'recurring' })
       if (data.status === 'throttled') {
         setError({ status: `${THROTTLED_TEXT} Wait a moment and check again.` })
         return null

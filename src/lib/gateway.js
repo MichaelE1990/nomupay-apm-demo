@@ -11,13 +11,21 @@ export const API_BASE_URL = (env('API_BASE_URL') || `https://${API_HOST}`).repla
 export const IS_TEST = /test/i.test(API_HOST)
 export const TEST_MODE = process.env.TEST_MODE !== undefined ? env('TEST_MODE') : IS_TEST ? 'EXTERNAL' : ''
 
+// The recurring guide always runs on the test card channel with 3-D Secure 2 and
+// registrations ("Demo Channel - 3DV2"), with the demo's access token
+const RECURRING_ENTITY_ID = '8ac7a4c781a732090181aaf9f6fc15d4'
+
 const ENTITIES = {
   wallet: { id: env('ENTITY_ID'), token: env('ACCESS_TOKEN') },
   card: { id: env('CARD_ENTITY_ID') || env('ENTITY_ID'), token: env('CARD_ACCESS_TOKEN') || env('ACCESS_TOKEN') },
+  recurring: {
+    id: env('RECURRING_ENTITY_ID') || RECURRING_ENTITY_ID,
+    token: env('RECURRING_ACCESS_TOKEN') || env('CARD_ACCESS_TOKEN') || env('ACCESS_TOKEN'),
+  },
 }
 
 export function entity(kind) {
-  return ENTITIES[kind === 'card' ? 'card' : 'wallet']
+  return ENTITIES[kind in ENTITIES ? kind : 'wallet']
 }
 
 export const CONFIGURED = Boolean(ENTITIES.wallet.id && ENTITIES.wallet.token)
@@ -34,6 +42,7 @@ export function publicConfig() {
       wallet: maskEntity(ENTITIES.wallet.id),
       card: maskEntity(ENTITIES.card.id),
       cardDedicated: Boolean(env('CARD_ENTITY_ID')),
+      recurring: maskEntity(ENTITIES.recurring.id),
     },
   }
 }
