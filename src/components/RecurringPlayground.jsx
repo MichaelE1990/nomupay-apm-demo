@@ -5,7 +5,7 @@ import clsx from 'clsx'
 import { Banner, PlaygroundShell, Row, Section, Stepper, TextField } from '@/components/Playground'
 import { SegmentedControl, Toggle } from '@/components/forms'
 import { SelectMenu } from '@/components/select'
-import { AGREEMENTS, CUSTOMER_KEYS, DECLINE_CODES, RECURRING_BRANDS, RECURRING_CURRENCIES, TEST_CARDS } from '@/lib/recurring'
+import { AGREEMENTS, CUSTOMER_KEYS, DECLINE_CODE, DECLINE_CODES, RECURRING_BRANDS, RECURRING_CURRENCIES, TEST_CARDS } from '@/lib/recurring'
 
 // The Playground for the recurring guide sets up the initial payment: the agreement, the
 // card, the shopper and 3-D Secure. The demo always runs on the test system's 3DV2 card
@@ -138,6 +138,7 @@ export function RecurringPlayground({ open, onClose, focus, pg }) {
   let needs = AGREEMENTS[flow.tx]?.needs || []
   let invalid = (key) => missing.includes(key)
   let preset = TEST_CARDS.find((c) => c.value === form.preset)
+  let declining = DECLINE_CODE.test(form.card.holder.trim()) && form.testMode === 'EXTERNAL'
 
   function choosePreset(value) {
     let card = TEST_CARDS.find((c) => c.value === value)
@@ -198,7 +199,7 @@ export function RecurringPlayground({ open, onClose, focus, pg }) {
             />
           </Row>
         )}
-        <Row label="Customer ID" htmlFor="pg-customer-id" hint="customer.merchantCustomerId">
+        <Row label="Customer ID" htmlFor="pg-customer-id" hint="merchantCustomerId">
           <TextField id="pg-customer-id" value={form.merchantCustomerId} placeholder="Not sent if empty" onChange={(merchantCustomerId) => set({ merchantCustomerId })} />
         </Row>
       </Section>
@@ -331,19 +332,34 @@ export function RecurringPlayground({ open, onClose, focus, pg }) {
       </Section>
 
       {/* Testing */}
-      <Section id="pg-testing" title="Testing" description="Where the test system sends the card payments.">
+      <Section id="pg-testing" title="Testing" description="Where the test system sends the payments. Sent with the initial payment and every payment on the registration.">
         <Row label="testMode" htmlFor="pg-test-mode">
           <SelectMenu
             id="pg-test-mode"
             options={[
-              { value: '', label: 'Not sent', description: 'The simulator (INTERNAL) is the default' },
-              { value: 'INTERNAL', label: 'INTERNAL', description: 'The test simulators' },
-              { value: 'EXTERNAL', label: 'EXTERNAL', description: 'The acquirer’s test system' },
+              { value: '', label: 'Not sent', description: 'Integrator Test Mode: approves every payment' },
+              { value: 'INTERNAL', label: 'INTERNAL', description: 'Integrator Test Mode: approves every payment' },
+              { value: 'EXTERNAL', label: 'EXTERNAL', description: 'Acquirer simulator: applies decline codes' },
             ]}
             value={form.testMode}
             onChange={(testMode) => set({ testMode })}
           />
         </Row>
+        <Banner>
+          To make payments on the registration decline, store a decline code as the card holder and send everything with testMode EXTERNAL. The
+          initial payment declines with the code too, but the card is still stored.{' '}
+          {declining ? (
+            <span className="font-medium">Set up: {form.card.holder} with EXTERNAL.</span>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setForm({ ...form, testMode: 'EXTERNAL', card: { ...form.card, holder: '800.100.203' } })}
+              className="font-semibold underline decoration-current/30 underline-offset-2 hover:decoration-current"
+            >
+              Set up 800.100.203
+            </button>
+          )}
+        </Banner>
       </Section>
     </PlaygroundShell>
   )

@@ -30,13 +30,19 @@ Request panels have cURL and JavaScript (Node.js fetch) tabs, kept in step acros
 
 **Nomupay Server to Server Recurring Payments** (`/recurring-payments`)
 
-Card on file with cards (Visa, Mastercard) on the card entity, following the Card on File and Server-to-Server Registration Tokens guides on docs.oppwa.com. *Recurring workflow* explains the two phases (initial CIT, subsequent MIT), with a sequence diagram (shopper, merchant server, payment gateway, card issuer) and *Use cases*: Scheduled payments (Subscription `RECURRING`, Installments `INSTALLMENT`) or Unscheduled card on file (`UNSCHEDULED`).
+Card on file with cards (Visa, Mastercard) on the test system's 3-D Secure 2 card channel (Demo Channel - 3DV2, entity `8ac7a4c781a732090181aaf9f6fc15d4`, or `RECURRING_ENTITY_ID`), with the demo's access token: the Playground has no credentials or base URL. Following the Card on File and Server-to-Server Registration Tokens guides on docs.oppwa.com. *Recurring workflow* explains the two phases (initial CIT, subsequent MIT), with a sequence diagram (shopper, merchant server, payment gateway, card issuer) and *Use cases*: Scheduled payments (Subscription `RECURRING`, Installments `INSTALLMENT`) or Unscheduled card on file (`UNSCHEDULED`).
 
 1. **Send the initial payment**: `POST /v1/payments` with the card, `standingInstruction.mode=INITIAL`, `source=CIT`, the agreement type (plus `recurringType`, `frequency`, `expiry`, `numberOfInstallments` where they apply) and `createRegistration=true`. Customer, billing and the browser data for 3-D Secure 2 (`customer.ip`, `customer.browser.*`) are sent by default. Test cards include 3-D Secure frictionless and challenge cards, and the 3DS simulator's `customParameters[3DS2_flow]` / `[3DS2_enrolled]` can be set in the Playground.
 2. **Authenticate the shopper**: only when step 1 is pending with a redirect; the issuer's page opens in the drawer and returns to `/recurring-payments/return`.
-3. **Get the payment status**: `GET /v1/payments/{id}` on the card entity; once approved it carries the `registrationId`.
-4. **Send a subsequent payment**: `POST /v1/registrations/{id}/payments` with `standingInstruction.mode=REPEATED`, `source=MIT` (optionally `initialTransactionId`). *Simulate a decline* sends a result code as `card.holder`, the negative testing trigger from the Help Centre's Negative Testing Integration Sheet (any rejection code; not `000.xxx.xxx`). Every subsequent payment is listed in a table with the code sent and the result.
-5. **Manage the registration** (optional): update the stored card (`POST /v1/registrations/{id}` with new `card.holder` / expiry) or delete it (`DELETE /v1/registrations/{id}`), then send another subsequent payment to see the failure.
+3. **Get the payment status**: `GET /v1/payments/{id}` on the recurring entity; it carries the `registrationId`.
+4. **Send a subsequent payment**: `POST /v1/registrations/{id}/payments` with `standingInstruction.mode=REPEATED`, `source=MIT`. The amount can be changed inline. *Simulate a decline* sends the payment with the card details instead (`POST /v1/payments`, REPEATED MIT) with a rejection code as `card.holder` and `testMode=EXTERNAL`. Every subsequent payment is listed in a table with the route, `card.holder`, `testMode` and the result.
+5. **Delete the registration** (optional): `DELETE /v1/registrations/{id}`; a payment on it afterwards is rejected with `100.150.202`. Updating a stored card (`POST /v1/registrations/{id}`) returns 404 on the test system.
+
+Negative testing (the Help Centre's Negative Testing Integration Sheet) as found on the 3DV2 channel:
+
+- It only runs with `testMode=EXTERNAL` (the acquirer simulator). Without `testMode`, or with `INTERNAL`, payments run in Integrator Test Mode and are approved.
+- The simulator reads the holder of the card charged. On a registration that's the holder stored with the initial payment: a `card.holder` in the request is ignored, and a stored card can't be changed.
+- So to decline payments on a registration, send the initial payment with a rejection code as `card.holder` and `testMode=EXTERNAL` (the Playground's Testing section sets this up). The initial payment declines with the code after 3-D Secure, but the card is still stored, and every payment on the registration with `testMode=EXTERNAL` declines with it. Step 4 is enabled once the initial payment has a result, approved or declined.
 
 Card details are only accepted when `API_HOST` is a test host, and the card number and CVV are masked in what the demo echoes back.
 
@@ -113,8 +119,9 @@ Next.js, Tailwind CSS and Headless UI. The layout, navigation, code panels and b
 | `POST /api/payments` | Server-to-server payment (with your own test credentials when the body carries them) |
 | `POST /api/payments/{id}` | Capture (CP) or refund (RF) of an earlier payment |
 | `POST /api/recurring/payments` | Recurring initial payment (CIT) with `createRegistration=true`, on the card entity |
-| `POST /api/recurring/registrations/{id}/payments` | Recurring subsequent payment (MIT) on a registration, with an optional decline code as `card.holder` |
-| `POST /api/recurring/registrations/{id}` | Update (`action: update`) or delete (`action: delete`) a registration |
+| `POST /api/recurring/registrations/{id}/payments` | Recurring subsequent payment (MIT) on a registration |
+| `POST /api/recurring/card-payments` | Recurring subsequent payment (MIT) with the card details, for *Simulate a decline* |
+| `POST /api/recurring/registrations/{id}` | Delete a registration (sent to the gateway as `DELETE /v1/registrations/{id}`) |
 | `GET /api/status?resourcePath=…&entity=…` | Payment or checkout status |
 | `POST /api/status` | Payment status with your own test credentials, which stay out of the URL (`entity: card` for card payments) |
 | `GET /api/config` | Environment summary and payment method catalogue |

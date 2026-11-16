@@ -98,35 +98,49 @@ const PAYMENT_TYPES = {
   PA: 'PA, Preauthorization: a stand-alone authorisation. A Capture (CP) with reference to the Preauthorisation (PA) will confirm the payment.',
 }
 
-// What the demo found when it tested each decline route on the 3DV2 card channel (16 Nov 2026)
+// What the demo found when it tested each decline route on the 3DV2 card channel (16 Nov 2026).
+// Negative testing only runs on the acquirer simulator (testMode=EXTERNAL), and it reads the
+// holder of the card being charged: for a payment on a registration, that's the stored holder.
 const DECLINE_FINDINGS = [
   {
-    route: 'Initial payment with a decline code as card.holder',
-    request: 'POST /v1/payments',
-    result: 'Fails during 3-D Secure (100.390.111), not with the code',
+    route: 'Any payment, decline code as card.holder',
+    testMode: 'Not sent or INTERNAL',
+    result: 'Approved: Integrator Test Mode doesn’t simulate declines',
     works: false,
   },
   {
-    route: 'Subsequent payment on the registration, decline code as card.holder',
-    request: 'POST /v1/registrations/{id}/payments',
-    result: 'Code ignored, approved (with or without testMode)',
+    route: 'Initial payment, decline code as card.holder',
+    testMode: 'EXTERNAL',
+    result: 'Declined with the code after 3-D Secure. The card is still stored in the registration',
+    works: true,
+  },
+  {
+    route: 'Subsequent payment on that registration (decline code stored as the holder)',
+    testMode: 'EXTERNAL',
+    result: 'Declined with the stored code, every time',
+    works: true,
+  },
+  {
+    route: 'Subsequent payment on a registration stored as John Doe, decline code as card.holder',
+    testMode: 'EXTERNAL',
+    result: 'Approved: the request’s card.holder is ignored, the stored holder is used',
     works: false,
   },
   {
     route: 'Subsequent payment with the card details, decline code as card.holder',
-    request: 'POST /v1/payments',
+    testMode: 'EXTERNAL',
     result: 'Declined with the code',
     works: true,
   },
   {
     route: 'Subsequent payment on a deleted registration',
-    request: 'POST /v1/registrations/{id}/payments',
+    testMode: 'Any',
     result: 'Rejected: 100.150.202 registration is already deregistered',
     works: true,
   },
   {
-    route: 'Change the stored card holder',
-    request: 'POST /v1/registrations/{id}',
+    route: 'Change the stored card holder (POST /v1/registrations/{id})',
+    testMode: 'Any',
     result: 'Not supported: 404',
     works: false,
   },
@@ -215,14 +229,14 @@ function Table({ head, children, caption }) {
 
 function DeclineFindings() {
   return (
-    <Table head={['Route', 'Request', 'Result on the test system']}>
+    <Table head={['Payment', 'testMode', 'Result on the test system']}>
       {DECLINE_FINDINGS.map((f) => (
         <tr key={f.route}>
           <td className={td}>{f.route}</td>
-          <td className={clsx(td, 'font-mono text-xs whitespace-nowrap')}>{f.request}</td>
+          <td className={clsx(td, 'font-mono text-xs whitespace-nowrap')}>{f.testMode}</td>
           <td className={td}>
             <span className="flex items-start gap-2">
-              <StatusBadge status={f.works ? 'success' : 'failed'}>{f.works ? 'Works' : 'No'}</StatusBadge>
+              <StatusBadge status={f.works ? 'success' : 'failed'}>{f.works ? 'Declines' : 'No'}</StatusBadge>
               <span>{f.result}</span>
             </span>
           </td>
@@ -237,7 +251,7 @@ function AttemptsTable({ attempts }) {
   if (!attempts.length) return null
   return (
     <Table
-      head={['Time', 'Sent with', 'Amount', 'card.holder', 'Result', 'Status']}
+      head={['Time', 'Sent with', 'Amount', 'card.holder', 'testMode', 'Result', 'Status']}
       caption={
         <div className="mb-3 flex items-baseline justify-between gap-4">
           <h3 className="text-sm font-semibold text-zinc-900 dark:text-white">Subsequent payments sent</h3>
@@ -254,7 +268,8 @@ function AttemptsTable({ attempts }) {
             <td className={clsx(td, 'font-mono text-xs whitespace-nowrap')}>
               {a.amount} {a.currency}
             </td>
-            <td className={clsx(td, 'font-mono text-xs whitespace-nowrap')}>{a.declineCode || '—'}</td>
+            <td className={clsx(td, 'font-mono text-xs whitespace-nowrap')}>{a.route === 'card' ? a.declineCode : <span className="font-sans text-zinc-500 dark:text-zinc-400">Stored</span>}</td>
+            <td className={clsx(td, 'font-mono text-xs whitespace-nowrap')}>{a.testMode || '—'}</td>
             <td className={td}>
               <span className="font-mono text-xs">{r.code || a.error || '—'}</span>
               {r.description && <span className="block text-xs text-zinc-500 dark:text-zinc-400">{r.description}</span>}
@@ -349,12 +364,17 @@ export function RecurringFlow({ mode = 'start' }) {
   let approvedResponse = state.result?.status === 'success' ? state.result.response : initial?.status === 'success' ? initial.response : null
   let registrationId = approvedResponse?.registrationId || state.result?.response?.registrationId || initial?.response?.registrationId || ''
   let approved = Boolean(approvedResponse)
+  // On the test system the card is stored even when the initial payment is declined, which is
+  // how you get a registration that declines (a decline code as its holder, with testMode EXTERNAL)
+  let declinedInitial = state.result?.status === 'failed' || initial?.status === 'failed'
+  let chargeable = Boolean(registrationId) && (approved || declinedInitial)
   let agreedAmount = approvedResponse?.amount || initial?.response?.amount || form.amount
   let agreedCurrency = approvedResponse?.currency || initial?.response?.currency || form.currency
   let deregistered = state.manage?.status === 'success'
 
-  // The subsequent payment. Negative testing reads card.holder from the request, and a payment
-  // on the registration uses the stored card, so a simulated decline goes with the card details
+  // The subsequent payment. Negative testing runs on the acquirer simulator (testMode EXTERNAL)
+  // and reads the holder of the card charged: on the registration that's the stored holder, so a
+  // simulated decline goes with the card details
   let decline = form.repeated.decline
   let declineCode = decline ? (form.repeated.code === 'custom' ? form.repeated.custom.trim() : form.repeated.code) : ''
   let declineInvalid = decline && !DECLINE_CODE.test(declineCode)
@@ -372,6 +392,7 @@ export function RecurringFlow({ mode = 'start' }) {
     paymentBrand: form.paymentBrand,
     card: { number: form.card.number, expiryMonth: form.card.expiryMonth, expiryYear: form.card.expiryYear },
     holder: declineCode,
+    testMode: 'EXTERNAL',
   }
   let repeatedParams =
     route === 'card'
@@ -489,7 +510,10 @@ export function RecurringFlow({ mode = 'start' }) {
           : await postJson(`/api/recurring/registrations/${registrationId}/payments`, { ...repeatedInput, merchantTransactionId: newMerchantTransactionId() })
       setState((s) => ({
         ...s,
-        attempts: [{ ...data, at, route: sentRoute, amount: repeatedInput.amount, currency: repeatedInput.currency, declineCode }, ...(s.attempts || [])].slice(0, MAX_ATTEMPTS),
+        attempts: [
+          { ...data, at, route: sentRoute, amount: repeatedInput.amount, currency: repeatedInput.currency, declineCode, testMode: sentRoute === 'card' ? 'EXTERNAL' : form.testMode },
+          ...(s.attempts || []),
+        ].slice(0, MAX_ATTEMPTS),
       }))
     } catch (e) {
       setError({ repeated: e.message })
@@ -537,6 +561,7 @@ export function RecurringFlow({ mode = 'start' }) {
   let needs = agreement?.needs || []
 
   let values = Object.fromEntries(initialParams)
+  let storedDecline = DECLINE_CODE.test(form.card.holder.trim()) && form.testMode === 'EXTERNAL'
   let row = (key, extra = {}) => ({ doc: recDoc(key, extra.doc), value: extra.value ?? values[key], note: extra.note, missing: missing.includes(key) })
   let groups = [
     {
@@ -554,7 +579,12 @@ export function RecurringFlow({ mode = 'start' }) {
       title: 'Card',
       rows: [
         row('card.number', { doc: { req: 'M' } }),
-        row('card.holder', { doc: { req: 'M' }, note: 'Use a real name. On this channel, a decline code here fails the payment during 3-D Secure (100.390.111).' }),
+        row('card.holder', {
+          doc: { req: 'M' },
+          note: storedDecline
+            ? `A decline code, with testMode EXTERNAL: this payment declines with ${form.card.holder.trim()}, the card is still stored, and every payment on the registration declines the same way.`
+            : 'A name. To make payments on the registration decline, store a decline code here with testMode EXTERNAL (see Testing declines).',
+        }),
         row('card.expiryMonth', { doc: { req: 'M' } }),
         row('card.expiryYear', { doc: { req: 'M' } }),
         row('card.cvv', { doc: { req: 'M' } }),
@@ -643,7 +673,7 @@ export function RecurringFlow({ mode = 'start' }) {
         The registrationId is <code className="font-mono">{initial.response?.registrationId}</code>. Continue to <StepLink step={repeated} /> to charge it.
       </StepNote>
     ) : (
-      <StepNote status="failed" title="Declined, nothing to charge.">
+      <StepNote status="failed" title={initial.response?.registrationId ? 'Declined, card stored.' : 'Declined, nothing to charge.'}>
         {resultText(initial)}
       </StepNote>
     ))
@@ -654,8 +684,8 @@ export function RecurringFlow({ mode = 'start' }) {
     if (lastAttempt.status === 'success')
       return (
         <StepNote status="success" title="Approved.">
-          {lastAttempt.declineCode
-            ? `The gateway didn’t apply ${lastAttempt.declineCode}. Check that testMode isn’t sending it to a real acquirer test system.`
+          {lastAttempt.route === 'registration' && lastAttempt.testMode !== 'EXTERNAL'
+            ? 'Sent without testMode EXTERNAL, so Integrator Test Mode approved it. Turn on Simulate a decline to see a declined payment.'
             : 'Turn on Simulate a decline and send it again to see how a declined payment comes back.'}
         </StepNote>
       )
@@ -720,18 +750,38 @@ export function RecurringFlow({ mode = 'start' }) {
       </p>
       <h3>Testing declines</h3>
       <p>
-        On the test system, a payment is declined with a rejection result code sent as <code>card.holder</code> (see the{' '}
+        On the test system, a payment is declined with a rejection result code as the card holder (see the{' '}
         <a href={NEGATIVE_TESTING_URL} target="_blank" rel="noreferrer">
           Negative Testing Integration Sheet
         </a>
-        ). The gateway only reads it from a request that carries the card details: a payment on a registration uses the stored card. This is what
-        each route does on this channel:
+        ). Two things decide whether it’s applied:
       </p>
+      <ul>
+        <li>
+          <strong>testMode=EXTERNAL.</strong> It sends the payment to the acquirer simulator, which applies the code. Without it, or with INTERNAL,
+          the payment runs in Integrator Test Mode, which approves everything.
+        </li>
+        <li>
+          <strong>The holder of the card charged.</strong> A payment on a registration charges the stored card, so the simulator reads the holder
+          stored with the initial payment and ignores any <code>card.holder</code> in the request. A stored card can’t be changed.
+        </li>
+      </ul>
+      <p>This is what each route did on this channel:</p>
       <DeclineFindings />
+      <p>So there are two ways to see a declined subsequent payment:</p>
+      <ul>
+        <li>
+          <strong>On the registration.</strong> Store a decline code as the card holder: in the{' '}
+          {playgroundLink('testing', 'Playground’s Testing section')}, choose Set up 800.100.203. The initial payment declines with the code, then every payment on the registration in
+          step {repeated.step} declines the same way.
+        </li>
+        <li>
+          <strong>With the card details.</strong> Keep an approved registration and turn on <strong>Simulate a decline</strong> in step{' '}
+          {repeated.step}: the demo sends that payment with the card details, the code and testMode=EXTERNAL.
+        </li>
+      </ul>
       <p>
-        So to see a declined subsequent payment, turn on <strong>Simulate a decline</strong> in step {repeated.step}: the demo then sends the payment
-        with the card details. To see a payment on a cancelled agreement, delete the registration in step {remove.step}, then send another subsequent
-        payment.
+        To see a payment on a cancelled agreement, delete the registration in step {remove.step}, then send another payment in step {repeated.step}.
       </p>
 
       <hr />
@@ -925,8 +975,15 @@ export function RecurringFlow({ mode = 'start' }) {
                 The shopper hasn’t finished 3-D Secure yet. Check the status again in a moment.
               </StepNote>
             ) : (
-              <StepNote status="failed" title="Declined, nothing to charge.">
+              <StepNote status="failed" title={registrationId ? 'Declined, card stored.' : 'Declined, nothing to charge.'}>
                 {resultText(state.result)}
+                {registrationId && (
+                  <>
+                    {' '}
+                    The test system still stored the card in the registration, so you can charge it in <StepLink step={repeated} />. In production, don’t
+                    charge a registration whose initial payment was declined.
+                  </>
+                )}
               </StepNote>
             ))}
         </Col>
@@ -967,7 +1024,9 @@ export function RecurringFlow({ mode = 'start' }) {
               <div className="min-w-0">
                 <p className="text-sm font-medium text-zinc-900 dark:text-white">Simulate a decline</p>
                 <p className="text-xs/5 text-zinc-500 dark:text-zinc-400">
-                  Sends the payment with the card details and the result code as <code className="font-mono">card.holder</code>.
+                  {storedDecline
+                    ? `Not needed: the registration’s stored holder is ${form.card.holder.trim()}, so payments on it already decline.`
+                    : 'Sends this payment with the card details and a decline code.'}
                 </p>
               </div>
               <Toggle checked={decline} label="Simulate a decline" onChange={(on) => setRepeated({ decline: on })} />
@@ -997,9 +1056,10 @@ export function RecurringFlow({ mode = 'start' }) {
                   <p className="text-xs text-rose-700/80 dark:text-rose-300/75">Use a rejection code like 800.100.203. Success and pending codes (000.xxx.xxx) can’t be simulated.</p>
                 )}
                 <p className="text-xs/5 text-zinc-500 dark:text-zinc-400">
-                  The test system ignores a decline code on a payment with the registrationId (it uses the stored card), so this sends{' '}
-                  <code className="font-mono">POST /v1/payments</code> with the card from step {first.step}, as a merchant that stores the card itself
-                  would. The response is the same as a declined payment on the registration.
+                  A payment on the registration charges the stored card, and the test system reads its stored holder ({form.card.holder || 'the initial'}),
+                  not one in the request. So this sends <code className="font-mono">POST /v1/payments</code> with the card from step {first.step}, the
+                  code as <code className="font-mono">card.holder</code> and <code className="font-mono">testMode=EXTERNAL</code>, as a merchant that
+                  stores cards itself would. The declined response looks the same as one on the registration.
                 </p>
               </div>
             )}
@@ -1052,9 +1112,19 @@ export function RecurringFlow({ mode = 'start' }) {
                 />
               )}
             </ParamGroup>
-            {form.testMode && (
-              <ParamGroup title="Testing">
-                <ParamDoc doc={recDoc('testMode', { req: 'T' })} value={form.testMode} />
+            {(route === 'card' || form.testMode) && (
+              <ParamGroup title="Testing" defaultOpen={route === 'card'}>
+                <ParamDoc
+                  doc={recDoc('testMode', { req: 'T' })}
+                  value={repeatedValues.testMode}
+                  note={
+                    route === 'card'
+                      ? 'EXTERNAL: the acquirer simulator applies the decline code.'
+                      : repeatedValues.testMode === 'EXTERNAL'
+                        ? `From the Playground. The acquirer simulator applies the stored holder${storedDecline ? ` (${form.card.holder.trim()})` : ''}.`
+                        : 'From the Playground.'
+                  }
+                />
               </ParamGroup>
             )}
           </ParamGroups>
@@ -1070,11 +1140,11 @@ export function RecurringFlow({ mode = 'start' }) {
             lineNumbers
             footer={
               <div className="flex flex-wrap items-center gap-3">
-                <SendButton onClick={sendRepeated} disabled={!approved || !registrationId || !canSend || declineInvalid || busy === 'repeated'}>
+                <SendButton onClick={sendRepeated} disabled={!(decline ? approved || declinedInitial : chargeable) || !canSend || declineInvalid || busy === 'repeated'}>
                   {busy === 'repeated' ? 'Sending…' : 'Send request'}
                 </SendButton>
                 {sendHint ||
-                  (!approved && <span className="text-xs text-zinc-400">Available once the initial payment is approved (step {status.step}).</span>)}
+                  (!chargeable && <span className="text-xs text-zinc-400">Available once the initial payment has a result (step {status.step}).</span>)}
               </div>
             }
           />
