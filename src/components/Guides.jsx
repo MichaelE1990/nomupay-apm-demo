@@ -39,6 +39,15 @@ function RepeatIcon(props) {
   )
 }
 
+function FundingIcon(props) {
+  return (
+    <svg viewBox="0 0 20 20" aria-hidden="true" {...props}>
+      <rect x="2.75" y="5.25" width="14.5" height="10.5" rx="2" strokeWidth="1.25" />
+      <path fill="none" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round" d="M17.25 9h-3.5a1.75 1.75 0 0 0 0 3.5h3.5M5.25 5.25l7.5-2.5 1 2.5" />
+    </svg>
+  )
+}
+
 const guides = [
   {
     href: '/copyandpay',
@@ -60,6 +69,13 @@ const guides = [
     description: 'Store a card with an initial payment, charge it again without the shopper, and simulate declines on the subsequent payments.',
     icon: RepeatIcon,
     pattern: { y: 22, squares: [[0, 2], [1, 4]] },
+  },
+  {
+    href: '/aft/server-to-server',
+    name: 'AFT Server to Server',
+    description: 'Send an Account Funding Transaction for your MCC, with the Funds Transfer Type, sender and recipient, and get the result.',
+    icon: FundingIcon,
+    pattern: { y: 4, squares: [[-1, 1], [1, 2]] },
   },
 ]
 

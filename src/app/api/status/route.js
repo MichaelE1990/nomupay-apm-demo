@@ -30,12 +30,12 @@ export async function GET(request) {
 }
 
 // The same with the merchant's own test credentials, which stay out of the URL.
-// entity: 'card' reads a card payment (recurring) with the demo's card entity
+// entity: 'card' reads a card payment with the demo's card entity; 'recurring' and 'aft' use the 3DV2 card channel
 export async function POST(request) {
   let input = await request.json().catch(() => ({}))
-  // The recurring guide always reads its payments with the recurring entity
-  let kind = input.entity === 'recurring' ? 'recurring' : input.entity === 'card' ? 'card' : 'wallet'
-  let creds = credentialsFor(kind === 'recurring' ? {} : input, kind)
+  // The recurring and AFT guides always read their payments with their own card entity
+  let kind = ['recurring', 'aft', 'card'].includes(input.entity) ? input.entity : 'wallet'
+  let creds = credentialsFor(kind === 'recurring' || kind === 'aft' ? {} : input, kind)
   if (creds.error) return Response.json({ error: creds.error }, { status: creds.status })
   let path = pathFrom(input.resourcePath, input.id)
   if (!path) return Response.json({ error: 'Give a 32-character payment ID or a resourcePath.' }, { status: 400 })

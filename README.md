@@ -4,7 +4,7 @@ A test bench for payment brands (APMs) and cards on the ACI/OPPWA gateway, in th
 
 ## Guides
 
-The sidebar has two sections of guides: **Alternative Payment Methods** (Nomupay PPRO Copy & Pay, Nomupay PPRO Server to Server APMs) and **Recurring Payments** (Nomupay Server to Server Recurring Payments).
+The sidebar has three sections of guides: **Alternative Payment Methods** (Nomupay PPRO Copy & Pay, Nomupay PPRO Server to Server APMs), **Recurring Payments** (Nomupay Server to Server Recurring Payments) and **AFT** (Server to Server).
 
 **Nomupay PPRO Copy & Pay** (`/copyandpay`)
 
@@ -46,7 +46,35 @@ Negative testing (the Help Centre's Negative Testing Integration Sheet) as found
 
 Card details are only accepted when `API_HOST` is a test host, and the card number and CVV are masked in what the demo echoes back.
 
-The sidebar is organised like a help centre: the Guides category, its sections (Introduction; Alternative Payment Methods; Recurring Payments), the articles in each, and the open article's chapters under it. Breadcrumbs above each article show the same path.
+**AFT Server to Server** (`/aft/server-to-server`)
+
+Account Funding Transactions with cards (Visa, Mastercard) on the same 3-D Secure 2 card channel as the recurring guide (or `AFT_ENTITY_ID`), with the demo's access token. The parameters, formats and requirements follow the Help Centre's [6211 - Security Brokers/Dealers](https://support.nomupay.com/hc/en-gb/articles/34020652253329-6211-Security-Brokers-Dealers) article, the current parameter reference for every MCC, with `customParameters[FundsTransferType]` in place of `transactionBai`. *AFT workflow* explains what an AFT is, with a sequence diagram (shopper, merchant server, payment gateway, card issuer) and *Use cases*: one card per MCC (6211, 6540, 6051, 4829, 6012), whose tray lists the Funds Transfer Types that MCC can send, tagged with the Visa BAI and Mastercard TTI each maps to. A table under the cards shows the same per MCC, with *Not allowed* where a scheme doesn't allow the type.
+
+Which Funds Transfer Type each MCC can send on each scheme comes from Nomupay's mapping (Nov 2026), kept in `src/lib/aft.js` (`FUNDS_TRANSFER_TYPES`):
+
+| FundsTransferType | Visa BAI | Visa MCCs | Mastercard TTI | Mastercard MCCs |
+|---|---|---|---|---|
+| `purchase_crypto` | LA | 6051 | P70 | 6051 |
+| `purchase_high_risk_securities` | LA | 6211 | P71 | 6211 |
+| `purchase_liquid_assets` | LA | 6012, 6051, 6211 | F52 | 6211, 4829 |
+| `wallet_crypto` | LA | 6051 | F52 | 6051 |
+| `wallet_high_risk_securities` | LA | 6211 | F52 | 6211 |
+| `wallet_liquid_assets` | LA | 6012, 6051, 6211 | F52 | 6211, 4829 |
+| `wallet_stored_value` | FT | 4829, 6012, 6540, 6211 (or high brand risk) | F52 | 4829 |
+| `wallet_staged` | WT | 6051 (or high brand risk, gambling) | F61 | 6540 |
+| `own_account` | AA | 4829, 6012, 6211 | F52 | 4829 |
+| `own_prepaid_card` | TU | 6012, 6051, 6540 | F64 | 4829 |
+
+Choosing a type that only one scheme allows switches the card brand (and the test card) to that scheme, and the server rejects a type the MCC doesn't allow on the card's scheme.
+
+1. **Send the AFT payment**: `POST /v1/payments` with the card, `merchantTransactionId` (mandatory), `transactionProcessingCode=FUNDING`, `customParameters[FundsTransferType]`, `customParameters[isDirectPurchase]` (set from the type: true for `purchase_` types, false for the others, and changeable), `transactionPurposeCode` (`HIGHRISKSEC` for 6211; required for Mastercard, and only enforced where the Help Centre documents the value), the sender (`sender.accountNumberType=CARD_ACCOUNT`, names, address, 2-letter country, and `sender.birthDate` when the card was issued abroad) and the recipient (the shopper, the same person as the sender, or the business name with no surname; `recipient.accountNumberType=WALLET_ID` and `recipient.accountNumber`). Customer, billing and the 3-D Secure browser data are sent too.
+2. **Authenticate the shopper**: only when step 1 is pending with a redirect; returns to `/aft/server-to-server/return`.
+3. **Get the payment status**: `GET /v1/payments/{id}` on the AFT entity.
+4. **Capture the payment** (pre-authorization only): `POST /v1/payments/{id}` with `paymentType=CP` and the pre-authorization's `testMode`.
+
+On the test system the payment runs in Integrator Test Mode: the gateway checks the AFT parameters' format (an invalid value comes back as `200.300.404` with `parameterErrors`), but the test channel has no MCC, so the demo does the MCC check. The response echoes `customParameters` and `recipient`, not the sender.
+
+The sidebar is organised like a help centre: the Guides category, its sections (Introduction; Alternative Payment Methods; Recurring Payments; AFT), the articles in each, and the open article's chapters under it. Breadcrumbs above each article show the same path.
 
 The introduction covers getting started and credentials (entityId and the access token as a Bearer header, from the Credentials section of the Nomupay Dashboard), and links to both guides.
 
@@ -82,6 +110,7 @@ Set these in Vercel under **Settings → Environment Variables**, then redeploy.
 | `ACCESS_TOKEN` | Yes | Bearer token for that entity |
 | `CARD_ENTITY_ID` | No | Entity used whenever a checkout includes cards. Falls back to `ENTITY_ID` |
 | `CARD_ACCESS_TOKEN` | No | Token for `CARD_ENTITY_ID` if it differs. Falls back to `ACCESS_TOKEN` |
+| `AFT_ENTITY_ID`, `AFT_ACCESS_TOKEN` | No | Entity and token for the AFT guide. Fall back to the recurring guide's 3DV2 card channel and token |
 | `API_HOST` | No | Defaults to `eu-test.oppwa.com` |
 | `TEST_MODE` | No | Defaults to `EXTERNAL` on test hosts (PPRO simulator), sent only when a payment brand is in the request. Set it empty to leave it out |
 | `PUBLIC_BASE_URL` | No | Fixed base for `shopperResultUrl` and the widget's return URL. Defaults to the request's host |
@@ -114,6 +143,7 @@ Next.js, Tailwind CSS and Headless UI. The layout, navigation, code panels and b
 | `/copyandpay`, `/copyandpay/return` | COPYandPAY guide; the return page is the widget's form action |
 | `/server-to-server`, `/server-to-server/return` | Server-to-server guide; the return page is the `shopperResultUrl`, and inside the drawer or popup it messages the guide instead |
 | `/recurring-payments`, `/recurring-payments/return` | Recurring payments guide; the return page is the `shopperResultUrl` after 3-D Secure |
+| `/aft/server-to-server`, `/aft/server-to-server/return` | AFT guide; the return page is the `shopperResultUrl` after 3-D Secure |
 | `/checkout/{checkoutId}` | Checkout page running `paymentWidgets.js` |
 | `POST /api/checkouts` | Creates a COPYandPAY checkout |
 | `POST /api/payments` | Server-to-server payment (with your own test credentials when the body carries them) |
@@ -122,6 +152,8 @@ Next.js, Tailwind CSS and Headless UI. The layout, navigation, code panels and b
 | `POST /api/recurring/registrations/{id}/payments` | Recurring subsequent payment (MIT) on a registration |
 | `POST /api/recurring/card-payments` | Recurring subsequent payment (MIT) with the card details, for *Simulate a decline* |
 | `POST /api/recurring/registrations/{id}` | Delete a registration (sent to the gateway as `DELETE /v1/registrations/{id}`) |
+| `POST /api/aft/payments` | AFT payment, on the AFT entity |
+| `POST /api/aft/payments/{id}` | Capture (CP) of a pre-authorized AFT |
 | `GET /api/status?resourcePath=…&entity=…` | Payment or checkout status |
-| `POST /api/status` | Payment status with your own test credentials, which stay out of the URL (`entity: card` for card payments) |
+| `POST /api/status` | Payment status with your own test credentials, which stay out of the URL (`entity: card` for card payments, `recurring` or `aft` for those guides) |
 | `GET /api/config` | Environment summary and payment method catalogue |

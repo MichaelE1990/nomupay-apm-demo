@@ -17,6 +17,10 @@ export const navigation = [
         title: 'Recurring Payments',
         links: [{ title: 'Nomupay Server to Server Recurring Payments', href: '/recurring-payments' }],
       },
+      {
+        title: 'AFT',
+        links: [{ title: 'Server to Server', href: '/aft/server-to-server' }],
+      },
     ],
   },
 ]
@@ -58,6 +62,13 @@ export const allSections = {
     { id: 'get-the-payment-status', step: 3, title: 'Get the payment status', tag: 'GET' },
     { id: 'send-a-subsequent-payment', step: 4, title: 'Send a subsequent payment', tag: 'POST' },
     { id: 'delete-the-registration', step: 5, title: 'Delete the registration', tag: 'DELETE' },
+  ],
+  // The capture step only shows for a pre-authorization; AftFlow updates this list
+  '/aft/server-to-server': [
+    { id: 'aft-workflow', title: 'AFT workflow' },
+    { id: 'send-the-aft-payment', step: 1, title: 'Send the AFT payment', tag: 'POST' },
+    { id: 'authenticate-the-shopper', step: 2, title: 'Authenticate the shopper' },
+    { id: 'get-the-payment-status', step: 3, title: 'Get the payment status', tag: 'GET' },
   ],
 }
 

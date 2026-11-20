@@ -95,7 +95,7 @@ export function recDoc(key, extra = {}) {
 const DETAIL = { format: 'AN2048', pattern: ANY(0, 2048) }
 
 // Card payments: the connector details worth reading on a card payment
-const CARD_RESULT_DETAILS = [
+export const CARD_RESULT_DETAILS = [
   { name: 'ExtendedDescription', ...DETAIL, req: 'C', text: 'The acquirer’s description of the result.', example: 'Approved' },
   { name: 'AcquirerResponse', ...DETAIL, req: 'C', text: 'The acquirer’s original response code.', example: '00' },
   { name: 'ConnectorTxID1', ...DETAIL, req: 'C', text: 'The acquirer’s ID for the transaction.', example: '8ac7a4a1a1a0e53501a1a1308cfc3851' },
@@ -108,7 +108,7 @@ const CARD_RESULT_DETAILS = [
   },
 ]
 
-const CARD_DOC = {
+export const CARD_DOC = {
   name: 'card',
   type: 'object',
   req: 'C',
@@ -140,7 +140,7 @@ const STANDING_INSTRUCTION_DOC = {
   ],
 }
 
-const THREE_D_SECURE_DOC = {
+export const THREE_D_SECURE_DOC = {
   name: 'threeDSecure',
   type: 'object',
   req: 'C',

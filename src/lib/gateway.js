@@ -22,6 +22,11 @@ const ENTITIES = {
     id: env('RECURRING_ENTITY_ID') || RECURRING_ENTITY_ID,
     token: env('RECURRING_ACCESS_TOKEN') || env('CARD_ACCESS_TOKEN') || env('ACCESS_TOKEN'),
   },
+  // The AFT guide runs on the same 3DV2 card channel unless AFT_ENTITY_ID says otherwise
+  aft: {
+    id: env('AFT_ENTITY_ID') || env('RECURRING_ENTITY_ID') || RECURRING_ENTITY_ID,
+    token: env('AFT_ACCESS_TOKEN') || env('RECURRING_ACCESS_TOKEN') || env('CARD_ACCESS_TOKEN') || env('ACCESS_TOKEN'),
+  },
 }
 
 export function entity(kind) {
@@ -43,6 +48,7 @@ export function publicConfig() {
       card: maskEntity(ENTITIES.card.id),
       cardDedicated: Boolean(env('CARD_ENTITY_ID')),
       recurring: maskEntity(ENTITIES.recurring.id),
+      aft: maskEntity(ENTITIES.aft.id),
     },
   }
 }

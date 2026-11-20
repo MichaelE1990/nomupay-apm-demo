@@ -54,7 +54,7 @@ const RECURRING_TYPE_OPTIONS = [
   { value: 'STANDING_ORDER', label: 'STANDING_ORDER', description: 'Variable amount at a fixed interval' },
 ]
 
-const CUSTOMER_LABELS = {
+export const CUSTOMER_LABELS = {
   'customer.givenName': 'Given name',
   'customer.surname': 'Surname',
   'customer.email': 'Email',
@@ -66,7 +66,7 @@ const CUSTOMER_LABELS = {
 }
 
 // threeDSecure.challengeIndicator, from the 3D Secure Request Parameters page
-const CHALLENGE_INDICATORS = [
+export const CHALLENGE_INDICATORS = [
   { value: '', label: 'Not sent', description: 'The gateway uses 04 for an initial CIT' },
   { value: '01', label: '01', description: 'No preference' },
   { value: '02', label: '02', description: 'No challenge requested' },

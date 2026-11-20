@@ -151,11 +151,13 @@ function FlowCard({ mode, selected, onSelect, tray }) {
   )
 }
 
-// modes: [{ value, title, description, icon?, pattern?, flows: [{ value, title, types: ['PA','CP'] }] }]
+// modes: [{ value, title, description, icon?, pattern?, flows: [{ value, title, types: ['PA','CP'], meta? }] }]
+// meta: shown on the right of a flow instead of its types
 // trayLabel: the heading over each card's options
-export function FlowCards({ modes, mode, tx, onChange, label = 'Payment flow', trayLabel = 'Transaction flow' }) {
+// align 'start': cards keep their own height, so a long tray doesn't stretch the card beside it
+export function FlowCards({ modes, mode, tx, onChange, label = 'Payment flow', trayLabel = 'Transaction flow', align }) {
   return (
-    <div role="radiogroup" aria-label={label} className="not-prose my-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:max-w-none">
+    <div role="radiogroup" aria-label={label} className={clsx('not-prose my-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:max-w-none', align === 'start' && 'items-start')}>
       {modes.map((m) => {
         let selected = m.value === mode
         return (
@@ -186,7 +188,7 @@ export function FlowCards({ modes, mode, tx, onChange, label = 'Payment flow', t
                       >
                         <Radio on={on} />
                         <span className="min-w-0 flex-auto">{f.title}</span>
-                        <span className="flex-none font-mono text-[0.6875rem] text-zinc-400 dark:text-zinc-500">{f.types.join(' · ')}</span>
+                        {f.meta ?? <span className="flex-none font-mono text-[0.6875rem] text-zinc-400 dark:text-zinc-500">{f.types.join(' · ')}</span>}
                       </button>
                     )
                   })}
