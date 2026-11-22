@@ -4,7 +4,7 @@ A test bench for payment brands (APMs) and cards on the ACI/OPPWA gateway, in th
 
 ## Guides
 
-The sidebar has two sections of guides: **Alternative Payment Methods** (Nomupay PPRO Copy & Pay, Nomupay PPRO Server to Server APMs) and **Recurring Payments** (Nomupay Server to Server Recurring Payments).
+The sidebar has three sections of guides: **Alternative Payment Methods** (Nomupay PPRO Copy & Pay, Nomupay PPRO Server to Server APMs), **Open Banking** (Pay by Bank, Account setup, Pay by link, Server to Server) and **Recurring Payments** (Nomupay Server to Server Recurring Payments).
 
 **Nomupay PPRO Copy & Pay** (`/copyandpay`)
 
@@ -27,6 +27,17 @@ Request panels have cURL and JavaScript (Node.js fetch) tabs, kept in step acros
 3. **Get the payment status**: `GET /v1/payments/{id}`, sent with *Send request*; once there's a reply, *Check status* sends it again for a pending payment. The response parameters come from the OPPWA Payment Response Parameters and the Wallets integration sheet's Response field mapping (ConnectorTxID1-3 and the other `resultDetails`). The gateway allows two status requests a minute per payment (more get `800.120.100`), so the demo counts them and waits rather than going over.
 4. **Capture the payment** (pre-authorization only): `POST /v1/payments/{id}` with `paymentType=CP`.
 5. **Manage the payment** (optional): a full or partial refund, `paymentType=RF`, for brands that allow refunds. Capture and refund send the same `testMode` as the payment, or the gateway answers `700.100.600`. Refunds come back pending (`000.200.001`) while the brand processes them.
+
+**Open Banking** (`/open-banking`)
+
+Pay by Bank (Open Banking, delivered with Token.io), in four pages that lead into each other. The content comes from the Help Centre's [Open Banking](https://support.nomupay.com/hc/en-gb/sections/19215253523089-Open-Banking) section and the Pay by Bank merchant one-pager (nothing from the internal training one-pager):
+
+- **Pay by Bank** (`/open-banking`): what it is, the shopper's three steps (select bank, authenticate, approve), the one-pager's figures with their sources, the benefits and use cases, *At a glance* (one-off DB payments only, GBP and EUR, refunds not available, the Token.io coverage map), and *Get started*: account setup, then Pay by link or Server to Server.
+- **Account setup** (`/open-banking/account-setup`): the four steps to apply, and the settings agreed at onboarding, grouped as business, payouts and checkout.
+- **Pay by link** (`/open-banking/pay-by-link`): creating a Pay by Bank link in the Dashboard, and what the customer sees.
+- **Server to Server** (`/open-banking/server-to-server`): built like the other guides. *Pay by Bank workflow* (asynchronous flow, a sequence diagram with Token.io and the bank, testing notes), then 1. **Send the payment** (`POST /v1/payments` with `paymentBrand=ACI_INSTANTPAY`, `paymentType=DB`, `bankAccount.country`, `shopperResultUrl`), 2. **Send the shopper to their bank** (Token.io's page sets `frame-ancestors`, so it opens in a new window or redirects the whole page, never in the drawer), 3. **Get the payment status**, with what to do while it's pending (`000.200.000`, `000.200.001`), the suggested shopper message and the confirmation-time chart from the Help Centre. The Playground sets the amount, currency and the bank's country.
+
+The guide runs on the test system's Open Banking channel from the Help Centre article (`8ac7a4ca…0016`) with the demo's `ACCESS_TOKEN`. If that token can't use the channel (`800.900.300`), set `OPEN_BANKING_ENTITY_ID` and `OPEN_BANKING_ACCESS_TOKEN`. In Token.io's sandbox some banks end the payment straight away and others open the bank's own sandbox login.
 
 **Nomupay Server to Server Recurring Payments** (`/recurring-payments`)
 
@@ -82,6 +93,7 @@ Set these in Vercel under **Settings → Environment Variables**, then redeploy.
 | `ACCESS_TOKEN` | Yes | Bearer token for that entity |
 | `CARD_ENTITY_ID` | No | Entity used whenever a checkout includes cards. Falls back to `ENTITY_ID` |
 | `CARD_ACCESS_TOKEN` | No | Token for `CARD_ENTITY_ID` if it differs. Falls back to `ACCESS_TOKEN` |
+| `OPEN_BANKING_ENTITY_ID`, `OPEN_BANKING_ACCESS_TOKEN` | No | Entity and token for the Pay by Bank guide. Default to the test system's Open Banking channel and `ACCESS_TOKEN` |
 | `API_HOST` | No | Defaults to `eu-test.oppwa.com` |
 | `TEST_MODE` | No | Defaults to `EXTERNAL` on test hosts (PPRO simulator), sent only when a payment brand is in the request. Set it empty to leave it out |
 | `PUBLIC_BASE_URL` | No | Fixed base for `shopperResultUrl` and the widget's return URL. Defaults to the request's host |
@@ -113,6 +125,8 @@ Next.js, Tailwind CSS and Headless UI. The layout, navigation, code panels and b
 | `/` | Overview: getting started, credentials, guides |
 | `/copyandpay`, `/copyandpay/return` | COPYandPAY guide; the return page is the widget's form action |
 | `/server-to-server`, `/server-to-server/return` | Server-to-server guide; the return page is the `shopperResultUrl`, and inside the drawer or popup it messages the guide instead |
+| `/open-banking`, `/open-banking/account-setup`, `/open-banking/pay-by-link` | Pay by Bank overview, account setup and Pay by link guides |
+| `/open-banking/server-to-server`, `/open-banking/server-to-server/return` | Pay by Bank API guide; the return page is the `shopperResultUrl` from Token.io, and in a popup it messages the guide |
 | `/recurring-payments`, `/recurring-payments/return` | Recurring payments guide; the return page is the `shopperResultUrl` after 3-D Secure |
 | `/checkout/{checkoutId}` | Checkout page running `paymentWidgets.js` |
 | `POST /api/checkouts` | Creates a COPYandPAY checkout |
@@ -122,6 +136,8 @@ Next.js, Tailwind CSS and Headless UI. The layout, navigation, code panels and b
 | `POST /api/recurring/registrations/{id}/payments` | Recurring subsequent payment (MIT) on a registration |
 | `POST /api/recurring/card-payments` | Recurring subsequent payment (MIT) with the card details, for *Simulate a decline* |
 | `POST /api/recurring/registrations/{id}` | Delete a registration (sent to the gateway as `DELETE /v1/registrations/{id}`) |
+| `POST /api/open-banking/payments` | Pay by Bank payment on the Open Banking entity |
+| `POST /api/open-banking/status` | Pay by Bank payment status (`{ id }`) |
 | `GET /api/status?resourcePath=…&entity=…` | Payment or checkout status |
 | `POST /api/status` | Payment status with your own test credentials, which stay out of the URL (`entity: card` for card payments) |
 | `GET /api/config` | Environment summary and payment method catalogue |

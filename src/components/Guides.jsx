@@ -25,6 +25,15 @@ function ServerIcon(props) {
   )
 }
 
+function BankIcon(props) {
+  return (
+    <svg viewBox="0 0 20 20" aria-hidden="true" {...props}>
+      <path strokeWidth="1.25" strokeLinejoin="round" d="M2.75 7.25 10 3.25l7.25 4H2.75Z" />
+      <path fill="none" strokeWidth="1.25" strokeLinecap="round" d="M4.75 9.5v5M8.25 9.5v5M11.75 9.5v5M15.25 9.5v5M2.75 16.75h14.5" />
+    </svg>
+  )
+}
+
 function RepeatIcon(props) {
   return (
     <svg viewBox="0 0 20 20" aria-hidden="true" {...props}>
@@ -53,6 +62,13 @@ const guides = [
     description: 'Send the payment from your server, redirect the shopper to the payment brand, get the payment status and refund it.',
     icon: ServerIcon,
     pattern: { y: -6, squares: [[-1, 2], [1, 3]] },
+  },
+  {
+    href: '/open-banking',
+    name: 'Pay by Bank',
+    description: 'Let shoppers pay from their bank account with Open Banking: set up your account, then take payments by link or at your checkout.',
+    icon: BankIcon,
+    pattern: { y: 10, squares: [[0, 3], [1, 1]] },
   },
   {
     href: '/recurring-payments',

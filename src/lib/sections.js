@@ -14,6 +14,15 @@ export const navigation = [
         ],
       },
       {
+        title: 'Open Banking',
+        links: [
+          { title: 'Pay by Bank', href: '/open-banking' },
+          { title: 'Account setup', href: '/open-banking/account-setup' },
+          { title: 'Pay by link', href: '/open-banking/pay-by-link' },
+          { title: 'Server to Server', href: '/open-banking/server-to-server' },
+        ],
+      },
+      {
         title: 'Recurring Payments',
         links: [{ title: 'Nomupay Server to Server Recurring Payments', href: '/recurring-payments' }],
       },
@@ -50,6 +59,28 @@ export const allSections = {
     { id: 'redirect-shopper', step: 2, title: 'Redirect shopper' },
     { id: 'get-the-payment-status', step: 3, title: 'Get the payment status', tag: 'GET' },
     { id: 'manage-the-payment', step: 4, title: 'Manage the payment', tag: 'POST' },
+  ],
+  '/open-banking': [
+    { id: 'how-it-works', title: 'How it works' },
+    { id: 'why-pay-by-bank', title: 'Why Pay by Bank' },
+    { id: 'at-a-glance', title: 'At a glance' },
+    { id: 'get-started', title: 'Get started' },
+  ],
+  '/open-banking/account-setup': [
+    { id: 'apply', title: 'Apply for Pay by Bank' },
+    { id: 'settings', title: 'Settings we configure' },
+    { id: 'next-steps', title: 'Next steps' },
+  ],
+  '/open-banking/pay-by-link': [
+    { id: 'create-a-link', title: 'Create a Pay by link' },
+    { id: 'what-your-customer-sees', title: 'What your customer sees' },
+    { id: 'next-steps', title: 'Next steps' },
+  ],
+  '/open-banking/server-to-server': [
+    { id: 'pay-by-bank-workflow', title: 'Pay by Bank workflow' },
+    { id: 'send-the-payment', step: 1, title: 'Send the payment', tag: 'POST' },
+    { id: 'send-the-shopper-to-their-bank', step: 2, title: 'Send the shopper to their bank' },
+    { id: 'get-the-payment-status', step: 3, title: 'Get the payment status', tag: 'GET' },
   ],
   '/recurring-payments': [
     { id: 'recurring-workflow', title: 'Recurring workflow' },
