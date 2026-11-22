@@ -4,7 +4,7 @@ A test bench for payment brands (APMs) and cards on the ACI/OPPWA gateway, in th
 
 ## Guides
 
-The sidebar has three sections of guides: **Alternative Payment Methods** (Nomupay PPRO Copy & Pay, Nomupay PPRO Server to Server APMs), **Open Banking** (Pay by Bank, Account setup, Pay by link, Server to Server) and **Recurring Payments** (Nomupay Server to Server Recurring Payments).
+The sidebar has three sections of guides: **Alternative Payment Methods** (Nomupay PPRO Copy & Pay, Nomupay PPRO Server to Server APMs), **Open Banking** (Overview, Account setup, Integration) and **Recurring Payments** (Nomupay Server to Server Recurring Payments).
 
 **Nomupay PPRO Copy & Pay** (`/copyandpay`)
 
@@ -30,14 +30,15 @@ Request panels have cURL and JavaScript (Node.js fetch) tabs, kept in step acros
 
 **Open Banking** (`/open-banking`)
 
-Pay by Bank (Open Banking, delivered with Token.io), in four pages that lead into each other. The content comes from the Help Centre's [Open Banking](https://support.nomupay.com/hc/en-gb/sections/19215253523089-Open-Banking) section and the Pay by Bank merchant one-pager (nothing from the internal training one-pager):
+Pay by Bank (Open Banking, delivered with Token.io), in three pages that lead into each other. The content comes from the Help Centre's [Open Banking](https://support.nomupay.com/hc/en-gb/sections/19215253523089-Open-Banking) section and the Pay by Bank merchant one-pager (nothing from the internal training one-pager):
 
-- **Pay by Bank** (`/open-banking`): what it is, the shopper's three steps (select bank, authenticate, approve), the one-pager's figures with their sources, the benefits and use cases, *At a glance* (one-off DB payments only, GBP and EUR, refunds not available, the Token.io coverage map), and *Get started*: account setup, then Pay by link or Server to Server.
-- **Account setup** (`/open-banking/account-setup`): the four steps to apply, and the settings agreed at onboarding, grouped as business, payouts and checkout.
-- **Pay by link** (`/open-banking/pay-by-link`): creating a Pay by Bank link in the Dashboard, and what the customer sees.
-- **Server to Server** (`/open-banking/server-to-server`): built like the other guides. *Pay by Bank workflow* (asynchronous flow, a sequence diagram with Token.io and the bank, testing notes), then 1. **Send the payment** (`POST /v1/payments` with `paymentBrand=ACI_INSTANTPAY`, `paymentType=DB`, `bankAccount.country`, `shopperResultUrl`), 2. **Send the shopper to their bank** (Token.io's page sets `frame-ancestors`, so it opens in a new window or redirects the whole page, never in the drawer), 3. **Get the payment status**, with what to do while it's pending (`000.200.000`, `000.200.001`), the suggested shopper message and the confirmation-time chart from the Help Centre. The Playground sets the amount, currency and the bank's country.
+- **Overview** (`/open-banking`): what Pay by Bank is, the shopper's three steps (select bank, authenticate, approve), the one-pager's figures with their sources, the benefits and use cases, *At a glance* as a three-column spec sheet (payment type, recurring, refunds, currencies, coverage, card data, integration, payment brand, partner), and *Get started* as a three-step strip (account setup, integrate, go live).
+- **Account setup** (`/open-banking/account-setup`): the four steps to apply, and the settings agreed at onboarding in three columns (business, payouts, checkout), then *Up next*.
+- **Integration** (`/open-banking/integration`): *Pay by Bank workflow* starts with two cards, like the use cases on the other guides. **No code** opens a tray that links to the Help Centre's [Pay by Links](https://support.nomupay.com/hc/en-gb/articles/9409128173201-Pay-by-Links) guide (choose OpenBanking as the payment method), and the page shows only that. **API** opens a tray with Server to Server (COPYandPAY is listed as coming soon) and shows the asynchronous flow, a sequence diagram with Token.io and the bank, testing notes, then the steps: 1. **Send the payment** (`POST /v1/payments` with `paymentBrand=ACI_INSTANTPAY`, `paymentType=DB`, `bankAccount.country`, `shopperResultUrl`), 2. **Send the shopper to their bank** (Token.io's page sets `frame-ancestors`, so it opens in a new window or redirects the whole page, never in the drawer), 3. **Get the payment status**, with what to do while it's pending (`000.200.000`, `000.200.001`), the suggested shopper message and the confirmation-time chart from the Help Centre. The Playground sets the amount, currency and the bank's country.
 
 The guide runs on the test system's Open Banking channel from the Help Centre article (`8ac7a4ca…0016`) with the demo's `ACCESS_TOKEN`. If that token can't use the channel (`800.900.300`), set `OPEN_BANKING_ENTITY_ID` and `OPEN_BANKING_ACCESS_TOKEN`. In Token.io's sandbox some banks end the payment straight away and others open the bank's own sandbox login.
+
+The Playground drawer on every guide has a close button in its header (Escape or a click outside also close it), and *Reset to defaults* and *Done* in its footer; changes are saved as you go.
 
 **Nomupay Server to Server Recurring Payments** (`/recurring-payments`)
 
@@ -125,8 +126,8 @@ Next.js, Tailwind CSS and Headless UI. The layout, navigation, code panels and b
 | `/` | Overview: getting started, credentials, guides |
 | `/copyandpay`, `/copyandpay/return` | COPYandPAY guide; the return page is the widget's form action |
 | `/server-to-server`, `/server-to-server/return` | Server-to-server guide; the return page is the `shopperResultUrl`, and inside the drawer or popup it messages the guide instead |
-| `/open-banking`, `/open-banking/account-setup`, `/open-banking/pay-by-link` | Pay by Bank overview, account setup and Pay by link guides |
-| `/open-banking/server-to-server`, `/open-banking/server-to-server/return` | Pay by Bank API guide; the return page is the `shopperResultUrl` from Token.io, and in a popup it messages the guide |
+| `/open-banking`, `/open-banking/account-setup` | Pay by Bank overview and account setup |
+| `/open-banking/integration`, `/open-banking/integration/return` | Pay by Bank integration (Pay by link or the API); the return page is the `shopperResultUrl` from Token.io, and in a popup it messages the guide |
 | `/recurring-payments`, `/recurring-payments/return` | Recurring payments guide; the return page is the `shopperResultUrl` after 3-D Secure |
 | `/checkout/{checkoutId}` | Checkout page running `paymentWidgets.js` |
 | `POST /api/checkouts` | Creates a COPYandPAY checkout |

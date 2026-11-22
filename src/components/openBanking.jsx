@@ -108,22 +108,14 @@ export function FeatureGrid({ features }) {
   )
 }
 
-// Catalyst's description list: a term and its details, row by row
-export function FactList({ items, className }) {
+// A spec sheet: a label with its value under it, three to a row (like a marketplace listing)
+export function SpecGrid({ items }) {
   return (
-    <dl
-      className={clsx(
-        'not-prose my-6 grid grid-cols-1 text-sm/6 sm:grid-cols-[min(38%,--spacing(56))_auto]',
-        'border-y border-zinc-900/7.5 dark:border-white/10',
-        className,
-      )}
-    >
-      {items.map((f, i) => (
-        <div key={f.term} className="contents">
-          <dt className={clsx('pt-3 font-medium text-zinc-900 sm:py-3 dark:text-white', i > 0 && 'border-t border-zinc-900/5 dark:border-white/5')}>
-            {f.term}
-          </dt>
-          <dd className={clsx('pb-3 text-zinc-600 sm:py-3 dark:text-zinc-400', i > 0 && 'sm:border-t sm:border-zinc-900/5 sm:dark:border-white/5')}>
+    <dl className="not-prose my-8 grid grid-cols-1 gap-x-8 gap-y-6 border-t border-zinc-900/7.5 pt-6 sm:grid-cols-2 lg:grid-cols-3 xl:max-w-none dark:border-white/10">
+      {items.map((f) => (
+        <div key={f.term}>
+          <dt className="text-sm font-semibold text-zinc-900 dark:text-white">{f.term}</dt>
+          <dd className="mt-1 text-sm/6 text-zinc-600 dark:text-zinc-400 [&_a]:font-medium [&_a]:text-emerald-600 dark:[&_a]:text-emerald-400">
             {f.details}
           </dd>
         </div>
@@ -166,47 +158,72 @@ export function StepList({ steps }) {
   )
 }
 
-// Cards for the next place to go, with a badge such as "No code" or "API". wide: one card across
-export function PathCards({ paths, wide }) {
+// Steps across a dotted line, each with a pill, a title, a line of text and an optional link
+export function StepStrip({ steps }) {
   return (
-    <div className={clsx('not-prose my-6 grid grid-cols-1 gap-4 xl:max-w-none', !wide && 'sm:grid-cols-2')}>
-      {paths.map((p) => (
-        <Link
-          key={p.href}
-          href={p.href}
-          className="group relative flex flex-col rounded-2xl bg-zinc-50 p-5 ring-1 ring-zinc-900/7.5 transition hover:bg-emerald-50/60 hover:ring-emerald-500/40 dark:bg-white/2.5 dark:ring-white/10 dark:hover:bg-emerald-400/5 dark:hover:ring-emerald-400/40"
-        >
-          <div className="flex items-start justify-between gap-4">
-            <IconBadge icon={p.icon} />
-            {p.badge && (
-              <span className="rounded-full bg-white px-2 py-0.5 text-xs font-medium text-zinc-600 ring-1 ring-zinc-900/10 dark:bg-white/5 dark:text-zinc-300 dark:ring-white/10">
-                {p.badge}
-              </span>
+    <ol className="not-prose my-8 grid grid-cols-1 gap-y-6 sm:grid-cols-3 xl:max-w-none">
+      {steps.map((s, i) => (
+        <li key={s.title} className={clsx('flex flex-col', i > 0 && 'sm:border-l sm:border-zinc-900/7.5 sm:pl-5 dark:sm:border-white/10', i < steps.length - 1 && 'sm:pr-5')}>
+          <span
+            className={clsx(
+              'self-start rounded-md px-2 py-1 text-xs font-medium ring-1',
+              i === 0
+                ? 'bg-zinc-900 text-white ring-zinc-900 dark:bg-white dark:text-zinc-900 dark:ring-white'
+                : 'bg-zinc-50 text-zinc-700 ring-zinc-900/10 dark:bg-white/5 dark:text-zinc-300 dark:ring-white/10',
             )}
-          </div>
-          <p className="mt-4 text-sm font-semibold text-zinc-900 dark:text-white">{p.title}</p>
-          <p className="mt-1 flex-auto text-sm/6 text-zinc-600 dark:text-zinc-400">{p.text}</p>
-          <p className="mt-4 flex items-center gap-1.5 text-sm font-semibold text-emerald-600 dark:text-emerald-400">
-            {p.action || 'Read the guide'}
-            <ArrowRightIcon className="size-4 stroke-current transition group-hover:translate-x-0.5" />
-          </p>
-        </Link>
+          >
+            Step {i + 1}
+          </span>
+          <span aria-hidden="true" className="mt-3 border-t border-dashed border-zinc-900/15 dark:border-white/15" />
+          <p className="mt-4 text-sm font-semibold text-zinc-900 dark:text-white">{s.title}</p>
+          <p className="mt-1 flex-auto text-sm/6 text-zinc-600 dark:text-zinc-400">{s.text}</p>
+          {s.href && (
+            <Link href={s.href} className="group mt-3 flex items-center gap-1.5 self-start text-sm font-semibold text-emerald-600 dark:text-emerald-400">
+              {s.action}
+              <ArrowRightIcon className="size-4 stroke-current transition group-hover:translate-x-0.5" />
+            </Link>
+          )}
+        </li>
       ))}
-    </div>
+    </ol>
   )
 }
 
-// Settings grouped under small headings: what the merchant agrees with Nomupay
-export function SettingGroups({ groups }) {
+// The next page, as one compact row (after Compass's "up next" link)
+export function UpNext({ href, title, text }) {
   return (
-    <div className="not-prose my-8 grid grid-cols-1 gap-8">
+    <Link
+      href={href}
+      className="not-prose group my-8 flex items-center gap-4 rounded-2xl px-5 py-4 ring-1 ring-zinc-900/7.5 transition hover:bg-zinc-50 hover:ring-emerald-500/40 dark:ring-white/10 dark:hover:bg-white/2.5 dark:hover:ring-emerald-400/40"
+    >
+      <div className="min-w-0 flex-auto">
+        <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">Up next</p>
+        <p className="mt-0.5 text-sm font-semibold text-zinc-900 dark:text-white">{title}</p>
+        <p className="mt-0.5 text-sm/6 text-zinc-600 dark:text-zinc-400">{text}</p>
+      </div>
+      <ArrowRightIcon className="size-5 flex-none stroke-zinc-400 transition group-hover:translate-x-0.5 group-hover:stroke-emerald-500" />
+    </Link>
+  )
+}
+
+// Settings in three columns, one per group, each setting with its description under it
+export function SettingColumns({ groups }) {
+  return (
+    <div className="not-prose my-8 grid grid-cols-1 gap-8 border-t border-zinc-900/7.5 pt-6 sm:grid-cols-2 lg:grid-cols-3 xl:max-w-none dark:border-white/10">
       {groups.map((g) => (
         <section key={g.title}>
           <div className="flex items-center gap-3">
             <IconBadge icon={g.icon} className="size-8 [&_svg]:size-4" />
             <h3 className="text-sm font-semibold text-zinc-900 dark:text-white">{g.title}</h3>
           </div>
-          <FactList items={g.items} className="mt-3 mb-0" />
+          <dl className="mt-4 space-y-4">
+            {g.items.map((f) => (
+              <div key={f.term}>
+                <dt className="text-sm font-medium text-zinc-900 dark:text-white">{f.term}</dt>
+                <dd className="mt-0.5 text-sm/6 text-zinc-600 dark:text-zinc-400">{f.details}</dd>
+              </div>
+            ))}
+          </dl>
         </section>
       ))}
     </div>

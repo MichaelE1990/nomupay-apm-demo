@@ -5,7 +5,7 @@ import { OpenBankingFlow } from '@/components/OpenBankingFlow'
 import { ReturnBridge } from '@/components/ReturnBridge'
 
 export const metadata = {
-  title: 'Pay by Bank Server to Server',
+  title: 'Pay by Bank integration',
   robots: { index: false },
 }
 
@@ -19,7 +19,7 @@ export default function OpenBankingReturnPage() {
     <Article>
       <script dangerouslySetInnerHTML={{ __html: EMBED_SCRIPT }} />
       <ReturnBridge />
-      <h1>Server to Server</h1>
+      <h1>Integration</h1>
       <p className="lead">The shopper is back from their bank. Get the payment status with the payment ID the gateway added to this address.</p>
       <Suspense>
         <OpenBankingFlow mode="return" />

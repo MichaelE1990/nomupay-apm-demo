@@ -235,11 +235,17 @@ export function CredentialsSection({ creds, setCreds, config, readyText = 'Using
 // The drawer itself: header, the sections, and the reset / done footer.
 // Opens at the section the merchant came for (pg-{focus}), the back-office amounts, say.
 export function PlaygroundShell({ open, onClose, focus, onReset, children }) {
+  let [restored, setRestored] = useState(false)
   useEffect(() => {
     if (!open || !focus) return
     let t = setTimeout(() => document.getElementById(`pg-${focus}`)?.scrollIntoView({ block: 'start' }), 320)
     return () => clearTimeout(t)
   }, [open, focus])
+  useEffect(() => {
+    if (!restored) return
+    let t = setTimeout(() => setRestored(false), 2500)
+    return () => clearTimeout(t)
+  }, [restored])
 
   return (
     <Dialog open={open} onClose={onClose} className="relative z-[60]">
@@ -253,6 +259,7 @@ export function PlaygroundShell({ open, onClose, focus, onReset, children }) {
             transition
             className="pointer-events-auto flex h-full w-screen max-w-xl flex-col bg-white shadow-xl ring-1 ring-zinc-900/10 transition duration-300 ease-in-out data-closed:translate-x-full dark:bg-zinc-900 dark:ring-white/10"
           >
+            {/* Header: what the drawer does, and a close button (Escape or a click outside also close it) */}
             <div className="flex items-start gap-4 border-b border-zinc-900/7.5 px-5 py-4 dark:border-white/10">
               <div className="min-w-0 flex-auto">
                 <DialogTitle className="flex items-center gap-2 text-base font-semibold text-zinc-900 dark:text-white">
@@ -260,32 +267,44 @@ export function PlaygroundShell({ open, onClose, focus, onReset, children }) {
                   Playground
                 </DialogTitle>
                 <p className="mt-0.5 text-xs/5 text-zinc-500 dark:text-zinc-400">
-                  Set up the requests on this page. The code and parameters update as you go.
+                  Set up the requests on this page. Changes are saved as you go, and the code and parameters update with them.
                 </p>
               </div>
               <button
                 type="button"
                 onClick={onClose}
-                className="flex-none rounded-full bg-emerald-500 px-3.5 py-1.5 text-sm font-medium text-white transition hover:bg-emerald-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-500"
+                aria-label="Close the Playground"
+                className="-m-1.5 flex size-8 flex-none items-center justify-center rounded-full text-zinc-400 transition hover:bg-zinc-900/5 hover:text-zinc-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-500 dark:hover:bg-white/10 dark:hover:text-white"
               >
-                Done
+                <svg viewBox="0 0 20 20" aria-hidden="true" className="size-5">
+                  <path d="m5.75 5.75 8.5 8.5m0-8.5-8.5 8.5" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                </svg>
               </button>
             </div>
 
             <div className="flex-auto divide-y divide-zinc-900/7.5 overflow-y-auto dark:divide-white/10">{children}</div>
 
+            {/* Footer: start again from the defaults, or go back to the page */}
             <div className="flex items-center justify-between gap-4 border-t border-zinc-900/7.5 px-5 py-3 dark:border-white/10">
-              <button
-                type="button"
-                onClick={onReset}
-                className="text-sm font-medium text-zinc-500 transition hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white"
-              >
-                Reset to defaults
-              </button>
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    onReset?.()
+                    setRestored(true)
+                  }}
+                  className="rounded-full px-3 py-1.5 text-sm font-medium text-zinc-600 ring-1 ring-zinc-900/10 transition hover:bg-zinc-50 hover:text-zinc-900 dark:text-zinc-300 dark:ring-white/10 dark:hover:bg-white/5 dark:hover:text-white"
+                >
+                  Reset to defaults
+                </button>
+                <span role="status" className={clsx('text-xs text-zinc-500 transition-opacity dark:text-zinc-400', restored ? 'opacity-100' : 'opacity-0')}>
+                  Defaults restored
+                </span>
+              </div>
               <button
                 type="button"
                 onClick={onClose}
-                className="rounded-full bg-emerald-500 px-3.5 py-1.5 text-sm font-medium text-white transition hover:bg-emerald-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-500"
+                className="rounded-full bg-emerald-500 px-4 py-1.5 text-sm font-medium text-white transition hover:bg-emerald-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-500"
               >
                 Done
               </button>

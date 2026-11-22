@@ -1,6 +1,6 @@
 import { Article } from '@/components/Article'
 import { Heading } from '@/components/Heading'
-import { BankIcon, Callout, LinkIcon, PathCards, ReceiptIcon, ServerIcon, SettingGroups, StepList } from '@/components/openBanking'
+import { BankIcon, Callout, LinkIcon, ReceiptIcon, SettingColumns, StepList, UpNext } from '@/components/openBanking'
 import { SALES_EMAIL, SUPPORT_EMAIL } from '@/lib/openBanking'
 
 export const metadata = {
@@ -59,7 +59,7 @@ export default function AccountSetupPage() {
           { title: 'Contact our sales team', text: <>Email {mail(SALES_EMAIL)} to start your application.</> },
           { title: 'Complete onboarding', text: 'Complete the Know Your Customer (KYC) checks, and agree the settings below with us.' },
           { title: 'Wait for confirmation', text: 'We confirm when your Pay by Bank account is active and ready to take payments.' },
-          { title: 'Start taking payments', text: 'Send Pay by links from your Dashboard, or integrate the API.' },
+          { title: 'Start taking payments', text: <>Send Pay by links from your Dashboard, or integrate the API. See <a href="/open-banking/integration">Integration</a>.</> },
         ]}
       />
 
@@ -67,32 +67,15 @@ export default function AccountSetupPage() {
         Settings we configure
       </Heading>
       <p>We set these up for your account during onboarding, so have them ready to apply.</p>
-      <SettingGroups groups={GROUPS} />
+      <SettingColumns groups={GROUPS} />
       <Callout title="Changing a setting">
         Email {mail(SUPPORT_EMAIL)} with the setting you’d like to change and its new value.
       </Callout>
 
-      <Heading level={2} id="next-steps">
-        Next steps
-      </Heading>
-      <p>Once your account is active, choose how shoppers pay.</p>
-      <PathCards
-        paths={[
-          {
-            href: '/open-banking/pay-by-link',
-            icon: LinkIcon,
-            badge: 'No code',
-            title: 'Pay by link',
-            text: 'Create a payment link in your Nomupay Dashboard and send it to your customer.',
-          },
-          {
-            href: '/open-banking/server-to-server',
-            icon: ServerIcon,
-            badge: 'API',
-            title: 'Server to Server',
-            text: 'Add Pay by Bank to your checkout: send the payment, send the shopper to their bank and get the result.',
-          },
-        ]}
+      <UpNext
+        href="/open-banking/integration"
+        title="Integration"
+        text="Choose how shoppers pay: Pay by links from your Dashboard, or the API at your checkout."
       />
     </Article>
   )

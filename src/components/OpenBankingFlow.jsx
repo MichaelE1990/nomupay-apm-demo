@@ -1,70 +1,198 @@
-'use client'
+"use client";
 
-import clsx from 'clsx'
-import { useSearchParams } from 'next/navigation'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import clsx from "clsx";
+import { useSearchParams } from "next/navigation";
+import { useEffect, useMemo, useRef, useState } from "react";
 
-import { ErrorNote } from '@/components/builder'
-import { CodeWindow, NewWindowIcon, RefreshIcon, SendButton, SplitButton, UrlLabel } from '@/components/CodeWindow'
-import { Col, Note, Row } from '@/components/content'
-import { Heading } from '@/components/Heading'
-import { Callout, ConfirmationChart } from '@/components/openBanking'
-import { ParamDoc, ParamList, RequestProperties } from '@/components/params'
-import { Banner, PlaygroundShell, Row as PgRow, Section, Stepper, TextField } from '@/components/Playground'
-import { StepLink, StepNote, resultText } from '@/components/S2SFlow'
-import { ParamGroup, ParamGroups, SequenceDiagram } from '@/components/s2sParts'
-import { SelectMenu } from '@/components/select'
-import { postJson, usePersistentState } from '@/lib/flowState'
-import { highlightJs, highlightJson, requestCode } from '@/lib/highlight'
-import { CONFIRMATION_TIMES, OB_COUNTRIES, OB_CURRENCIES, buildPaymentParams, currencyFor, defaultForm, missingPayment } from '@/lib/openBanking'
-import { PAYMENT_RESPONSE_DOCS, STATUS_RESPONSE_DOCS, obDoc } from '@/lib/openBankingDocs'
-import { REDIRECT_DOC } from '@/lib/paramDocs'
-import { RETURN_MESSAGE, redirectSnippet, sendShopper, sendShopperToPopup } from '@/lib/redirect'
-import { useConfig } from '@/lib/useConfig'
+import { ErrorNote } from "@/components/builder";
+import {
+  CodeWindow,
+  NewWindowIcon,
+  RefreshIcon,
+  SendButton,
+  SplitButton,
+  UrlLabel,
+} from "@/components/CodeWindow";
+import { Col, Note, Row } from "@/components/content";
+import { Heading } from "@/components/Heading";
+import {
+  Callout,
+  ConfirmationChart,
+  LinkIcon,
+  ServerIcon,
+} from "@/components/openBanking";
+import { ParamDoc, ParamList, RequestProperties } from "@/components/params";
+import {
+  Banner,
+  PlaygroundShell,
+  Row as PgRow,
+  Section,
+  Stepper,
+  TextField,
+} from "@/components/Playground";
+import { StepLink, StepNote, resultText } from "@/components/S2SFlow";
+import {
+  FlowCard,
+  ParamGroup,
+  ParamGroups,
+  Radio,
+  SequenceDiagram,
+} from "@/components/s2sParts";
+import { useSyncSections } from "@/components/SectionProvider";
+import { SelectMenu } from "@/components/select";
+import { postJson, usePersistentState } from "@/lib/flowState";
+import { highlightJs, highlightJson, requestCode } from "@/lib/highlight";
+import {
+  CONFIRMATION_TIMES,
+  OB_COUNTRIES,
+  OB_CURRENCIES,
+  PAY_BY_LINKS_URL,
+  buildPaymentParams,
+  currencyFor,
+  defaultForm,
+  missingPayment,
+} from "@/lib/openBanking";
+import {
+  PAYMENT_RESPONSE_DOCS,
+  STATUS_RESPONSE_DOCS,
+  obDoc,
+} from "@/lib/openBankingDocs";
+import { REDIRECT_DOC } from "@/lib/paramDocs";
+import {
+  RETURN_MESSAGE,
+  redirectSnippet,
+  sendShopper,
+  sendShopperToPopup,
+} from "@/lib/redirect";
+import { useConfig } from "@/lib/useConfig";
 
-const KEY = 'nomupayApmDemo.openBanking.v1'
-const INITIAL = { form: defaultForm(), payment: null, result: null, returned: false }
+const KEY = "nomupayApmDemo.openBanking.v1";
+const INITIAL = {
+  integration: "api",
+  form: defaultForm(),
+  payment: null,
+  result: null,
+  returned: false,
+};
 
 // The gateway allows two status requests a minute for each payment
-const STATUS_LIMIT = 2
-const STATUS_WINDOW_MS = 60000
-const THROTTLED_TEXT = 'The gateway allows two status checks a minute for each payment.'
+const STATUS_LIMIT = 2;
+const STATUS_WINDOW_MS = 60000;
+const THROTTLED_TEXT =
+  "The gateway allows two status checks a minute for each payment.";
 
 // Shown instead of the demo's own values: the request carries the real ones
-const SHOPPER_RESULT_URL_SHOWN = 'https://demo/paymentresult'
-const ENTITY_SHOWN = '{entity_id}'
+const SHOPPER_RESULT_URL_SHOWN = "https://demo/paymentresult";
+const ENTITY_SHOWN = "{entity_id}";
 
 const STEPS = [
-  { key: 'payment', id: 'send-the-payment', step: 1, title: 'Send the payment', tag: 'POST' },
-  { key: 'redirect', id: 'send-the-shopper-to-their-bank', step: 2, title: 'Send the shopper to their bank' },
-  { key: 'status', id: 'get-the-payment-status', step: 3, title: 'Get the payment status', tag: 'GET' },
-]
-const [PAYMENT, REDIRECT, STATUS] = STEPS
+  {
+    key: "payment",
+    id: "send-the-payment",
+    step: 1,
+    title: "Send the payment",
+    tag: "POST",
+  },
+  {
+    key: "redirect",
+    id: "send-the-shopper-to-their-bank",
+    step: 2,
+    title: "Send the shopper to their bank",
+  },
+  {
+    key: "status",
+    id: "get-the-payment-status",
+    step: 3,
+    title: "Get the payment status",
+    tag: "GET",
+  },
+];
+const [PAYMENT, REDIRECT, STATUS] = STEPS;
 
 const LANES = [
-  { id: 'shopper', label: 'Shopper', bar: 'bg-emerald-500 dark:bg-emerald-400' },
-  { id: 'server', label: 'Merchant server', bar: 'bg-amber-500 dark:bg-amber-400' },
-  { id: 'gateway', label: 'Payment gateway', bar: 'bg-sky-500 dark:bg-sky-400' },
-  { id: 'bank', label: 'Token.io and bank', bar: 'bg-violet-500 dark:bg-violet-400' },
-]
+  {
+    id: "shopper",
+    label: "Shopper",
+    bar: "bg-emerald-500 dark:bg-emerald-400",
+  },
+  {
+    id: "server",
+    label: "Merchant server",
+    bar: "bg-amber-500 dark:bg-amber-400",
+  },
+  {
+    id: "gateway",
+    label: "Payment gateway",
+    bar: "bg-sky-500 dark:bg-sky-400",
+  },
+  {
+    id: "bank",
+    label: "Token.io and bank",
+    bar: "bg-violet-500 dark:bg-violet-400",
+  },
+];
 
-const step = (s, extra) => ({ step: s.step, href: s.id, label: s.title, ...extra })
+const step = (s, extra) => ({
+  step: s.step,
+  href: s.id,
+  label: s.title,
+  ...extra,
+});
 const MESSAGES = [
-  { from: 'shopper', to: 'server', label: 'Chooses Pay by Bank at checkout' },
-  { from: 'server', to: 'gateway', ...step(PAYMENT, { detail: 'POST /v1/payments · ACI_INSTANTPAY · DB' }) },
-  { from: 'gateway', to: 'server', kind: 'response', label: 'Pending, with a redirect to Token.io' },
-  { from: 'server', to: 'bank', ...step(REDIRECT, { detail: 'redirect.url' }) },
-  { from: 'bank', kind: 'note', label: 'Shopper picks their bank and approves in their banking app' },
-  { from: 'bank', to: 'shopper', kind: 'response', label: 'Shopper returns to your shopperResultUrl' },
-  { from: 'bank', to: 'gateway', kind: 'response', label: 'The bank confirms the payment, usually within 90 seconds' },
-  { from: 'server', to: 'gateway', ...step(STATUS, { detail: 'GET /v1/payments/{id}' }) },
-  { from: 'gateway', to: 'server', kind: 'response', label: 'Approved, declined or still pending' },
-  { from: 'server', kind: 'note', label: 'Confirms the order once it’s approved' },
-]
+  { from: "shopper", to: "server", label: "Chooses Pay by Bank at checkout" },
+  {
+    from: "server",
+    to: "gateway",
+    ...step(PAYMENT, { detail: "POST /v1/payments · ACI_INSTANTPAY · DB" }),
+  },
+  {
+    from: "gateway",
+    to: "server",
+    kind: "response",
+    label: "Pending, with a redirect to Token.io",
+  },
+  { from: "server", to: "bank", ...step(REDIRECT, { detail: "redirect.url" }) },
+  {
+    from: "bank",
+    kind: "note",
+    label: "Shopper picks their bank and approves in their banking app",
+  },
+  {
+    from: "bank",
+    to: "shopper",
+    kind: "response",
+    label: "Shopper returns to your shopperResultUrl",
+  },
+  {
+    from: "bank",
+    to: "gateway",
+    kind: "response",
+    label: "The bank confirms the payment, usually within 90 seconds",
+  },
+  {
+    from: "server",
+    to: "gateway",
+    ...step(STATUS, { detail: "GET /v1/payments/{id}" }),
+  },
+  {
+    from: "gateway",
+    to: "server",
+    kind: "response",
+    label: "Approved, declined or still pending",
+  },
+  {
+    from: "server",
+    kind: "note",
+    label: "Confirms the order once it’s approved",
+  },
+];
 
 // True inside a payment popup (see the return page)
 function isEmbedded() {
-  return typeof document !== 'undefined' && document.documentElement.hasAttribute('data-embedded')
+  return (
+    typeof document !== "undefined" &&
+    document.documentElement.hasAttribute("data-embedded")
+  );
 }
 
 function ResponseGroup({ docs, response }) {
@@ -76,404 +204,812 @@ function ResponseGroup({ docs, response }) {
         ))}
       </ParamGroup>
     </ParamGroups>
-  )
+  );
 }
 
-function OpenBankingPlayground({ open, onClose, form, setForm, missing, onReset }) {
-  let set = (patch) => setForm({ ...form, ...patch })
+// The two ways to take Pay by Bank, as cards like the use cases on the other guides. The chosen
+// card opens a tray: No code links to the Help Centre's Pay by Links guide; API offers Server to
+// Server (COPYandPAY is still to come)
+const INTEGRATIONS = [
+  {
+    value: "nocode",
+    title: "No code",
+    description:
+      "Send Pay by links from your Nomupay Dashboard. There’s nothing to build.",
+    icon: LinkIcon,
+    pattern: {
+      y: 16,
+      squares: [
+        [0, 1],
+        [1, 3],
+      ],
+    },
+  },
+  {
+    value: "api",
+    title: "API",
+    description:
+      "Add Pay by Bank to your own checkout, with your server sending the requests.",
+    icon: ServerIcon,
+    pattern: {
+      y: -6,
+      squares: [
+        [-1, 2],
+        [1, 3],
+      ],
+    },
+  },
+];
+
+const trayItem =
+  "flex items-center gap-3 rounded-lg px-3 py-2 text-left text-sm transition";
+
+function IntegrationCards({ value, onChange }) {
+  return (
+    <div
+      role="radiogroup"
+      aria-label="Integration"
+      className="not-prose my-6 grid grid-cols-1 items-start gap-4 sm:grid-cols-2 xl:max-w-none"
+    >
+      {INTEGRATIONS.map((m) => (
+        <FlowCard
+          key={m.value}
+          mode={m}
+          selected={m.value === value}
+          onSelect={() => onChange(m.value)}
+          tray={
+            <div className="px-4 pt-3.5 pb-4">
+              <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
+                {m.value === "nocode"
+                  ? "Dashboard integration"
+                  : "Integration type"}
+              </p>
+              {m.value === "nocode" ? (
+                <div className="mt-2 grid gap-1">
+                  <a
+                    href={PAY_BY_LINKS_URL}
+                    target="_blank"
+                    rel="noreferrer"
+                    className={clsx(
+                      trayItem,
+                      "group bg-white font-medium text-zinc-900 shadow-sm ring-1 ring-zinc-900/5 dark:bg-zinc-800 dark:text-white dark:ring-white/10",
+                    )}
+                  >
+                    <LinkIcon className="size-4 flex-none stroke-emerald-600 dark:stroke-emerald-400" />
+                    <span className="min-w-0 flex-auto">Pay by link</span>
+                    <span className="flex flex-none items-center gap-1 text-xs font-normal text-zinc-500 group-hover:text-emerald-600 dark:text-zinc-400 dark:group-hover:text-emerald-400">
+                      Help Centre guide
+                      <NewWindowIcon className="size-3" />
+                    </span>
+                  </a>
+                  <p className="px-3 pt-1 text-xs/5 text-zinc-500 dark:text-zinc-400">
+                    Choose OpenBanking as the payment method when you create the
+                    link.
+                  </p>
+                </div>
+              ) : (
+                <div
+                  role="radiogroup"
+                  aria-label="API: integration type"
+                  className="mt-2 grid gap-1"
+                >
+                  <button
+                    type="button"
+                    role="radio"
+                    aria-checked="true"
+                    className={clsx(
+                      trayItem,
+                      "bg-white font-medium text-zinc-900 shadow-sm ring-1 ring-zinc-900/5 dark:bg-zinc-800 dark:text-white dark:ring-white/10",
+                    )}
+                  >
+                    <Radio on />
+                    <span className="min-w-0 flex-auto">Server to Server</span>
+                    <span className="flex-none font-mono text-[0.6875rem] text-zinc-400 dark:text-zinc-500">
+                      POST · GET
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    role="radio"
+                    aria-checked="false"
+                    disabled
+                    className={clsx(
+                      trayItem,
+                      "cursor-not-allowed text-zinc-400 dark:text-zinc-500",
+                    )}
+                  >
+                    <Radio on={false} />
+                    <span className="min-w-0 flex-auto">COPYandPAY</span>
+                    <span className="flex-none rounded-full bg-zinc-900/5 px-2 py-0.5 text-[0.6875rem] font-medium text-zinc-500 dark:bg-white/10 dark:text-zinc-400">
+                      Coming soon
+                    </span>
+                  </button>
+                </div>
+              )}
+            </div>
+          }
+        />
+      ))}
+    </div>
+  );
+}
+
+function OpenBankingPlayground({
+  open,
+  onClose,
+  form,
+  setForm,
+  missing,
+  onReset,
+}) {
+  let set = (patch) => setForm({ ...form, ...patch });
   return (
     <PlaygroundShell open={open} onClose={onClose} onReset={onReset}>
       <div className="px-5 py-4">
-        <Banner>Runs on the test system’s Open Banking channel, with Token.io’s sandbox banks.</Banner>
+        <Banner>
+          Runs on the test system’s Open Banking channel, with Token.io’s
+          sandbox banks.
+        </Banner>
       </div>
-      <Section id="pg-payment" title="Payment" description="What the shopper pays.">
+      <Section
+        id="pg-payment"
+        title="Payment"
+        description="What the shopper pays."
+      >
         <PgRow label="Amount" htmlFor="pg-amount">
-          <Stepper id="pg-amount" value={form.amount} onChange={(amount) => set({ amount })} />
+          <Stepper
+            id="pg-amount"
+            value={form.amount}
+            onChange={(amount) => set({ amount })}
+          />
         </PgRow>
         <PgRow label="Currency" htmlFor="pg-currency">
-          <SelectMenu id="pg-currency" options={OB_CURRENCIES.map((c) => ({ value: c, label: c }))} value={form.currency} onChange={(currency) => set({ currency })} />
+          <SelectMenu
+            id="pg-currency"
+            options={OB_CURRENCIES.map((c) => ({ value: c, label: c }))}
+            value={form.currency}
+            onChange={(currency) => set({ currency })}
+          />
         </PgRow>
-        <PgRow label="Merchant transaction ID" htmlFor="pg-mtid" hint="Optional">
-          <TextField id="pg-mtid" value={form.merchantTransactionId} placeholder="Not sent if empty" onChange={(merchantTransactionId) => set({ merchantTransactionId })} />
+        <PgRow
+          label="Merchant transaction ID"
+          htmlFor="pg-mtid"
+          hint="Optional"
+        >
+          <TextField
+            id="pg-mtid"
+            value={form.merchantTransactionId}
+            placeholder="Not sent if empty"
+            onChange={(merchantTransactionId) => set({ merchantTransactionId })}
+          />
         </PgRow>
       </Section>
-      <Section id="pg-bank" title="Shopper’s bank" description="Token.io lists the banks for this country first. Choosing a country sets its currency.">
+      <Section
+        id="pg-bank"
+        title="Shopper’s bank"
+        description="Token.io lists the banks for this country first. Choosing a country sets its currency."
+      >
         <PgRow label="Country" htmlFor="pg-country" hint="bankAccount.country">
           <SelectMenu
             id="pg-country"
-            options={OB_COUNTRIES.map((c) => ({ value: c.code, label: c.name, meta: c.code, description: c.currency }))}
+            options={OB_COUNTRIES.map((c) => ({
+              value: c.code,
+              label: c.name,
+              meta: c.code,
+              description: c.currency,
+            }))}
             value={form.country}
-            onChange={(country) => set({ country, currency: currencyFor(country) })}
+            onChange={(country) =>
+              set({ country, currency: currencyFor(country) })
+            }
           />
         </PgRow>
-        {missing.length > 0 && <Banner tone="amber">Fill in: {missing.join(', ')}</Banner>}
+        {missing.length > 0 && (
+          <Banner tone="amber">Fill in: {missing.join(", ")}</Banner>
+        )}
       </Section>
     </PlaygroundShell>
-  )
+  );
 }
 
-export function OpenBankingFlow({ mode = 'start' }) {
-  let config = useConfig()
-  let search = useSearchParams()
-  let [state, setState, ready] = usePersistentState(KEY, INITIAL)
-  let [busy, setBusy] = useState('')
-  let [error, setError] = useState({})
-  let [playground, setPlayground] = useState(false)
-  let autoScrolled = useRef(false)
+export function OpenBankingFlow({ mode = "start" }) {
+  let config = useConfig();
+  let search = useSearchParams();
+  let [state, setState, ready] = usePersistentState(KEY, INITIAL);
+  let [busy, setBusy] = useState("");
+  let [error, setError] = useState({});
+  let [playground, setPlayground] = useState(false);
+  let autoScrolled = useRef(false);
 
-  let form = { ...INITIAL.form, ...state.form }
-  let setForm = (f) => setState((s) => ({ ...s, form: f }))
-  let missing = useMemo(() => missingPayment(form), [form])
-  let params = buildPaymentParams(form, { entityId: ENTITY_SHOWN, shopperResultUrl: SHOPPER_RESULT_URL_SHOWN })
-  let values = Object.fromEntries(params)
+  // A shopper coming back from their bank is always on the API flow
+  let api =
+    mode === "return" || (state.integration ?? INITIAL.integration) === "api";
+  let setIntegration = (integration) =>
+    setState((s) => ({ ...s, integration }));
+  useSyncSections([
+    { id: "pay-by-bank-workflow", title: "Pay by Bank workflow" },
+    ...(api
+      ? STEPS.map((x) => ({
+          id: x.id,
+          step: x.step,
+          title: x.title,
+          tag: x.tag,
+        }))
+      : []),
+  ]);
 
-  let payment = state.payment
-  let paymentId = payment?.response?.id
-  let redirect = payment?.response?.redirect
-  let returnId = search.get('id') || search.get('resourcePath')?.match(/\/v1\/payments\/(\w+)/)?.[1]
-  let statusId = (mode === 'return' && returnId) || paymentId
-  let canSend = Boolean(config && config.configured && config.environment === 'TEST')
-  let authFailed = /^800\.900\.30/.test(payment?.response?.result?.code || '')
+  let form = { ...INITIAL.form, ...state.form };
+  let setForm = (f) => setState((s) => ({ ...s, form: f }));
+  let missing = useMemo(() => missingPayment(form), [form]);
+  let params = buildPaymentParams(form, {
+    entityId: ENTITY_SHOWN,
+    shopperResultUrl: SHOPPER_RESULT_URL_SHOWN,
+  });
+  let values = Object.fromEntries(params);
+
+  let payment = state.payment;
+  let paymentId = payment?.response?.id;
+  let redirect = payment?.response?.redirect;
+  let returnId =
+    search.get("id") ||
+    search.get("resourcePath")?.match(/\/v1\/payments\/(\w+)/)?.[1];
+  let statusId = (mode === "return" && returnId) || paymentId;
+  let canSend = Boolean(
+    config && config.configured && config.environment === "TEST",
+  );
+  let authFailed = /^800\.900\.30/.test(payment?.response?.result?.code || "");
 
   // Status requests per payment in the last minute, to stay inside the gateway's limit
-  let statusCalls = useRef({})
+  let statusCalls = useRef({});
   function statusWait(id) {
-    let now = Date.now()
-    let recent = (statusCalls.current[id] || []).filter((t) => now - t < STATUS_WINDOW_MS)
-    statusCalls.current[id] = recent
-    return recent.length < STATUS_LIMIT ? 0 : recent[0] + STATUS_WINDOW_MS - now + 250
+    let now = Date.now();
+    let recent = (statusCalls.current[id] || []).filter(
+      (t) => now - t < STATUS_WINDOW_MS,
+    );
+    statusCalls.current[id] = recent;
+    return recent.length < STATUS_LIMIT
+      ? 0
+      : recent[0] + STATUS_WINDOW_MS - now + 250;
   }
 
   async function checkStatus() {
-    if (!statusId) return
-    let ms = statusWait(statusId)
+    if (!statusId) return;
+    let ms = statusWait(statusId);
     if (ms > 0) {
-      setError({ status: `${THROTTLED_TEXT} Try again in ${Math.ceil(ms / 1000)} seconds.` })
-      return
+      setError({
+        status: `${THROTTLED_TEXT} Try again in ${Math.ceil(ms / 1000)} seconds.`,
+      });
+      return;
     }
-    setBusy('status')
-    setError({})
+    setBusy("status");
+    setError({});
     try {
-      statusCalls.current[statusId] = [...(statusCalls.current[statusId] || []), Date.now()]
-      let data = await postJson('/api/open-banking/status', { id: statusId })
-      if (data.status === 'throttled') setError({ status: `${THROTTLED_TEXT} Wait a moment and check again.` })
-      else setState((s) => ({ ...s, result: data }))
+      statusCalls.current[statusId] = [
+        ...(statusCalls.current[statusId] || []),
+        Date.now(),
+      ];
+      let data = await postJson("/api/open-banking/status", { id: statusId });
+      if (data.status === "throttled")
+        setError({
+          status: `${THROTTLED_TEXT} Wait a moment and check again.`,
+        });
+      else setState((s) => ({ ...s, result: data }));
     } catch (e) {
-      setError({ status: e.message })
+      setError({ status: e.message });
     } finally {
-      setBusy('')
+      setBusy("");
     }
   }
 
   async function sendPayment() {
-    setBusy('payment')
-    setError({})
+    setBusy("payment");
+    setError({});
     try {
-      let data = await postJson('/api/open-banking/payments', form)
-      setState((s) => ({ ...s, payment: data, result: null, returned: false }))
+      let data = await postJson("/api/open-banking/payments", form);
+      setState((s) => ({ ...s, payment: data, result: null, returned: false }));
     } catch (e) {
-      setError({ payment: e.message })
+      setError({ payment: e.message });
     } finally {
-      setBusy('')
+      setBusy("");
     }
   }
 
   function openWindow() {
-    if (!sendShopperToPopup(redirect)) setError({ redirect: 'The browser blocked the new window. Allow pop-ups for this site, or redirect this page.' })
+    if (!sendShopperToPopup(redirect))
+      setError({
+        redirect:
+          "The browser blocked the new window. Allow pop-ups for this site, or redirect this page.",
+      });
   }
 
   // Back on the return page after a full-page redirect: show step 2
   useEffect(() => {
-    if (mode !== 'return' || autoScrolled.current || !ready || !returnId || isEmbedded()) return
-    autoScrolled.current = true
-    setTimeout(() => document.getElementById(REDIRECT.id)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 350)
-  }, [mode, returnId, ready])
+    if (
+      mode !== "return" ||
+      autoScrolled.current ||
+      !ready ||
+      !returnId ||
+      isEmbedded()
+    )
+      return;
+    autoScrolled.current = true;
+    setTimeout(
+      () =>
+        document
+          .getElementById(REDIRECT.id)
+          ?.scrollIntoView({ behavior: "smooth", block: "start" }),
+      350,
+    );
+  }, [mode, returnId, ready]);
 
   // The return page in the popup tells this page when the shopper is back
-  let latest = useRef({})
-  latest.current = { paymentId }
+  let latest = useRef({});
+  latest.current = { paymentId };
   useEffect(() => {
-    let allowed = [window.location.origin]
+    let allowed = [window.location.origin];
     try {
-      if (config?.returnBase) allowed.push(new URL(config.returnBase).origin)
+      if (config?.returnBase) allowed.push(new URL(config.returnBase).origin);
     } catch {}
     function onMessage(e) {
-      if (!allowed.includes(e.origin) || e.data?.type !== RETURN_MESSAGE) return
-      if (latest.current.paymentId && e.data.id && e.data.id !== latest.current.paymentId) return
-      setState((s) => ({ ...s, returned: true }))
+      if (!allowed.includes(e.origin) || e.data?.type !== RETURN_MESSAGE)
+        return;
+      if (
+        latest.current.paymentId &&
+        e.data.id &&
+        e.data.id !== latest.current.paymentId
+      )
+        return;
+      setState((s) => ({ ...s, returned: true }));
     }
-    window.addEventListener('message', onMessage)
-    return () => window.removeEventListener('message', onMessage)
-  }, [config, setState])
+    window.addEventListener("message", onMessage);
+    return () => window.removeEventListener("message", onMessage);
+  }, [config, setState]);
 
-  let base = `https://${config?.apiHost || 'eu-test.oppwa.com'}`
-  let paymentVariants = requestCode({ url: `${base}/v1/payments`, params })
-  let statusVariants = requestCode({ method: 'GET', url: `${base}/v1/payments/${statusId || '{id}'}`, params: [['entityId', ENTITY_SHOWN]] })
-  let snippet = redirectSnippet(redirect)
-  let back = state.returned || (mode === 'return' && Boolean(returnId))
+  let base = `https://${config?.apiHost || "eu-test.oppwa.com"}`;
+  let paymentVariants = requestCode({ url: `${base}/v1/payments`, params });
+  let statusVariants = requestCode({
+    method: "GET",
+    url: `${base}/v1/payments/${statusId || "{id}"}`,
+    params: [["entityId", ENTITY_SHOWN]],
+  });
+  let snippet = redirectSnippet(redirect);
+  let back = state.returned || (mode === "return" && Boolean(returnId));
 
-  let row = (key, extra = {}) => ({ doc: obDoc(key, extra.doc), value: extra.value ?? values[key], note: extra.note, missing: missing.includes(key) })
+  let row = (key, extra = {}) => ({
+    doc: obDoc(key, extra.doc),
+    value: extra.value ?? values[key],
+    note: extra.note,
+    missing: missing.includes(key),
+  });
   let groups = [
     {
-      title: 'Payment',
+      title: "Payment",
       rows: [
-        row('amount', { doc: { req: 'M' } }),
-        row('currency', { doc: { req: 'M' } }),
-        row('paymentBrand', { doc: { req: 'M' } }),
-        row('paymentType', { doc: { req: 'M' } }),
-        row('bankAccount.country', { doc: { req: 'M' } }),
-        row('shopperResultUrl', { doc: { req: 'M' } }),
-        row('merchantTransactionId', { doc: { req: 'O' }, note: 'Your own reference, for reconciliation.' }),
+        row("amount", { doc: { req: "M" } }),
+        row("currency", { doc: { req: "M" } }),
+        row("paymentBrand", { doc: { req: "M" } }),
+        row("paymentType", { doc: { req: "M" } }),
+        row("bankAccount.country", { doc: { req: "M" } }),
+        row("shopperResultUrl", { doc: { req: "M" } }),
+        row("merchantTransactionId", {
+          doc: { req: "O" },
+          note: "Your own reference, for reconciliation.",
+        }),
       ],
     },
-  ]
+  ];
 
-  let link = (text = 'Playground') => (
-    <button type="button" onClick={() => setPlayground(true)} className="font-semibold text-emerald-600 hover:text-emerald-500 dark:text-emerald-400 dark:hover:text-emerald-300">
+  let link = (text = "Playground") => (
+    <button
+      type="button"
+      onClick={() => setPlayground(true)}
+      className="font-semibold text-emerald-600 hover:text-emerald-500 dark:text-emerald-400 dark:hover:text-emerald-300"
+    >
       {text}
     </button>
-  )
+  );
   let sendHint =
     config && !canSend ? (
-      <span className="text-xs text-zinc-400">{config.environment !== 'TEST' ? 'This guide only runs against the test system.' : 'The demo’s access token isn’t set on this server.'}</span>
-    ) : null
+      <span className="text-xs text-zinc-400">
+        {config.environment !== "TEST"
+          ? "This guide only runs against the test system."
+          : "The demo’s access token isn’t set on this server."}
+      </span>
+    ) : null;
 
-  let status = state.result?.status
-  let pendingForBank = state.result?.response?.result?.code === '000.200.001'
+  let status = state.result?.status;
+  let pendingForBank = state.result?.response?.result?.code === "000.200.001";
 
   return (
     <>
-      {/* Workflow: what's asynchronous about it, the requests, and testing */}
+      {/* Workflow: the integration to use, then for the API what's asynchronous about it, the requests and testing */}
       <Heading level={2} id="pay-by-bank-workflow">
         Pay by Bank workflow
       </Heading>
       <p>
-        A Pay by Bank payment is asynchronous. It stays pending while the shopper approves it with their bank, and the bank’s confirmation can
-        arrive after the shopper is back on your site. So you send the payment, send the shopper to their bank, then get the final status.
+        Choose how shoppers pay: from a Pay by link you send from your
+        Dashboard, or at your own checkout with the API.
       </p>
-      <p>The requests run on the test system’s Open Banking channel with Token.io’s sandbox. Set the amount, currency and bank country in the {link()}.</p>
-      <h3>Transaction flow model</h3>
-      <p>The requests between the shopper, the merchant server, the payment gateway and Token.io. Numbered requests are the steps below.</p>
-      <SequenceDiagram title="Pay by Bank · ACI_INSTANTPAY · DB" messages={MESSAGES} lanes={LANES} />
-      <h3>Testing Pay by Bank</h3>
-      <p>
-        Token.io’s sandbox lists test versions of real banks. Not every one completes a payment: some end it straight away, and others open the
-        bank’s own sandbox login, which needs that bank’s test credentials. Until the shopper finishes, the payment stays pending.
-      </p>
-
-      <hr />
-
-      {/* 1. The payment */}
-      <Heading level={2} id={PAYMENT.id} step={PAYMENT.step} tag="POST">
-        {PAYMENT.title}
-      </Heading>
-      <Row>
-        <Col>
+      <IntegrationCards
+        value={api ? "api" : "nocode"}
+        onChange={setIntegration}
+      />
+      {api ? (
+        <>
           <p>
-            Send a server-to-server POST request with paymentBrand ACI_INSTANTPAY and the country of the shopper’s bank. The response is pending, with
-            a redirect to Token.io’s page for step {REDIRECT.step}.
+            A Pay by Bank payment is asynchronous. It stays pending while the
+            shopper approves it with their bank, and the bank’s confirmation can
+            arrive after the shopper is back on your site. So you send the
+            payment, send the shopper to their bank, then get the final status.
           </p>
-          <h3>Properties</h3>
-          <RequestProperties method="POST" path="/v1/payments" base={base} />
-          <h3>Body parameters</h3>
-          <p>Change the amount, currency or bank country in the {link()}.</p>
-          <ParamGroups>
-            {groups.map((g) => (
-              <ParamGroup key={g.title} title={g.title} defaultOpen missing={g.rows.filter((r) => r.missing).length}>
-                {g.rows.map((r) => (
-                  <ParamDoc key={r.doc.name} doc={r.doc} value={r.value} note={r.note} missing={r.missing} onPlayground={() => setPlayground(true)} />
-                ))}
-              </ParamGroup>
-            ))}
-          </ParamGroups>
-          <h3>Response</h3>
-          <ResponseGroup docs={PAYMENT_RESPONSE_DOCS} response={payment?.response} />
-        </Col>
-        <Col sticky>
-          <CodeWindow
-            title="Request"
-            tag="POST"
-            label={<UrlLabel base={base} path="/v1/payments" />}
-            variants={paymentVariants}
-            lineNumbers
-            onPlayground={() => setPlayground(true)}
-            footer={
-              <div className="flex flex-wrap items-center gap-3">
-                <SendButton onClick={sendPayment} disabled={!canSend || missing.length > 0 || busy === 'payment'}>
-                  {busy === 'payment' ? 'Sending…' : 'Send request'}
-                </SendButton>
-                {sendHint}
-                {payment && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setState((s) => ({ ...s, payment: null, result: null, returned: false }))
-                      setError({})
-                    }}
-                    className="ml-auto text-xs font-medium text-zinc-400 transition hover:text-white"
-                  >
-                    Start over
-                  </button>
-                )}
-              </div>
-            }
+          <p>
+            The requests run on the test system’s Open Banking channel with
+            Token.io’s sandbox. Set the amount, currency and bank country in the{" "}
+            {link()}.
+          </p>
+          <h3>Transaction flow model</h3>
+          <p>
+            The requests between the shopper, the merchant server, the payment
+            gateway and Token.io. Numbered requests are the steps below.
+          </p>
+          <SequenceDiagram
+            title="Pay by Bank · ACI_INSTANTPAY · DB"
+            messages={MESSAGES}
+            lanes={LANES}
           />
-          <ErrorNote message={error.payment} />
-          <CodeWindow
-            title="Response"
-            code={payment ? JSON.stringify(payment.response, null, 2) : ''}
-            html={payment ? highlightJson(payment.response) : ''}
-            empty="Response Details"
-          />
-          {payment &&
-            (authFailed ? (
-              <StepNote status="failed" title="Not authorised.">
-                The demo’s access token can’t use the Open Banking test channel. Set OPEN_BANKING_ENTITY_ID and OPEN_BANKING_ACCESS_TOKEN on the
-                server.
-              </StepNote>
-            ) : payment.status === 'pending' && redirect ? (
-              <StepNote status="pending" title="Pending.">
-                Continue to <StepLink step={REDIRECT} /> to send the shopper to their bank.
-              </StepNote>
-            ) : payment.status === 'pending' ? (
-              <StepNote status="pending" title="Pending, without a redirect.">
-                Check the status in <StepLink step={STATUS} />, or send the payment again.
-              </StepNote>
-            ) : (
-              <StepNote status="failed" title="Rejected.">
-                {resultText(payment)}
-                {/^900\.100\.2/.test(payment.response?.result?.code || '') && ' The connection to Token.io’s sandbox failed. Send the payment again.'}
-              </StepNote>
-            ))}
-        </Col>
-      </Row>
-
-      {/* 2. Token.io and the bank */}
-      <hr />
-      <Heading level={2} id={REDIRECT.id} step={REDIRECT.step}>
-        {REDIRECT.title}
-      </Heading>
-      <Row>
-        <Col>
+          <h3>Testing Pay by Bank</h3>
           <p>
-            Send the shopper to the redirect URL from step {PAYMENT.step}’s response. It’s always a GET request, with no parameters. On Token.io’s
-            page they pick their bank and approve the payment in their banking app, then come back to your shopperResultUrl.
+            Token.io’s sandbox lists test versions of real banks. Not every one
+            completes a payment: some end it straight away, and others open the
+            bank’s own sandbox login, which needs that bank’s test credentials.
+            Until the shopper finishes, the payment stays pending.
           </p>
-          <p>Token.io’s page can’t open inside another site, so open it in a new window or redirect the whole page.</p>
-          <h3>Response parameters</h3>
-          <p>The redirect object from step {PAYMENT.step}’s response.</p>
-          <ParamGroups>
-            <ParamGroup title="Redirect" defaultOpen>
-              {REDIRECT_DOC.children.map((d) => (
-                <ParamDoc key={d.name} doc={d} prefix="redirect." value={d.name === 'method' ? redirect?.method : redirect?.[d.name]} />
-              ))}
-            </ParamGroup>
-          </ParamGroups>
-        </Col>
-        <Col sticky>
-          <CodeWindow
-            title="JavaScript"
-            label={`Redirect details from step ${PAYMENT.step}`}
-            code={snippet}
-            html={highlightJs(snippet)}
-            footer={
-              <SplitButton
-                primary={{ label: 'Open in new window', icon: <NewWindowIcon className="size-3.5 flex-none" />, onClick: openWindow, disabled: !redirect }}
-                secondary={{ label: 'Redirect this page', onClick: () => sendShopper(redirect), disabled: !redirect }}
-              />
-            }
-          />
-          <ErrorNote message={error.redirect} />
-          {back && (
-            <StepNote status="success" title="The shopper is back.">
-              Continue to <StepLink step={STATUS} /> to get the payment status.
-            </StepNote>
-          )}
-        </Col>
-      </Row>
-
-      {/* 3. Status, and what to do while it's pending */}
-      <hr />
-      <Heading level={2} id={STATUS.id} step={STATUS.step} tag="GET">
-        {STATUS.title}
-      </Heading>
-      <Row>
-        <Col>
+        </>
+      ) : (
+        <>
+          <h3>Pay by link</h3>
           <p>
-            When the shopper comes back to your shopperResultUrl, it carries the payment’s id and resourcePath. Send a GET request for the payment
-            with your entityId to get its status. {THROTTLED_TEXT}
+            Your customer opens the link, picks their bank on Token.io’s page and approves the payment in their banking app. The Pay by Links guide
+            in the card above covers creating, sending and managing links.
           </p>
-          <h3>Properties</h3>
-          <RequestProperties method="GET" path="/v1/payments/{id}" base={base} />
-          <h3>Path parameters</h3>
-          <ParamList className="not-prose my-6 border-y border-zinc-900/5 dark:border-white/5">
-            <ParamDoc
-              doc={{ name: 'id', format: 'AN32', pattern: '[a-zA-Z0-9]{32}', req: 'M', text: 'The identifier of the payment, from its response.', example: '8ac7a4a1a1f5d12001a203497d145db9' }}
-              value={statusId}
-              note={`The id from step ${PAYMENT.step}’s response.`}
-            />
-          </ParamList>
-          <h3>Response</h3>
-          <ResponseGroup docs={STATUS_RESPONSE_DOCS} response={state.result?.response} />
-          <h3>When the payment is still pending</h3>
-          <p>
-            Some banks take longer to confirm, so the shopper can be back before the payment is final. A status of 000.200.000 or 000.200.001 is
-            still pending, not declined. Get the final status by checking again, or with a webhook notification when the bank confirms.
-          </p>
-          <Callout title="Don’t keep the shopper waiting">
-            Show a message like this, and email them when the payment is approved: “Your order is being processed. We’re confirming your payment with
-            your bank and will email you when it’s approved, so there’s no need to pay again.”
+          <Callout title="Before you start">
+            Your account needs Pay by link as its integration type. See <a href="/open-banking/account-setup#settings">Account setup</a>.
           </Callout>
-          <ConfirmationChart rows={CONFIRMATION_TIMES} source="Source: Nomupay, Open Banking API guide." />
-        </Col>
-        <Col sticky>
-          <CodeWindow
-            title="Request"
-            tag="GET"
-            label={<UrlLabel base={base} path="/v1/payments/" id={statusId || ''} />}
-            variants={statusVariants}
-            lineNumbers
-            footer={
-              <div className="flex flex-wrap items-center gap-3">
-                <SplitButton
-                  primary={{ label: busy === 'status' ? 'Sending…' : 'Send request', onClick: checkStatus, disabled: !statusId || busy === 'status' || !canSend }}
-                  secondary={{
-                    label: 'Check status',
-                    icon: <RefreshIcon className={clsx('size-3.5 flex-none', busy === 'status' && 'animate-spin')} />,
-                    onClick: checkStatus,
-                    disabled: !state.result || busy === 'status' || !canSend,
+        </>
+      )}
+
+      {api && (
+        <>
+          <hr />
+
+          {/* 1. The payment */}
+          <Heading level={2} id={PAYMENT.id} step={PAYMENT.step} tag="POST">
+            {PAYMENT.title}
+          </Heading>
+          <Row>
+            <Col>
+              <p>
+                Send a server-to-server POST request with paymentBrand
+                ACI_INSTANTPAY and the country of the shopper’s bank. The
+                response is pending, with a redirect to Token.io’s page for step{" "}
+                {REDIRECT.step}.
+              </p>
+              <h3>Properties</h3>
+              <RequestProperties
+                method="POST"
+                path="/v1/payments"
+                base={base}
+              />
+              <h3>Body parameters</h3>
+              <p>
+                Change the amount, currency or bank country in the {link()}.
+              </p>
+              <ParamGroups>
+                {groups.map((g) => (
+                  <ParamGroup
+                    key={g.title}
+                    title={g.title}
+                    defaultOpen
+                    missing={g.rows.filter((r) => r.missing).length}
+                  >
+                    {g.rows.map((r) => (
+                      <ParamDoc
+                        key={r.doc.name}
+                        doc={r.doc}
+                        value={r.value}
+                        note={r.note}
+                        missing={r.missing}
+                        onPlayground={() => setPlayground(true)}
+                      />
+                    ))}
+                  </ParamGroup>
+                ))}
+              </ParamGroups>
+              <h3>Response</h3>
+              <ResponseGroup
+                docs={PAYMENT_RESPONSE_DOCS}
+                response={payment?.response}
+              />
+            </Col>
+            <Col sticky>
+              <CodeWindow
+                title="Request"
+                tag="POST"
+                label={<UrlLabel base={base} path="/v1/payments" />}
+                variants={paymentVariants}
+                lineNumbers
+                onPlayground={() => setPlayground(true)}
+                footer={
+                  <div className="flex flex-wrap items-center gap-3">
+                    <SendButton
+                      onClick={sendPayment}
+                      disabled={
+                        !canSend || missing.length > 0 || busy === "payment"
+                      }
+                    >
+                      {busy === "payment" ? "Sending…" : "Send request"}
+                    </SendButton>
+                    {sendHint}
+                    {payment && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setState((s) => ({
+                            ...s,
+                            payment: null,
+                            result: null,
+                            returned: false,
+                          }));
+                          setError({});
+                        }}
+                        className="ml-auto text-xs font-medium text-zinc-400 transition hover:text-white"
+                      >
+                        Start over
+                      </button>
+                    )}
+                  </div>
+                }
+              />
+              <ErrorNote message={error.payment} />
+              <CodeWindow
+                title="Response"
+                code={payment ? JSON.stringify(payment.response, null, 2) : ""}
+                html={payment ? highlightJson(payment.response) : ""}
+                empty="Response Details"
+              />
+              {payment &&
+                (authFailed ? (
+                  <StepNote status="failed" title="Not authorised.">
+                    The demo’s access token can’t use the Open Banking test
+                    channel. Set OPEN_BANKING_ENTITY_ID and
+                    OPEN_BANKING_ACCESS_TOKEN on the server.
+                  </StepNote>
+                ) : payment.status === "pending" && redirect ? (
+                  <StepNote status="pending" title="Pending.">
+                    Continue to <StepLink step={REDIRECT} /> to send the shopper
+                    to their bank.
+                  </StepNote>
+                ) : payment.status === "pending" ? (
+                  <StepNote
+                    status="pending"
+                    title="Pending, without a redirect."
+                  >
+                    Check the status in <StepLink step={STATUS} />, or send the
+                    payment again.
+                  </StepNote>
+                ) : (
+                  <StepNote status="failed" title="Rejected.">
+                    {resultText(payment)}
+                    {/^900\.100\.2/.test(
+                      payment.response?.result?.code || "",
+                    ) &&
+                      " The connection to Token.io’s sandbox failed. Send the payment again."}
+                  </StepNote>
+                ))}
+            </Col>
+          </Row>
+
+          {/* 2. Token.io and the bank */}
+          <hr />
+          <Heading level={2} id={REDIRECT.id} step={REDIRECT.step}>
+            {REDIRECT.title}
+          </Heading>
+          <Row>
+            <Col>
+              <p>
+                Send the shopper to the redirect URL from step {PAYMENT.step}’s
+                response. It’s always a GET request, with no parameters. On
+                Token.io’s page they pick their bank and approve the payment in
+                their banking app, then come back to your shopperResultUrl.
+              </p>
+              <p>
+                Token.io’s page can’t open inside another site, so open it in a
+                new window or redirect the whole page.
+              </p>
+              <h3>Response parameters</h3>
+              <p>The redirect object from step {PAYMENT.step}’s response.</p>
+              <ParamGroups>
+                <ParamGroup title="Redirect" defaultOpen>
+                  {REDIRECT_DOC.children.map((d) => (
+                    <ParamDoc
+                      key={d.name}
+                      doc={d}
+                      prefix="redirect."
+                      value={
+                        d.name === "method"
+                          ? redirect?.method
+                          : redirect?.[d.name]
+                      }
+                    />
+                  ))}
+                </ParamGroup>
+              </ParamGroups>
+            </Col>
+            <Col sticky>
+              <CodeWindow
+                title="JavaScript"
+                label={`Redirect details from step ${PAYMENT.step}`}
+                code={snippet}
+                html={highlightJs(snippet)}
+                footer={
+                  <SplitButton
+                    primary={{
+                      label: "Open in new window",
+                      icon: <NewWindowIcon className="size-3.5 flex-none" />,
+                      onClick: openWindow,
+                      disabled: !redirect,
+                    }}
+                    secondary={{
+                      label: "Redirect this page",
+                      onClick: () => sendShopper(redirect),
+                      disabled: !redirect,
+                    }}
+                  />
+                }
+              />
+              <ErrorNote message={error.redirect} />
+              {back && (
+                <StepNote status="success" title="The shopper is back.">
+                  Continue to <StepLink step={STATUS} /> to get the payment
+                  status.
+                </StepNote>
+              )}
+            </Col>
+          </Row>
+
+          {/* 3. Status, and what to do while it's pending */}
+          <hr />
+          <Heading level={2} id={STATUS.id} step={STATUS.step} tag="GET">
+            {STATUS.title}
+          </Heading>
+          <Row>
+            <Col>
+              <p>
+                When the shopper comes back to your shopperResultUrl, it carries
+                the payment’s id and resourcePath. Send a GET request for the
+                payment with your entityId to get its status. {THROTTLED_TEXT}
+              </p>
+              <h3>Properties</h3>
+              <RequestProperties
+                method="GET"
+                path="/v1/payments/{id}"
+                base={base}
+              />
+              <h3>Path parameters</h3>
+              <ParamList className="not-prose my-6 border-y border-zinc-900/5 dark:border-white/5">
+                <ParamDoc
+                  doc={{
+                    name: "id",
+                    format: "AN32",
+                    pattern: "[a-zA-Z0-9]{32}",
+                    req: "M",
+                    text: "The identifier of the payment, from its response.",
+                    example: "8ac7a4a1a1f5d12001a203497d145db9",
                   }}
+                  value={statusId}
+                  note={`The id from step ${PAYMENT.step}’s response.`}
                 />
-                {sendHint}
-              </div>
-            }
-          />
-          <ErrorNote message={error.status} />
-          <CodeWindow
-            title="Response"
-            code={state.result ? JSON.stringify(state.result.response, null, 2) : ''}
-            html={state.result ? highlightJson(state.result.response) : ''}
-            empty="Response Details"
-          />
-          {state.result &&
-            (status === 'success' ? (
-              <StepNote status="success" title="Approved.">
-                The bank confirmed the payment. Confirm the order.
-              </StepNote>
-            ) : status === 'pending' ? (
-              <StepNote status="pending" title="Still pending.">
-                {pendingForBank
-                  ? 'Waiting for the bank’s confirmation. Check again in a moment.'
-                  : 'The shopper hasn’t finished with their bank yet, or the bank hasn’t confirmed. Check again in a moment.'}
-              </StepNote>
-            ) : (
-              <StepNote status="failed" title="Not approved.">
-                {resultText(state.result)}
-              </StepNote>
-            ))}
-          {!payment && mode !== 'return' && <Note className="mt-4">Send the payment in step {PAYMENT.step} first.</Note>}
-        </Col>
-      </Row>
+              </ParamList>
+              <h3>Response</h3>
+              <ResponseGroup
+                docs={STATUS_RESPONSE_DOCS}
+                response={state.result?.response}
+              />
+              <h3>When the payment is still pending</h3>
+              <p>
+                Some banks take longer to confirm, so the shopper can be back
+                before the payment is final. A status of 000.200.000 or
+                000.200.001 is still pending, not declined. Get the final status
+                by checking again, or with a webhook notification when the bank
+                confirms.
+              </p>
+              <Callout title="Don’t keep the shopper waiting">
+                Show a message like this, and email them when the payment is
+                approved: “Your order is being processed. We’re confirming your
+                payment with your bank and will email you when it’s approved, so
+                there’s no need to pay again.”
+              </Callout>
+              <ConfirmationChart
+                rows={CONFIRMATION_TIMES}
+                source="Source: Nomupay, Open Banking API guide."
+              />
+            </Col>
+            <Col sticky>
+              <CodeWindow
+                title="Request"
+                tag="GET"
+                label={
+                  <UrlLabel
+                    base={base}
+                    path="/v1/payments/"
+                    id={statusId || ""}
+                  />
+                }
+                variants={statusVariants}
+                lineNumbers
+                footer={
+                  <div className="flex flex-wrap items-center gap-3">
+                    <SplitButton
+                      primary={{
+                        label: busy === "status" ? "Sending…" : "Send request",
+                        onClick: checkStatus,
+                        disabled: !statusId || busy === "status" || !canSend,
+                      }}
+                      secondary={{
+                        label: "Check status",
+                        icon: (
+                          <RefreshIcon
+                            className={clsx(
+                              "size-3.5 flex-none",
+                              busy === "status" && "animate-spin",
+                            )}
+                          />
+                        ),
+                        onClick: checkStatus,
+                        disabled:
+                          !state.result || busy === "status" || !canSend,
+                      }}
+                    />
+                    {sendHint}
+                  </div>
+                }
+              />
+              <ErrorNote message={error.status} />
+              <CodeWindow
+                title="Response"
+                code={
+                  state.result
+                    ? JSON.stringify(state.result.response, null, 2)
+                    : ""
+                }
+                html={state.result ? highlightJson(state.result.response) : ""}
+                empty="Response Details"
+              />
+              {state.result &&
+                (status === "success" ? (
+                  <StepNote status="success" title="Approved.">
+                    The bank confirmed the payment. Confirm the order.
+                  </StepNote>
+                ) : status === "pending" ? (
+                  <StepNote status="pending" title="Still pending.">
+                    {pendingForBank
+                      ? "Waiting for the bank’s confirmation. Check again in a moment."
+                      : "The shopper hasn’t finished with their bank yet, or the bank hasn’t confirmed. Check again in a moment."}
+                  </StepNote>
+                ) : (
+                  <StepNote status="failed" title="Not approved.">
+                    {resultText(state.result)}
+                  </StepNote>
+                ))}
+              {!payment && mode !== "return" && (
+                <Note className="mt-4">
+                  Send the payment in step {PAYMENT.step} first.
+                </Note>
+              )}
+            </Col>
+          </Row>
+        </>
+      )}
 
       <OpenBankingPlayground
         open={playground}
@@ -481,8 +1017,10 @@ export function OpenBankingFlow({ mode = 'start' }) {
         form={form}
         setForm={setForm}
         missing={missing}
-        onReset={() => setState(INITIAL)}
+        onReset={() =>
+          setState((s) => ({ ...INITIAL, integration: s.integration }))
+        }
       />
     </>
-  )
+  );
 }

@@ -66,7 +66,7 @@ const guides = [
   {
     href: '/open-banking',
     name: 'Pay by Bank',
-    description: 'Let shoppers pay from their bank account with Open Banking: set up your account, then take payments by link or at your checkout.',
+    description: 'Let shoppers pay from their bank account with Open Banking: set up your account, then take payments with Pay by links or the API.',
     icon: BankIcon,
     pattern: { y: 10, squares: [[0, 3], [1, 1]] },
   },

@@ -80,7 +80,7 @@ const FLOW_PATTERNS = {
   sync: { y: 16, squares: [[0, 1], [1, 3]] },
 }
 
-function Radio({ on }) {
+export function Radio({ on }) {
   return (
     <span
       aria-hidden="true"
@@ -94,7 +94,7 @@ function Radio({ on }) {
   )
 }
 
-function FlowCard({ mode, selected, onSelect, tray }) {
+export function FlowCard({ mode, selected, onSelect, tray }) {
   let mouseX = useMotionValue(0)
   let mouseY = useMotionValue(0)
   function onMouseMove({ currentTarget, clientX, clientY }) {

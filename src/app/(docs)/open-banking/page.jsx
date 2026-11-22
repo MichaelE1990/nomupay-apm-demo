@@ -4,24 +4,21 @@ import {
   ChartIcon,
   CheckList,
   ClockIcon,
-  FactList,
   FeatureGrid,
   HeadsetIcon,
   JourneySteps,
-  LinkIcon,
   PAY_BY_BANK_JOURNEY,
-  PathCards,
   ReceiptIcon,
-  ServerIcon,
-  SettingsIcon,
   ShieldIcon,
+  SpecGrid,
   StatGrid,
+  StepStrip,
   TagIcon,
 } from '@/components/openBanking'
-import { COVERAGE_URL } from '@/lib/openBanking'
+import { COVERAGE_URL, OB_BRAND, PAY_BY_LINKS_URL } from '@/lib/openBanking'
 
 export const metadata = {
-  title: 'Pay by Bank',
+  title: 'Pay by Bank overview',
   description: 'Pay by Bank lets shoppers pay straight from their bank account. What it is, how it works, where it’s available and how to start.',
 }
 
@@ -41,25 +38,37 @@ const BENEFITS = [
   { icon: HeadsetIcon, title: 'Launch support', text: 'Integration help, go-to-market advice and UX guidance from our team.' },
 ]
 
-const FACTS = [
-  { term: 'Payments', details: 'One-off payments that the shopper approves with their bank (debit, DB). There are no recurring payments.' },
-  { term: 'Where shoppers pay', details: 'At your checkout, through the API, or with a Pay by link from your Nomupay Dashboard.' },
-  { term: 'Currencies', details: 'GBP and EUR.' },
+// The spec sheet under At a glance
+const SPECS = [
+  { term: 'Payment type', details: 'One-off debit (DB), approved by the shopper in their bank' },
+  { term: 'Recurring payments', details: 'Not supported' },
+  { term: 'Refunds', details: 'Not available after a payment' },
+  { term: 'Currencies', details: 'GBP, EUR' },
   {
     term: 'Countries and banks',
     details: (
       <>
-        The UK and Europe. See the countries and banks on{' '}
-        <a href={COVERAGE_URL} target="_blank" rel="noreferrer" className="font-medium text-emerald-600 dark:text-emerald-400">
-          Token.io’s coverage map
+        UK and Europe.{' '}
+        <a href={COVERAGE_URL} target="_blank" rel="noreferrer">
+          Coverage map
         </a>
-        .
       </>
     ),
   },
-  { term: 'Refunds', details: 'Not available after a payment.' },
-  { term: 'Card data', details: 'None. Shoppers approve in their bank, so you never handle card or bank details.' },
-  { term: 'Partner', details: 'Delivered with our partner Token.io, which runs the connections to the banks.' },
+  { term: 'Card data', details: 'None: you never handle card or bank details' },
+  {
+    term: 'Integration',
+    details: (
+      <>
+        <a href={PAY_BY_LINKS_URL} target="_blank" rel="noreferrer">
+          Pay by link
+        </a>{' '}
+        (no code) or the <a href="/open-banking/integration">API</a>
+      </>
+    ),
+  },
+  { term: 'Payment brand (API)', details: <code className="font-mono text-[0.8125rem] text-zinc-900 dark:text-white">{OB_BRAND}</code> },
+  { term: 'Partner', details: 'Token.io, which runs the connections to the banks' },
 ]
 
 const USE_CASES = ['Ecommerce checkout', 'Account top-ups', 'Bill payments, including the public sector', 'Loan and credit card repayments', 'Travel and B2B payments']
@@ -94,43 +103,21 @@ export default function PayByBankPage() {
       <Heading level={2} id="at-a-glance">
         At a glance
       </Heading>
-      <FactList items={FACTS} />
+      <SpecGrid items={SPECS} />
 
       <Heading level={2} id="get-started">
         Get started
       </Heading>
-      <p>Two steps: set up your account, then choose how shoppers pay.</p>
-      <h3>1. Set up your account</h3>
-      <PathCards
-        paths={[
+      <StepStrip
+        steps={[
+          { title: 'Set up your account', text: 'Apply for Pay by Bank and agree your settings with us.', href: '/open-banking/account-setup', action: 'Account setup' },
           {
-            href: '/open-banking/account-setup',
-            icon: SettingsIcon,
-            badge: 'Start here',
-            title: 'Account setup',
-            text: 'Apply for Pay by Bank and agree the settings we configure for your account.',
+            title: 'Integrate',
+            text: 'Send Pay by links from your Dashboard, or add Pay by Bank to your checkout with the API.',
+            href: '/open-banking/integration',
+            action: 'Integration',
           },
-        ]}
-        wide
-      />
-      <h3>2. Choose how shoppers pay</h3>
-      <PathCards
-        paths={[
-          {
-            href: '/open-banking/pay-by-link',
-            icon: LinkIcon,
-            badge: 'No code',
-            title: 'Pay by link',
-            text: 'Create a payment link in your Nomupay Dashboard and send it to your customer.',
-          },
-          {
-            href: '/open-banking/server-to-server',
-            icon: ServerIcon,
-            badge: 'API',
-            title: 'Server to Server',
-            text: 'Add Pay by Bank to your checkout: send the payment, send the shopper to their bank and get the result.',
-            action: 'Try it on the test system',
-          },
+          { title: 'Go live', text: 'Take payments once we confirm your account is active.' },
         ]}
       />
     </Article>
