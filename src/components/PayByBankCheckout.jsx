@@ -1,7 +1,7 @@
 'use client'
 
-// "Show Pay by Bank at checkout" on the Integration page (Server to Server): which element to use,
-// a builder for the button and the mark, the design rules and Token.io's downloads. Everything
+// "Brand customisations" on the Integration page (Server to Server): the design rules, Token.io's
+// downloads, which element to use, and a builder for the button and the mark. Everything
 // follows Token.io's Pay by Bank design system (Nov 2026). The previews use the generic bank icon
 // only: Token.io's permission doesn't cover banks' app icons.
 import '@fontsource-variable/inter'
@@ -13,20 +13,20 @@ import { useState } from 'react'
 import { CodeWindow } from '@/components/CodeWindow'
 import { Col, Row } from '@/components/content'
 import { Heading } from '@/components/Heading'
-import { Callout, DownloadIcon, SpecGrid } from '@/components/openBanking'
+import { Callout, SpecGrid } from '@/components/openBanking'
 import { highlightHtml } from '@/lib/highlight'
 
-export const CHECKOUT_SECTION = { id: 'show-pay-by-bank-at-checkout', title: 'Show Pay by Bank at checkout' }
+export const CHECKOUT_SECTION = { id: 'brand-customisations', title: 'Brand customisations' }
 
 const INTER = "'Inter Variable', Inter, system-ui, sans-serif"
 
 // Token.io's downloads (Google Drive), from the design system's Basics page
 const DOWNLOADS = [
-  { label: 'Buttons', href: 'https://drive.google.com/drive/folders/13SWDc_5MLZIN_UAZ-K7xcwynLV44eOJc' },
-  { label: 'Bank icon mark', href: 'https://drive.google.com/drive/folders/1HgPiyaoa-iQXfKYiHknFQWQcmHSbZEIt' },
-  { label: 'App icon mark', href: 'https://drive.google.com/drive/folders/1qaNAt-rUemcl0J2MsJPIBbPe_kCy24in' },
-  { label: 'Word mark', href: 'https://drive.google.com/drive/folders/13iIvewb8WG4bW18fxF-Bz2L-PlccVRWG' },
-  { label: 'Inter font', href: 'https://fonts.google.com/specimen/Inter' },
+  { label: 'Pay by Bank buttons', meta: 'PNG, SVG', href: 'https://drive.google.com/drive/folders/13SWDc_5MLZIN_UAZ-K7xcwynLV44eOJc' },
+  { label: 'Bank icon mark', meta: 'PNG, SVG', href: 'https://drive.google.com/drive/folders/1HgPiyaoa-iQXfKYiHknFQWQcmHSbZEIt' },
+  { label: 'App icon mark', meta: 'PNG, SVG', href: 'https://drive.google.com/drive/folders/1qaNAt-rUemcl0J2MsJPIBbPe_kCy24in' },
+  { label: 'Word mark', meta: 'PNG, SVG', href: 'https://drive.google.com/drive/folders/13iIvewb8WG4bW18fxF-Bz2L-PlccVRWG' },
+  { label: 'Inter font', meta: 'Google Fonts', href: 'https://fonts.google.com/specimen/Inter' },
 ]
 
 // The generic bank icon (a temple) and the plus sign that means "and many more banks"
@@ -51,37 +51,35 @@ function textOn(hex) {
   return 0.2126 * r + 0.7152 * g + 0.0722 * b > 0.4 ? '#000000' : '#ffffff'
 }
 
-// Token.io's colours. Light grey is #f7f7f7 with the generic icon (#f2f2f2 with app icons).
-const BUTTON_STYLES = [
-  { id: 'white', label: 'White, black border', bg: '#ffffff', border: '#000000' },
-  { id: 'white-grey', label: 'White, grey border', bg: '#ffffff', border: '#b4b4b4' },
-  { id: 'grey', label: 'Light grey', bg: '#f7f7f7' },
-  { id: 'black', label: 'Black', bg: '#000000' },
-  { id: 'brand-outline', label: 'Your colour, outline', bg: '#ffffff', border: 'brand', custom: true },
-  { id: 'brand', label: 'Your colour, filled', bg: 'brand', custom: true },
+// Token.io's colours for the generic bank icon. Light grey is #f7f7f7 (#f2f2f2 with app icons).
+// Marks take white, black or your colour. Borders are 2px and go on white backgrounds only.
+const BACKGROUNDS = [
+  { id: 'white', label: 'White', hex: '#ffffff' },
+  { id: 'grey', label: 'Light grey', hex: '#f7f7f7', button: true },
+  { id: 'black', label: 'Black', hex: '#000000' },
+  { id: 'brand', label: 'Your colour' },
 ]
-const MARK_STYLES = [
-  { id: 'white', label: 'White, black border', bg: '#ffffff', border: '#000000' },
-  { id: 'white-grey', label: 'White, grey border', bg: '#ffffff', border: '#b4b4b4' },
-  { id: 'black', label: 'Black', bg: '#000000' },
-  { id: 'brand', label: 'Your colour, filled', bg: 'brand', custom: true },
+const BORDERS = [
+  { id: 'none', label: 'None' },
+  { id: 'black', label: 'Black', hex: '#000000' },
+  { id: 'grey', label: 'Grey', hex: '#b4b4b4' },
+  { id: 'brand', label: 'Your colour', button: true },
 ]
 
-function colours(style, brand) {
-  let bg = style.bg === 'brand' ? brand : style.bg
-  let border = style.border === 'brand' ? brand : style.border
-  return { bg, border, text: textOn(bg) }
+function colours({ bg, border, brand }) {
+  let fill = bg === 'brand' ? brand : BACKGROUNDS.find((b) => b.id === bg).hex
+  let line = bg !== 'white' || border === 'none' ? null : border === 'brand' ? brand : BORDERS.find((b) => b.id === border).hex
+  return { bg: fill, border: line, text: textOn(fill) }
 }
 
-function buttonCode(c, full) {
+function buttonCode(c) {
   return [
     '<!-- Inter, from Google Fonts -->',
     '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap">',
     '',
     '<style>',
     '  .pay-by-bank {',
-    `    display: ${full ? 'flex' : 'inline-flex'};`,
-    ...(full ? ['    width: 100%;'] : []),
+    '    display: inline-flex;',
     '    min-height: 48px;',
     '    padding: 0 32px;',
     '    align-items: center;',
@@ -139,10 +137,10 @@ function markCode(c) {
 }
 
 // The previews: Token.io's button, the mark in a payment list, and the word mark
-function ButtonPreview({ c, full = true, size = 18 }) {
+function ButtonPreview({ c, size = 18 }) {
   return (
     <span
-      className={clsx('items-center justify-center gap-[0.5em] rounded-md px-8 leading-none', full ? 'flex w-full' : 'inline-flex')}
+      className="inline-flex items-center justify-center gap-[0.5em] rounded-md px-8 leading-none"
       style={{
         fontFamily: INTER,
         fontSize: size,
@@ -211,7 +209,7 @@ const ELEMENTS = [
   {
     title: 'Button',
     text: 'Where one click starts the payment, such as the basket or a top-up.',
-    preview: <ButtonPreview c={WHITE} full={false} size={14} />,
+    preview: <ButtonPreview c={WHITE} size={14} />,
   },
   {
     title: 'Mark',
@@ -257,25 +255,65 @@ function Segmented({ label, value, onChange, options }) {
   )
 }
 
-function Field({ label, children }) {
+function Field({ label, hint, children }) {
   return (
     <div className="mt-6 first:mt-0">
       <div className="mb-2 text-sm font-semibold text-zinc-900 dark:text-white">{label}</div>
       {children}
+      {hint && <p className="mt-2 text-xs/5 text-zinc-500 dark:text-zinc-400">{hint}</p>}
     </div>
+  )
+}
+
+function Swatch({ hex, none }) {
+  return (
+    <span
+      className={clsx('relative size-4 flex-none overflow-hidden rounded-full ring-1 ring-zinc-900/15 dark:ring-white/20', none && 'bg-white')}
+      style={hex ? { background: hex } : undefined}
+    >
+      {none && <span className="absolute top-1/2 left-1/2 h-px w-5 -translate-x-1/2 -translate-y-1/2 -rotate-45 bg-zinc-400" />}
+    </span>
+  )
+}
+
+// A row of options, each with a colour swatch
+function SwatchChoice({ label, value, onChange, options, disabled }) {
+  return (
+    <RadioGroup value={value} onChange={onChange} aria-label={label} disabled={disabled} className="flex flex-wrap gap-2">
+      {options.map((o) => (
+        <HeadlessRadio
+          key={o.id}
+          value={o.id}
+          className="flex cursor-pointer items-center gap-2 rounded-full px-3 py-1.5 text-sm text-zinc-700 ring-1 ring-zinc-900/10 transition hover:bg-zinc-50 focus:outline-none data-checked:ring-2 data-checked:ring-emerald-500 data-disabled:cursor-not-allowed data-disabled:opacity-40 data-disabled:hover:bg-transparent data-focus:ring-2 data-focus:ring-emerald-500 dark:text-zinc-300 dark:ring-white/10 dark:hover:bg-white/5 dark:data-checked:ring-emerald-400"
+        >
+          <Swatch hex={o.swatch} none={o.id === 'none'} />
+          {o.label}
+        </HeadlessRadio>
+      ))}
+    </RadioGroup>
   )
 }
 
 function Builder() {
   let [element, setElement] = useState('button')
-  let [styleId, setStyleId] = useState('white')
+  let [bg, setBg] = useState('white')
+  let [border, setBorder] = useState('black')
   let [brand, setBrand] = useState(BRAND_DEFAULT)
-  let [width, setWidth] = useState('full')
 
-  let styles = element === 'button' ? BUTTON_STYLES : MARK_STYLES
-  let style = styles.find((s) => s.id === styleId) || styles[0]
-  let c = colours(style, brand)
-  let code = element === 'button' ? buttonCode(c, width === 'full') : markCode(c)
+  let button = element === 'button'
+  let backgrounds = BACKGROUNDS.filter((b) => button || !b.button).map((b) => ({ ...b, swatch: b.hex || brand }))
+  let borders = BORDERS.filter((b) => button || !b.button).map((b) => ({ ...b, swatch: b.id === 'brand' ? brand : b.hex }))
+  let c = colours({ bg, border, brand })
+  let code = button ? buttonCode(c) : markCode(c)
+
+  // Marks don't come in light grey or with a border in your colour
+  function changeElement(next) {
+    setElement(next)
+    if (next === 'mark') {
+      if (bg === 'grey') setBg('white')
+      if (border === 'brand') setBorder('black')
+    }
+  }
 
   return (
     <Row>
@@ -285,37 +323,21 @@ function Builder() {
             <Segmented
               label="Element"
               value={element}
-              onChange={setElement}
+              onChange={changeElement}
               options={[
                 { value: 'button', label: 'Button' },
                 { value: 'mark', label: 'Mark' },
               ]}
             />
           </Field>
-          <Field label="Style">
-            <RadioGroup value={style.id} onChange={setStyleId} aria-label="Style" className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-              {styles.map((s) => {
-                let sc = colours(s, brand)
-                return (
-                  <HeadlessRadio
-                    key={s.id}
-                    value={s.id}
-                    className="group flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-zinc-700 ring-1 ring-zinc-900/10 transition hover:bg-zinc-50 focus:outline-none data-checked:ring-2 data-checked:ring-emerald-500 data-focus:ring-2 data-focus:ring-emerald-500 dark:text-zinc-300 dark:ring-white/10 dark:hover:bg-white/5 dark:data-checked:ring-emerald-400"
-                  >
-                    <span
-                      className="flex h-6 w-9 flex-none items-center justify-center rounded"
-                      style={{ background: sc.bg, color: sc.text, border: sc.border ? `2px solid ${sc.border}` : '1px solid rgb(0 0 0 / 0.08)' }}
-                    >
-                      <BankIconMark className="h-2.5" />
-                    </span>
-                    {s.label}
-                  </HeadlessRadio>
-                )
-              })}
-            </RadioGroup>
+          <Field label="Background" hint="The text and icon turn black or white to suit it.">
+            <SwatchChoice label="Background" value={bg} onChange={setBg} options={backgrounds} />
           </Field>
-          {style.custom && (
-            <Field label="Your colour">
+          <Field label="Border" hint={bg === 'white' ? '2px wide.' : 'Borders go on white backgrounds only.'}>
+            <SwatchChoice label="Border" value={bg === 'white' ? border : 'none'} onChange={setBorder} options={borders} disabled={bg !== 'white'} />
+          </Field>
+          {(bg === 'brand' || (bg === 'white' && border === 'brand')) && (
+            <Field label="Your colour" hint="One colour only, never a gradient.">
               <label className="inline-flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-zinc-700 ring-1 ring-zinc-900/10 dark:text-zinc-300 dark:ring-white/10">
                 <input
                   type="color"
@@ -326,37 +348,23 @@ function Builder() {
                 />
                 <code className="font-mono text-[0.8125rem]">{brand}</code>
               </label>
-              <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">One colour only, never a gradient. The text turns black or white to stay readable.</p>
-            </Field>
-          )}
-          {element === 'button' && (
-            <Field label="Width">
-              <Segmented
-                label="Width"
-                value={width}
-                onChange={setWidth}
-                options={[
-                  { value: 'full', label: 'Full width' },
-                  { value: 'fit', label: 'Fit the text' },
-                ]}
-              />
             </Field>
           )}
         </div>
       </Col>
       <Col sticky>
-        <div className="not-prose overflow-hidden rounded-2xl bg-white ring-1 ring-zinc-900/10 dark:ring-white/10">
-          <div className="flex items-center justify-between border-b border-zinc-900/7.5 px-4 py-2.5 text-xs font-medium text-zinc-600">
-            <span>Preview</span>
-            <span className="text-zinc-400">Your checkout</span>
-          </div>
-          <div className="flex min-h-48 items-center justify-center bg-[radial-gradient(var(--color-zinc-200)_1px,transparent_1px)] [background-size:12px_12px] p-6">
-            <div className="w-full max-w-sm text-center">
-              {element === 'button' ? <ButtonPreview c={c} full={width === 'full'} /> : <PaymentList c={c} />}
+        <CodeWindow
+          title={button ? 'Pay by Bank button' : 'Pay by Bank mark'}
+          label="Your checkout page"
+          code={code}
+          html={highlightHtml(code)}
+          codeTab="HTML"
+          preview={
+            <div className="flex min-h-56 items-center justify-center bg-white bg-[radial-gradient(var(--color-zinc-200)_1px,transparent_1px)] [background-size:12px_12px] p-6">
+              {button ? <ButtonPreview c={c} /> : <div className="w-full max-w-sm"><PaymentList c={c} /></div>}
             </div>
-          </div>
-        </div>
-        <CodeWindow title="HTML" label="Your checkout page" code={code} html={highlightHtml(code)} className="mt-6" />
+          }
+        />
       </Col>
     </Row>
   )
@@ -371,22 +379,42 @@ const RULES = [
   { term: 'Size', details: 'Text and icons the same height, half an icon’s width apart, and centred. Marks at least 40px tall.' },
 ]
 
+function PaperClipIcon(props) {
+  return (
+    <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" {...props}>
+      <path
+        fillRule="evenodd"
+        d="M15.621 4.379a3 3 0 0 0-4.242 0l-7 7a3 3 0 0 0 4.241 4.243h.001l.497-.5a.75.75 0 0 1 1.064 1.057l-.498.501-.002.002a4.5 4.5 0 0 1-6.364-6.364l7-7a4.5 4.5 0 0 1 6.368 6.36l-3.455 3.553A2.625 2.625 0 1 1 9.52 9.52l3.45-3.451a.75.75 0 1 1 1.061 1.06l-3.45 3.451a1.125 1.125 0 0 0 1.587 1.595l3.454-3.553a3 3 0 0 0 0-4.242Z"
+        clipRule="evenodd"
+      />
+    </svg>
+  )
+}
+
+// Token.io's files as an attachments list (Tailwind Plus description list attachments)
 function Downloads() {
   return (
-    <div className="not-prose my-6 flex flex-wrap gap-2">
+    <ul role="list" className="not-prose my-6 divide-y divide-zinc-100 rounded-lg border border-zinc-200 dark:divide-white/5 dark:border-white/10">
       {DOWNLOADS.map((d) => (
-        <a
-          key={d.label}
-          href={d.href}
-          target="_blank"
-          rel="noreferrer"
-          className="group inline-flex items-center gap-1.5 rounded-full bg-zinc-100 px-3 py-1.5 text-sm font-medium text-zinc-700 ring-1 ring-zinc-900/5 transition hover:bg-zinc-200 hover:text-zinc-900 dark:bg-white/5 dark:text-zinc-300 dark:ring-white/10 dark:hover:bg-white/10 dark:hover:text-white"
-        >
-          {d.label}
-          <DownloadIcon className="size-4 stroke-current transition group-hover:translate-y-0.5" />
-        </a>
+        <li key={d.label} className="flex items-center justify-between py-4 pr-5 pl-4 text-sm/6">
+          <div className="flex w-0 flex-1 items-center">
+            <PaperClipIcon className="size-5 flex-none text-zinc-400 dark:text-zinc-500" />
+            <div className="ml-4 flex min-w-0 flex-1 flex-col sm:flex-row sm:gap-2">
+              <span className="truncate font-medium text-zinc-900 dark:text-white">{d.label}</span>
+              <span className="flex-none text-zinc-400 dark:text-zinc-500">{d.meta}</span>
+            </div>
+          </div>
+          <a
+            href={d.href}
+            target="_blank"
+            rel="noreferrer"
+            className="ml-4 flex-none font-medium text-emerald-600 hover:text-emerald-500 dark:text-emerald-400 dark:hover:text-emerald-300"
+          >
+            Download<span className="sr-only"> {d.label}</span>
+          </a>
+        </li>
       ))}
-    </div>
+    </ul>
   )
 }
 
@@ -402,6 +430,14 @@ export function PayByBankCheckout() {
         system sets how it looks, so shoppers recognise it wherever they see it.
       </p>
 
+      <h3>Design rules</h3>
+      <p>Keep to these whether you use the builder below or design your own.</p>
+      <SpecGrid items={RULES} />
+
+      <h3>Downloads</h3>
+      <p>Token.io’s buttons and marks, free to use with Pay by Bank.</p>
+      <Downloads />
+
       <h3>Choose what to show</h3>
       <ElementCards />
       <p>
@@ -414,16 +450,8 @@ export function PayByBankCheckout() {
       </Callout>
 
       <h3>Build your button or mark</h3>
-      <p>Pick a style, then copy the HTML into your checkout page. The builder uses the generic bank icon.</p>
+      <p>Choose the element, background and border, then copy the HTML into your checkout page. The builder uses the generic bank icon.</p>
       <Builder />
-
-      <h3>Design rules</h3>
-      <p>The builder follows these. Keep to them if you design your own.</p>
-      <SpecGrid items={RULES} />
-
-      <h3>Downloads</h3>
-      <p>Token.io’s buttons and marks as PNG and SVG files, free to use with Pay by Bank.</p>
-      <Downloads />
     </>
   )
 }

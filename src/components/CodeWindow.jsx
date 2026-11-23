@@ -101,8 +101,11 @@ export function SlidersIcon(props) {
 }
 
 // variants: [{ lang, label, code, html }] shows language tabs (cURL, JavaScript);
-// onPlayground adds the Playground tab, which opens the request settings
-export function CodeWindow({ title, tag, label, code, html, variants, onPlayground, lineNumbers, empty, footer, status, className }) {
+// onPlayground adds the Playground tab, which opens the request settings;
+// preview adds a Preview tab (shown first) before the code, labelled codeTab
+export function CodeWindow({ title, tag, label, code, html, variants, onPlayground, lineNumbers, empty, footer, status, className, preview, codeTab = 'Code' }) {
+  let [view, setView] = useState('preview')
+  let showPreview = Boolean(preview) && view === 'preview'
   let lang = useCodeLanguage((s) => s.lang)
   let setLang = useCodeLanguage((s) => s.setLang)
   useRememberedCodeLanguage()
@@ -121,6 +124,28 @@ export function CodeWindow({ title, tag, label, code, html, variants, onPlaygrou
       <div className="flex min-h-[calc(--spacing(12)+1px)] flex-wrap items-center gap-x-4 border-b border-zinc-700 bg-zinc-800 px-4 dark:border-zinc-800 dark:bg-transparent">
         <h3 className="mr-auto py-3 text-xs font-semibold text-white">{title}</h3>
         {status}
+        {preview && (
+          <div role="tablist" aria-label={`${title} view`} className="-mb-px flex items-center gap-4 text-xs font-medium">
+            {[
+              ['preview', 'Preview'],
+              ['code', codeTab],
+            ].map(([id, text]) => (
+              <button
+                key={id}
+                type="button"
+                role="tab"
+                aria-selected={view === id}
+                onClick={() => setView(id)}
+                className={clsx(
+                  'border-b py-3 transition focus-visible:outline-none',
+                  view === id ? 'border-emerald-500 text-emerald-400' : 'border-transparent text-zinc-400 hover:text-zinc-300',
+                )}
+              >
+                {text}
+              </button>
+            ))}
+          </div>
+        )}
         {(variants || onPlayground) && (
           <div role="tablist" aria-label={`${title} language`} className="-mb-px flex items-center gap-4 text-xs font-medium">
             {variants?.map((v) => {
@@ -168,7 +193,9 @@ export function CodeWindow({ title, tag, label, code, html, variants, onPlaygrou
         </div>
       )}
       <div className="group relative dark:bg-white/2.5">
-        {shownCode ? (
+        {showPreview ? (
+          preview
+        ) : shownCode ? (
           <>
             <pre
               className={clsx('max-h-[32rem] overflow-auto p-4 text-xs/5 text-white', lineNumbers && 'cw-numbered')}
