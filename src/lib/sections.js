@@ -16,8 +16,7 @@ export const navigation = [
       {
         title: 'Open Banking',
         links: [
-          { title: 'Overview', href: '/open-banking' },
-          { title: 'Account setup', href: '/open-banking/account-setup' },
+          { title: 'Get started', href: '/open-banking' },
           { title: 'Integration', href: '/open-banking/integration' },
         ],
       },
@@ -63,11 +62,8 @@ export const allSections = {
     { id: 'how-it-works', title: 'How it works' },
     { id: 'why-pay-by-bank', title: 'Why Pay by Bank' },
     { id: 'at-a-glance', title: 'At a glance' },
-    { id: 'get-started', title: 'Get started' },
-  ],
-  '/open-banking/account-setup': [
-    { id: 'apply', title: 'Apply for Pay by Bank' },
-    { id: 'settings', title: 'Settings we configure' },
+    { id: 'transaction-flow', title: 'Transaction flow' },
+    { id: 'account-setup', title: 'Account setup' },
   ],
   // The steps only show for the API; OpenBankingFlow updates this list
   '/open-banking/integration': [
@@ -75,6 +71,7 @@ export const allSections = {
     { id: 'send-the-payment', step: 1, title: 'Send the payment', tag: 'POST' },
     { id: 'send-the-shopper-to-their-bank', step: 2, title: 'Send the shopper to their bank' },
     { id: 'get-the-payment-status', step: 3, title: 'Get the payment status', tag: 'GET' },
+    { id: 'account-settings', title: 'Account settings' },
   ],
   '/recurring-payments': [
     { id: 'recurring-workflow', title: 'Recurring workflow' },

@@ -36,7 +36,6 @@ import {
   ParamGroup,
   ParamGroups,
   Radio,
-  SequenceDiagram,
 } from "@/components/s2sParts";
 import { useSyncSections } from "@/components/SectionProvider";
 import { SelectMenu } from "@/components/select";
@@ -46,6 +45,7 @@ import {
   CONFIRMATION_TIMES,
   OB_COUNTRIES,
   OB_CURRENCIES,
+  OB_STEPS,
   PAY_BY_LINKS_URL,
   buildPaymentParams,
   currencyFor,
@@ -85,107 +85,8 @@ const THROTTLED_TEXT =
 const SHOPPER_RESULT_URL_SHOWN = "https://demo/paymentresult";
 const ENTITY_SHOWN = "{entity_id}";
 
-const STEPS = [
-  {
-    key: "payment",
-    id: "send-the-payment",
-    step: 1,
-    title: "Send the payment",
-    tag: "POST",
-  },
-  {
-    key: "redirect",
-    id: "send-the-shopper-to-their-bank",
-    step: 2,
-    title: "Send the shopper to their bank",
-  },
-  {
-    key: "status",
-    id: "get-the-payment-status",
-    step: 3,
-    title: "Get the payment status",
-    tag: "GET",
-  },
-];
+const STEPS = OB_STEPS;
 const [PAYMENT, REDIRECT, STATUS] = STEPS;
-
-const LANES = [
-  {
-    id: "shopper",
-    label: "Shopper",
-    bar: "bg-emerald-500 dark:bg-emerald-400",
-  },
-  {
-    id: "server",
-    label: "Merchant server",
-    bar: "bg-amber-500 dark:bg-amber-400",
-  },
-  {
-    id: "gateway",
-    label: "Payment gateway",
-    bar: "bg-sky-500 dark:bg-sky-400",
-  },
-  {
-    id: "bank",
-    label: "Token.io and bank",
-    bar: "bg-violet-500 dark:bg-violet-400",
-  },
-];
-
-const step = (s, extra) => ({
-  step: s.step,
-  href: s.id,
-  label: s.title,
-  ...extra,
-});
-const MESSAGES = [
-  { from: "shopper", to: "server", label: "Chooses Pay by Bank at checkout" },
-  {
-    from: "server",
-    to: "gateway",
-    ...step(PAYMENT, { detail: "POST /v1/payments · ACI_INSTANTPAY · DB" }),
-  },
-  {
-    from: "gateway",
-    to: "server",
-    kind: "response",
-    label: "Pending, with a redirect to Token.io",
-  },
-  { from: "server", to: "bank", ...step(REDIRECT, { detail: "redirect.url" }) },
-  {
-    from: "bank",
-    kind: "note",
-    label: "Shopper picks their bank and approves in their banking app",
-  },
-  {
-    from: "bank",
-    to: "shopper",
-    kind: "response",
-    label: "Shopper returns to your shopperResultUrl",
-  },
-  {
-    from: "bank",
-    to: "gateway",
-    kind: "response",
-    label: "The bank confirms the payment, usually within 90 seconds",
-  },
-  {
-    from: "server",
-    to: "gateway",
-    ...step(STATUS, { detail: "GET /v1/payments/{id}" }),
-  },
-  {
-    from: "gateway",
-    to: "server",
-    kind: "response",
-    label: "Approved, declined or still pending",
-  },
-  {
-    from: "server",
-    kind: "note",
-    label: "Confirms the order once it’s approved",
-  },
-];
 
 // True inside a payment popup (see the return page)
 function isEmbedded() {
@@ -209,7 +110,7 @@ function ResponseGroup({ docs, response }) {
 
 // The two ways to take Pay by Bank, as cards like the use cases on the other guides. The chosen
 // card opens a tray: No code links to the Help Centre's Pay by Links guide; API offers Server to
-// Server (COPYandPAY is still to come)
+// Server (Copy & Pay is still to come)
 const INTEGRATIONS = [
   {
     value: "nocode",
@@ -319,7 +220,7 @@ function IntegrationCards({ value, onChange }) {
                     )}
                   >
                     <Radio on={false} />
-                    <span className="min-w-0 flex-auto">COPYandPAY</span>
+                    <span className="min-w-0 flex-auto">Copy &amp; Pay</span>
                     <span className="flex-none rounded-full bg-zinc-900/5 px-2 py-0.5 text-[0.6875rem] font-medium text-zinc-500 dark:bg-white/10 dark:text-zinc-400">
                       Coming soon
                     </span>
@@ -436,6 +337,7 @@ export function OpenBankingFlow({ mode = "start" }) {
           tag: x.tag,
         }))
       : []),
+    { id: "account-settings", title: "Account settings" },
   ]);
 
   let form = { ...INITIAL.form, ...state.form };
@@ -627,8 +529,7 @@ export function OpenBankingFlow({ mode = "start" }) {
         Pay by Bank workflow
       </Heading>
       <p>
-        Choose how shoppers pay: from a Pay by link you send from your
-        Dashboard, or at your own checkout with the API.
+        Pick how you’ll integrate. Each option shows what to do next.
       </p>
       <IntegrationCards
         value={api ? "api" : "nocode"}
@@ -641,22 +542,14 @@ export function OpenBankingFlow({ mode = "start" }) {
             shopper approves it with their bank, and the bank’s confirmation can
             arrive after the shopper is back on your site. So you send the
             payment, send the shopper to their bank, then get the final status.
+            The <a href="/open-banking#transaction-flow">transaction flow</a>{" "}
+            shows how the requests fit together.
           </p>
           <p>
             The requests run on the test system’s Open Banking channel with
             Token.io’s sandbox. Set the amount, currency and bank country in the{" "}
             {link()}.
           </p>
-          <h3>Transaction flow model</h3>
-          <p>
-            The requests between the shopper, the merchant server, the payment
-            gateway and Token.io. Numbered requests are the steps below.
-          </p>
-          <SequenceDiagram
-            title="Pay by Bank · ACI_INSTANTPAY · DB"
-            messages={MESSAGES}
-            lanes={LANES}
-          />
           <h3>Testing Pay by Bank</h3>
           <p>
             Token.io’s sandbox lists test versions of real banks. Not every one
@@ -673,7 +566,7 @@ export function OpenBankingFlow({ mode = "start" }) {
             in the card above covers creating, sending and managing links.
           </p>
           <Callout title="Before you start">
-            Your account needs Pay by link as its integration type. See <a href="/open-banking/account-setup#settings">Account setup</a>.
+            Your account needs Pay by link as its integration type. See <a href="#account-settings">Account settings</a>.
           </Callout>
         </>
       )}

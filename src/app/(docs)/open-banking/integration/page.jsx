@@ -2,6 +2,7 @@ import { Suspense } from 'react'
 
 import { Article } from '@/components/Article'
 import { OpenBankingFlow } from '@/components/OpenBankingFlow'
+import { OpenBankingSettings } from '@/components/OpenBankingSettings'
 
 export const metadata = {
   title: 'Pay by Bank integration',
@@ -19,6 +20,7 @@ export default function OpenBankingIntegrationPage() {
       <Suspense>
         <OpenBankingFlow />
       </Suspense>
+      <OpenBankingSettings />
     </Article>
   )
 }

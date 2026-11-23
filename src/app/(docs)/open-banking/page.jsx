@@ -8,18 +8,21 @@ import {
   HeadsetIcon,
   JourneySteps,
   PAY_BY_BANK_JOURNEY,
+  PillLinks,
   ReceiptIcon,
   ShieldIcon,
   SpecGrid,
   StatGrid,
-  StepStrip,
+  StepList,
   TagIcon,
+  UpNext,
 } from '@/components/openBanking'
-import { COVERAGE_URL, OB_BRAND, PAY_BY_LINKS_URL } from '@/lib/openBanking'
+import { OpenBankingTransactionFlow } from '@/components/OpenBankingTransactionFlow'
+import { COVERAGE_URL, OB_BRAND, PAY_BY_LINKS_URL, SALES_EMAIL, SETTINGS_FORM_URL } from '@/lib/openBanking'
 
 export const metadata = {
-  title: 'Pay by Bank overview',
-  description: 'Pay by Bank lets shoppers pay straight from their bank account. What it is, how it works, where it’s available and how to start.',
+  title: 'Get started with Pay by Bank',
+  description: 'Pay by Bank lets shoppers pay straight from their bank account. How it works, where it’s available, the transaction flow and how to set up your account.',
 }
 
 const STATS = [
@@ -71,6 +74,27 @@ const SPECS = [
   { term: 'Partner', details: 'Token.io, which runs the connections to the banks' },
 ]
 
+// Account setup: apply, we confirm, then take payments. The settings live on the Integration page
+const SETUP = [
+  {
+    title: 'Application and KYC',
+    text: (
+      <>
+        <a href={`mailto:${SALES_EMAIL}`}>Contact our sales team</a> to start your application. Tell them about your business and your Pay by
+        Bank needs, then complete our Know Your Customer (KYC) checks.
+      </>
+    ),
+    action: (
+      <PillLinks
+        primary={{ label: 'View settings', href: '/open-banking/integration#account-settings' }}
+        secondary={{ label: 'Download form', href: SETTINGS_FORM_URL, download: true, title: 'The Pay by Bank settings form (Word)' }}
+      />
+    ),
+  },
+  { title: 'Account confirmation', text: 'We set up your account with the settings you agreed, and email you when it’s ready to take payments.' },
+  { title: 'Take payments', text: 'Send Pay by links from your Dashboard, or add the API to your checkout.' },
+]
+
 const USE_CASES = ['Ecommerce checkout', 'Account top-ups', 'Bill payments, including the public sector', 'Loan and credit card repayments', 'Travel and B2B payments']
 
 export default function PayByBankPage() {
@@ -105,20 +129,25 @@ export default function PayByBankPage() {
       </Heading>
       <SpecGrid items={SPECS} />
 
-      <Heading level={2} id="get-started">
-        Get started
+      <Heading level={2} id="transaction-flow">
+        Transaction flow
       </Heading>
-      <StepStrip
-        steps={[
-          { title: 'Set up your account', text: 'Apply for Pay by Bank and agree your settings with us.', href: '/open-banking/account-setup', action: 'Account setup' },
-          {
-            title: 'Integrate',
-            text: 'Send Pay by links from your Dashboard, or add Pay by Bank to your checkout with the API.',
-            href: '/open-banking/integration',
-            action: 'Integration',
-          },
-          { title: 'Go live', text: 'Take payments once we confirm your account is active.' },
-        ]}
+      <p>
+        How a payment moves between the shopper, the merchant server, the payment gateway and Token.io when you use the API. Numbered requests
+        are the integration steps.
+      </p>
+      <OpenBankingTransactionFlow />
+
+      <Heading level={2} id="account-setup">
+        Account setup
+      </Heading>
+      <p>Pay by Bank has its own account set-up, in three steps.</p>
+      <StepList steps={SETUP} />
+
+      <UpNext
+        href="/open-banking/integration"
+        title="Integration"
+        text="Choose how shoppers pay: Pay by links from your Dashboard, or the API at your checkout."
       />
     </Article>
   )

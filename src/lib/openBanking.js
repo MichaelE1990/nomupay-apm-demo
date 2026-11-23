@@ -9,8 +9,18 @@ export const COVERAGE_URL = 'https://token.io/coverage'
 export const SALES_EMAIL = 'sales@nomupay.com'
 export const SUPPORT_EMAIL = 'support@nomupay.com'
 
+// The settings form linked from Account setup (public/downloads)
+export const SETTINGS_FORM_URL = '/downloads/pay-by-bank-settings-form.docx'
+
 export const OB_BRAND = 'ACI_INSTANTPAY'
 export const OB_CURRENCIES = ['GBP', 'EUR']
+
+// The API steps on the Integration page; the transaction flow on Get started links to them
+export const OB_STEPS = [
+  { key: 'payment', id: 'send-the-payment', step: 1, title: 'Send the payment', tag: 'POST' },
+  { key: 'redirect', id: 'send-the-shopper-to-their-bank', step: 2, title: 'Send the shopper to their bank' },
+  { key: 'status', id: 'get-the-payment-status', step: 3, title: 'Get the payment status', tag: 'GET' },
+]
 
 // The shopper's bank country (bankAccount.country), with the currency that goes with it
 export const OB_COUNTRIES = [

@@ -251,7 +251,7 @@ function MessageBox({ message, maxWidth }) {
     message.href && 'transition hover:ring-zinc-900/20 dark:hover:ring-white/25',
   )
   return message.href ? (
-    <Link href={`#${message.href}`} className={className} style={{ maxWidth }}>
+    <Link href={message.href.startsWith('/') ? message.href : `#${message.href}`} className={className} style={{ maxWidth }}>
       {inner}
     </Link>
   ) : (
@@ -301,12 +301,22 @@ function MessageRow({ message, lanes }) {
 }
 
 // messages: [{ from, to?, label, detail?, step?, href?, kind: 'request' | 'response' | 'note', optional? }]
+// href: a heading id on this page, or a path to another page (/guide#step)
 // lanes: four lifelines, LANES unless the flow has other parties (a card issuer, say)
-export function SequenceDiagram({ title, messages, lanes = LANES }) {
+// actions: shown at the right of the title bar (a toggle, say)
+export function SequenceDiagram({ title, messages, lanes = LANES, actions }) {
   return (
     <figure className="not-prose my-6 overflow-hidden rounded-2xl xl:max-w-none bg-zinc-50 ring-1 ring-zinc-900/7.5 dark:bg-white/2.5 dark:ring-white/10">
-      {title && (
-        <figcaption className="border-b border-zinc-900/7.5 px-4 py-2.5 text-xs font-medium text-zinc-600 dark:border-white/10 dark:text-zinc-400">{title}</figcaption>
+      {(title || actions) && (
+        <figcaption
+          className={clsx(
+            'flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-zinc-900/7.5 px-4 text-xs font-medium text-zinc-600 dark:border-white/10 dark:text-zinc-400',
+            actions ? 'py-2' : 'py-2.5',
+          )}
+        >
+          <span>{title}</span>
+          {actions}
+        </figcaption>
       )}
       <div className="overflow-x-auto bg-[image:radial-gradient(var(--dot)_1px,transparent_1px)] [--dot:rgb(24_24_27/0.09)] bg-size-[16px_16px] dark:[--dot:rgb(255_255_255/0.07)]">
         <div className="relative min-w-[44rem] px-2 pt-4 pb-5">

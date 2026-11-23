@@ -31,6 +31,7 @@ export const LinkIcon = icon('M8.25 11.75a3.25 3.25 0 0 0 4.6 0l2.4-2.4a3.25 3.2
 export const ServerIcon = icon('M4.75 3.25h10.5a1.5 1.5 0 0 1 1.5 1.5v2.5a1.5 1.5 0 0 1-1.5 1.5H4.75a1.5 1.5 0 0 1-1.5-1.5v-2.5a1.5 1.5 0 0 1 1.5-1.5ZM4.75 11.25h10.5a1.5 1.5 0 0 1 1.5 1.5v2.5a1.5 1.5 0 0 1-1.5 1.5H4.75a1.5 1.5 0 0 1-1.5-1.5v-2.5a1.5 1.5 0 0 1 1.5-1.5ZM6 6h.01M6 14h.01M9 6h4.5M9 14h4.5')
 export const SettingsIcon = icon('M10 12.25a2.25 2.25 0 1 0 0-4.5 2.25 2.25 0 0 0 0 4.5ZM10 2.75v1.5M10 15.75v1.5M17.25 10h-1.5M4.25 10h-1.5M15.13 4.87l-1.06 1.06M5.93 14.07l-1.06 1.06M15.13 15.13l-1.06-1.06M5.93 5.93 4.87 4.87')
 export const ArrowRightIcon = icon('M4.25 10h11.5m0 0-4-4m4 4-4 4')
+export const DownloadIcon = icon('M10 3.25v9.5m0 0-3.5-3.5M10 12.75l3.5-3.5M3.75 13.25v1.5a1.5 1.5 0 0 0 1.5 1.5h9.5a1.5 1.5 0 0 0 1.5-1.5v-1.5')
 
 // The shopper's journey, from the Pay by Bank one-pager
 export const PAY_BY_BANK_JOURNEY = [
@@ -151,6 +152,7 @@ export function StepList({ steps }) {
           <div className="min-w-0 pt-1">
             <p className="text-sm font-semibold text-zinc-900 dark:text-white">{s.title}</p>
             {s.text && <div className="mt-1 text-sm/6 text-zinc-600 dark:text-zinc-400 [&_a]:font-medium [&_a]:text-emerald-600 dark:[&_a]:text-emerald-400 [&_code]:font-mono [&_code]:text-[0.8125rem] [&_code]:text-zinc-900 dark:[&_code]:text-white">{s.text}</div>}
+            {s.action && <div className="mt-4">{s.action}</div>}
           </div>
         </li>
       ))}
@@ -158,34 +160,27 @@ export function StepList({ steps }) {
   )
 }
 
-// Steps across a dotted line, each with a pill, a title, a line of text and an optional link
-export function StepStrip({ steps }) {
+// Two links in one pill, after a "Get started" pill button: a raised white button on a grey
+// track, with the second link (a download, say) on the track
+export function PillLinks({ primary, secondary }) {
   return (
-    <ol className="not-prose my-8 grid grid-cols-1 gap-y-6 sm:grid-cols-3 xl:max-w-none">
-      {steps.map((s, i) => (
-        <li key={s.title} className={clsx('flex flex-col', i > 0 && 'sm:border-l sm:border-zinc-900/7.5 sm:pl-5 dark:sm:border-white/10', i < steps.length - 1 && 'sm:pr-5')}>
-          <span
-            className={clsx(
-              'self-start rounded-md px-2 py-1 text-xs font-medium ring-1',
-              i === 0
-                ? 'bg-zinc-900 text-white ring-zinc-900 dark:bg-white dark:text-zinc-900 dark:ring-white'
-                : 'bg-zinc-50 text-zinc-700 ring-zinc-900/10 dark:bg-white/5 dark:text-zinc-300 dark:ring-white/10',
-            )}
-          >
-            Step {i + 1}
-          </span>
-          <span aria-hidden="true" className="mt-3 border-t border-dashed border-zinc-900/15 dark:border-white/15" />
-          <p className="mt-4 text-sm font-semibold text-zinc-900 dark:text-white">{s.title}</p>
-          <p className="mt-1 flex-auto text-sm/6 text-zinc-600 dark:text-zinc-400">{s.text}</p>
-          {s.href && (
-            <Link href={s.href} className="group mt-3 flex items-center gap-1.5 self-start text-sm font-semibold text-emerald-600 dark:text-emerald-400">
-              {s.action}
-              <ArrowRightIcon className="size-4 stroke-current transition group-hover:translate-x-0.5" />
-            </Link>
-          )}
-        </li>
-      ))}
-    </ol>
+    <div className="inline-flex max-w-full items-center rounded-full bg-zinc-100 p-1 shadow-[inset_0_1px_2px_rgb(23_33_71/0.06)] ring-1 ring-zinc-900/5 dark:bg-white/5 dark:shadow-none dark:ring-white/10">
+      <Link
+        href={primary.href}
+        className="flex-none rounded-full bg-linear-to-b from-white to-zinc-50 px-4 py-1.5 text-sm font-semibold text-zinc-900 shadow-[0_1px_2px_rgb(23_33_71/0.08),0_2px_6px_rgb(23_33_71/0.06)] ring-1 ring-zinc-900/7.5 transition hover:to-white dark:from-zinc-700 dark:to-zinc-800 dark:text-white dark:ring-white/10 dark:hover:to-zinc-700"
+      >
+        {primary.label}
+      </Link>
+      <a
+        href={secondary.href}
+        download={secondary.download}
+        title={secondary.title}
+        className="group flex min-w-0 items-center gap-1.5 rounded-full py-1.5 pr-3.5 pl-3 text-sm font-medium text-zinc-600 transition hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white"
+      >
+        <span className="truncate">{secondary.label}</span>
+        <DownloadIcon className="size-4 flex-none stroke-current transition group-hover:translate-y-0.5" />
+      </a>
+    </div>
   )
 }
 
