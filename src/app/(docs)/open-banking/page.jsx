@@ -92,7 +92,7 @@ const SETUP = [
     ),
   },
   { title: 'Account confirmation', text: 'We set up your account with the settings you agreed, and email you when it’s ready to take payments.' },
-  { title: 'Take payments', text: 'Send Pay by links from your Dashboard, or add the API to your checkout.' },
+  { title: 'Take payments', text: 'Send Pay by links from your Dashboard, or add Pay by Bank to your own checkout.' },
 ]
 
 const USE_CASES = ['Ecommerce checkout', 'Account top-ups', 'Bill payments, including the public sector', 'Loan and credit card repayments', 'Travel and B2B payments']

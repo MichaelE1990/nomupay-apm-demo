@@ -14,7 +14,7 @@ export const navigation = [
         ],
       },
       {
-        title: 'Open Banking',
+        title: 'Pay by Bank',
         links: [
           { title: 'Get started', href: '/open-banking' },
           { title: 'Integration', href: '/open-banking/integration' },
@@ -68,6 +68,7 @@ export const allSections = {
   // The steps only show for the API; OpenBankingFlow updates this list
   '/open-banking/integration': [
     { id: 'pay-by-bank-workflow', title: 'Pay by Bank workflow' },
+    { id: 'show-pay-by-bank-at-checkout', title: 'Show Pay by Bank at checkout' },
     { id: 'send-the-payment', step: 1, title: 'Send the payment', tag: 'POST' },
     { id: 'send-the-shopper-to-their-bank', step: 2, title: 'Send the shopper to their bank' },
     { id: 'get-the-payment-status', step: 3, title: 'Get the payment status', tag: 'GET' },

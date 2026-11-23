@@ -15,6 +15,7 @@ import {
 } from "@/components/CodeWindow";
 import { Col, Note, Row } from "@/components/content";
 import { Heading } from "@/components/Heading";
+import { CHECKOUT_SECTION, PayByBankCheckout } from "@/components/PayByBankCheckout";
 import {
   Callout,
   ConfirmationChart,
@@ -248,8 +249,8 @@ function OpenBankingPlayground({
     <PlaygroundShell open={open} onClose={onClose} onReset={onReset}>
       <div className="px-5 py-4">
         <Banner>
-          Runs on the test system’s Open Banking channel, with Token.io’s
-          sandbox banks.
+          Runs on the demo’s test account with the Open Banking channel, and
+          Token.io’s sandbox banks.
         </Banner>
       </div>
       <Section
@@ -329,6 +330,7 @@ export function OpenBankingFlow({ mode = "start" }) {
     setState((s) => ({ ...s, integration }));
   useSyncSections([
     { id: "pay-by-bank-workflow", title: "Pay by Bank workflow" },
+    ...(api ? [CHECKOUT_SECTION] : []),
     ...(api
       ? STEPS.map((x) => ({
           id: x.id,
@@ -546,8 +548,8 @@ export function OpenBankingFlow({ mode = "start" }) {
             shows how the requests fit together.
           </p>
           <p>
-            The requests run on the test system’s Open Banking channel with
-            Token.io’s sandbox. Set the amount, currency and bank country in the{" "}
+            The requests run on the demo’s test account, which has the Open
+            Banking channel, with Token.io’s sandbox. Set the amount, currency and bank country in the{" "}
             {link()}.
           </p>
           <h3>Testing Pay by Bank</h3>
@@ -565,11 +567,17 @@ export function OpenBankingFlow({ mode = "start" }) {
             Your customer opens the link, picks their bank on Token.io’s page and approves the payment in their banking app. The Pay by Links guide
             in the card above covers creating, sending and managing links.
           </p>
+          <p>
+            Your Pay by link page shows Pay by Bank for you. Set its logo, company details and checkout options in the Dashboard’s Pay by Link
+            settings.
+          </p>
           <Callout title="Before you start">
             Your account needs Pay by link as its integration type. See <a href="#account-settings">Account settings</a>.
           </Callout>
         </>
       )}
+
+      {api && <PayByBankCheckout />}
 
       {api && (
         <>
@@ -673,9 +681,10 @@ export function OpenBankingFlow({ mode = "start" }) {
               {payment &&
                 (authFailed ? (
                   <StepNote status="failed" title="Not authorised.">
-                    The demo’s access token can’t use the Open Banking test
-                    channel. Set OPEN_BANKING_ENTITY_ID and
-                    OPEN_BANKING_ACCESS_TOKEN on the server.
+                    The demo’s entity or access token can’t use the Open
+                    Banking channel. Check the entity has it, or set
+                    OPEN_BANKING_ENTITY_ID and OPEN_BANKING_ACCESS_TOKEN on the
+                    server.
                   </StepNote>
                 ) : payment.status === "pending" && redirect ? (
                   <StepNote status="pending" title="Pending.">
