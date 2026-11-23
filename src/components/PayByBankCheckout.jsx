@@ -1,12 +1,23 @@
 'use client'
 
-// "Brand customisations" on the Integration page (Server to Server): Token.io's assets, then a
-// builder for the Pay by Bank button whose options are only what Token.io's Pay by Bank design
-// system (Nov 2026) allows; fixed parts are locked and effects are crossed out. The preview uses
-// placeholder tiles for bank app icons: Token.io's permission doesn't cover real ones.
+// "Brand customisations" on the Integration page (Server to Server): a builder for the Pay by
+// Bank button that only offers what Token.io's Pay by Bank design system (Nov 2026) allows, with
+// Token.io's files in a modal. The preview uses placeholder tiles for bank app icons: Token.io's
+// permission doesn't cover real ones.
 import '@fontsource-variable/inter'
 
-import { Radio as HeadlessRadio, RadioGroup } from '@headlessui/react'
+import {
+  CloseButton,
+  Dialog,
+  DialogBackdrop,
+  DialogPanel,
+  DialogTitle,
+  Radio as HeadlessRadio,
+  Popover,
+  PopoverButton,
+  PopoverPanel,
+  RadioGroup,
+} from '@headlessui/react'
 import clsx from 'clsx'
 import { useState } from 'react'
 
@@ -51,12 +62,17 @@ function textOn(hex) {
 }
 
 
-// What Token.io's design system allows on a button. With bank app icons the background is
+// What Token.io's design system allows on a button. Effects (shadows, glows, gradients) aren't. With bank app icons the background is
 // white or #f2f2f2 only, with a black or grey border; the generic icon also takes black or
 // one colour of your own. Borders are 2px and go on white backgrounds only.
-const ICONS = [
-  { id: 'generic', label: 'Generic bank icon', text: 'Works in every market.' },
-  { id: 'apps', label: 'Bank app icons', text: 'Your market’s top three banks.' },
+const THEMES = [
+  { id: 'generic', label: 'Generic icon', text: 'A generic bank icon, with a plus for every other bank. Works in every market.' },
+  {
+    id: 'apps',
+    label: 'Bank app icons',
+    text: 'Your market’s top three banks’ app icons, with a plus for the rest.',
+    warning: 'Token.io’s permission doesn’t cover banks’ app icons. Check with your legal team before you use them.',
+  },
 ]
 const BACKGROUNDS = [
   { id: 'white', label: 'White', hex: () => '#ffffff' },
@@ -70,7 +86,6 @@ const BORDERS = [
   { id: 'grey', label: 'Grey', hex: '#b4b4b4' },
   { id: 'brand', label: 'Your colour', generic: true },
 ]
-const EFFECTS = ['Shadow', 'Glow', 'Reflection', 'Gradient']
 
 // Placeholder colours for the bank app icons in the preview (not real banks)
 const APP_TILES = ['#2563eb', '#be123c', '#059669']
@@ -176,14 +191,6 @@ function ButtonPreview({ c, size = 18, pad = '1.75em' }) {
   )
 }
 
-function CheckIcon(props) {
-  return (
-    <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" {...props}>
-      <path fillRule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.857-9.809a.75.75 0 0 0-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z" clipRule="evenodd" />
-    </svg>
-  )
-}
-
 function LockIcon(props) {
   return (
     <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true" {...props}>
@@ -192,66 +199,139 @@ function LockIcon(props) {
   )
 }
 
-// One setting: its name and rule on the left, the control on the right (stacked on small screens)
-function Setting({ label, rule, children }) {
+// A colour dot. "None" is a dashed ring; options the rules don't allow are crossed out.
+function Dot({ hex, none, off, size = 'size-6' }) {
   return (
-    <div className="grid grid-cols-1 gap-x-6 gap-y-3 border-t border-zinc-900/7.5 py-5 first:border-t-0 first:pt-0 sm:grid-cols-[9.5rem_1fr] dark:border-white/10">
-      <div>
-        <div className="text-sm font-semibold text-zinc-900 dark:text-white">{label}</div>
-        <p className="mt-0.5 text-xs/5 text-zinc-500 dark:text-zinc-400">{rule}</p>
+    <span className={clsx('relative flex flex-none items-center justify-center', size)}>
+      {none ? (
+        <span className="size-full rounded-full border border-dashed border-zinc-400 dark:border-zinc-500" />
+      ) : (
+        <span className={clsx('size-full rounded-full ring-1 ring-zinc-900/15 dark:ring-white/20', off && 'opacity-30')} style={{ background: hex }} />
+      )}
+      {off && <span className="absolute h-0.5 w-[130%] -rotate-45 rounded-full bg-zinc-500/70" aria-hidden="true" />}
+    </span>
+  )
+}
+
+function ChevronIcon(props) {
+  return (
+    <svg viewBox="0 0 16 16" fill="none" aria-hidden="true" {...props}>
+      <path d="m5 6.5 3-3 3 3M5 9.5l3 3 3-3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+function TickIcon(props) {
+  return (
+    <svg viewBox="0 0 16 16" fill="none" aria-hidden="true" {...props}>
+      <path d="m3.5 8.5 3 3 6-7" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+const ROW = 'flex w-full items-center justify-between gap-3 rounded-xl px-4 py-3 text-sm'
+
+// The theme: one box with a toggle at the top; the picture and description follow it
+function ThemeBox({ value, onChange }) {
+  let theme = THEMES.find((t) => t.id === value)
+  return (
+    <div className="rounded-xl bg-zinc-100 p-1.5 dark:bg-white/5">
+      <div className="flex flex-wrap items-center justify-between gap-2 py-1 pr-0.5 pl-2.5">
+        <span className="text-sm text-zinc-500 dark:text-zinc-400">Theme</span>
+        <RadioGroup value={value} onChange={onChange} aria-label="Theme" className="flex rounded-lg bg-zinc-900/5 p-0.5 dark:bg-white/5">
+          {THEMES.map((t) => (
+            <HeadlessRadio
+              key={t.id}
+              value={t.id}
+              className="cursor-pointer rounded-md px-2.5 py-1 text-xs font-medium text-zinc-500 transition hover:text-zinc-900 focus:outline-none data-checked:bg-white data-checked:text-zinc-900 data-checked:shadow-sm data-checked:ring-1 data-checked:ring-zinc-900/5 data-focus:ring-2 data-focus:ring-emerald-500 dark:text-zinc-400 dark:hover:text-white dark:data-checked:bg-zinc-800 dark:data-checked:text-white dark:data-checked:ring-white/10"
+            >
+              {t.label}
+            </HeadlessRadio>
+          ))}
+        </RadioGroup>
       </div>
-      <div className="min-w-0">{children}</div>
+      <div className="mt-1.5 rounded-lg bg-white p-4 ring-1 ring-zinc-900/5 dark:bg-zinc-900 dark:ring-white/10">
+        <div className="flex h-16 items-center justify-center text-zinc-900 dark:text-white">
+          {value === 'apps' ? (
+            <span style={{ fontSize: 30 }}>
+              <AppIcons />
+            </span>
+          ) : (
+            <BankIconMark style={{ height: 30 }} />
+          )}
+        </div>
+        <p className="mt-3 text-xs/5 text-zinc-600 dark:text-zinc-400">{theme.text}</p>
+        {theme.warning && <p className="mt-1 text-xs/5 text-amber-700 dark:text-amber-400">{theme.warning}</p>}
+      </div>
     </div>
   )
 }
 
-// The icon as picture cards, with a check on the chosen one
-function IconCards({ value, onChange }) {
-  return (
-    <RadioGroup value={value} onChange={onChange} aria-label="Icon" className="grid grid-cols-2 gap-3">
-      {ICONS.map((o) => (
-        <HeadlessRadio key={o.id} value={o.id} className="group cursor-pointer focus:outline-none">
-          <div className="relative flex h-20 items-center justify-center overflow-hidden rounded-lg bg-zinc-50 ring-1 ring-zinc-900/10 transition group-hover:bg-zinc-100 group-data-checked:ring-2 group-data-checked:ring-emerald-500 group-data-focus:ring-2 group-data-focus:ring-emerald-500 dark:bg-white/5 dark:ring-white/10 dark:group-data-checked:ring-emerald-400">
-            <ButtonPreview c={settle({ icon: o.id, bg: 'white', border: 'black', brand: BRAND_DEFAULT })} size={10} pad="1em" />
-            <CheckIcon className="absolute bottom-1.5 left-1.5 size-5 text-emerald-500 opacity-0 transition group-data-checked:opacity-100" />
-          </div>
-          <div className="mt-2 text-xs font-medium text-zinc-900 dark:text-white">{o.label}</div>
-          <div className="text-xs text-zinc-500 dark:text-zinc-400">{o.text}</div>
-        </HeadlessRadio>
-      ))}
-    </RadioGroup>
-  )
-}
-
-// Colour dots in a pill track. Options the rules don't allow are crossed out.
-function Dots({ label, value, onChange, options, disabled }) {
+// A colour setting as one row: its name, then the current colour. Clicking it opens the colours
+// the rules allow, with your own colour at the end.
+function ColourRow({ label, rule, value, options, onChange, brand, onBrand, disabled }) {
   let current = options.find((o) => o.id === value)
   return (
-    <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-      <RadioGroup value={value} onChange={onChange} aria-label={label} disabled={disabled} className="inline-flex items-center gap-1.5 rounded-full bg-zinc-100 p-1.5 dark:bg-white/5">
-        {options.map((o) => (
-          <HeadlessRadio
-            key={o.id}
-            value={o.id}
-            disabled={Boolean(o.off || disabled)}
-            title={o.off ? `${o.label}: ${o.off}` : o.label}
-            className={clsx(
-              'group relative flex h-7 cursor-pointer items-center justify-center rounded-full focus:outline-none data-checked:ring-2 data-checked:ring-emerald-500 data-checked:ring-offset-2 data-checked:ring-offset-zinc-100 data-disabled:cursor-not-allowed data-focus:ring-2 data-focus:ring-emerald-500 dark:data-checked:ring-emerald-400 dark:data-checked:ring-offset-zinc-900',
-              !o.text && 'w-7',
+    <Popover>
+      <PopoverButton
+        disabled={Boolean(disabled)}
+        className={clsx(
+          ROW,
+          'bg-zinc-100 text-left transition hover:bg-zinc-200/60 focus:outline-none data-disabled:cursor-not-allowed data-disabled:hover:bg-zinc-100 data-focus:ring-2 data-focus:ring-emerald-500 data-open:bg-zinc-200/60 dark:bg-white/5 dark:hover:bg-white/10 dark:data-disabled:hover:bg-white/5 dark:data-open:bg-white/10',
+        )}
+      >
+        <span className="text-zinc-500 dark:text-zinc-400">{label}</span>
+        <span className="flex min-w-0 items-center gap-3">
+          <span className={clsx('truncate', disabled ? 'text-xs text-zinc-400 dark:text-zinc-500' : 'font-medium text-zinc-900 dark:text-white')}>
+            {disabled || current.label}
+          </span>
+          <Dot hex={current.hex} none={value === 'none'} size="size-7" />
+        </span>
+      </PopoverButton>
+      <PopoverPanel
+        anchor={{ to: 'bottom end', gap: 8 }}
+        transition
+        className="z-50 w-72 rounded-xl bg-white p-2 shadow-lg ring-1 ring-zinc-900/10 transition duration-150 ease-out data-closed:-translate-y-1 data-closed:opacity-0 dark:bg-zinc-900 dark:ring-white/10"
+      >
+        {({ close }) => (
+          <>
+            <p className="px-2 pt-1 pb-2 text-xs/5 text-zinc-500 dark:text-zinc-400">{rule}</p>
+            <RadioGroup
+              value={value}
+              onChange={(v) => {
+                onChange(v)
+                if (v !== 'brand') close()
+              }}
+              aria-label={label}
+            >
+              {options.map((o) => (
+                <HeadlessRadio
+                  key={o.id}
+                  value={o.id}
+                  disabled={Boolean(o.off)}
+                  className="group flex cursor-pointer items-center gap-3 rounded-lg px-2 py-1.5 text-sm text-zinc-700 transition hover:bg-zinc-50 focus:outline-none data-disabled:cursor-not-allowed data-disabled:hover:bg-transparent data-focus:bg-zinc-50 dark:text-zinc-300 dark:hover:bg-white/5 dark:data-focus:bg-white/5"
+                >
+                  <Dot hex={o.hex} none={o.id === 'none'} off={o.off} size="size-5" />
+                  <span className="flex-auto group-data-checked:font-medium group-data-checked:text-zinc-900 group-data-disabled:text-zinc-400 group-data-disabled:line-through dark:group-data-checked:text-white dark:group-data-disabled:text-zinc-500">
+                    {o.label}
+                  </span>
+                  {o.off ? (
+                    <span className="text-xs text-zinc-400 dark:text-zinc-500">{o.off}</span>
+                  ) : (
+                    <TickIcon className="size-4 text-emerald-500 opacity-0 group-data-checked:opacity-100" />
+                  )}
+                </HeadlessRadio>
+              ))}
+            </RadioGroup>
+            {value === 'brand' && (
+              <div className="mt-2 border-t border-zinc-900/7.5 px-2 pt-3 pb-1 dark:border-white/10">
+                <ColourInput value={brand} onChange={onBrand} />
+              </div>
             )}
-          >
-            {!o.text && <span className="sr-only">{o.label}</span>}
-            {o.text ? (
-              <span className="flex h-7 items-center rounded-full bg-white px-2.5 text-xs font-medium text-zinc-700 ring-1 ring-zinc-900/10 group-data-disabled:opacity-40 dark:bg-zinc-800 dark:text-zinc-300 dark:ring-white/10">{o.text}</span>
-            ) : (
-              <span className="size-6 rounded-full ring-1 ring-zinc-900/15 group-data-disabled:opacity-30 dark:ring-white/20" style={{ background: o.hex }} />
-            )}
-            {o.off && <span className="absolute h-0.5 w-8 -rotate-45 rounded-full bg-zinc-500/70" aria-hidden="true" />}
-          </HeadlessRadio>
-        ))}
-      </RadioGroup>
-      <span className="text-xs text-zinc-500 dark:text-zinc-400">{disabled ? disabled : current?.label}</span>
-    </div>
+          </>
+        )}
+      </PopoverPanel>
+    </Popover>
   )
 }
 
@@ -259,8 +339,8 @@ function Dots({ label, value, onChange, options, disabled }) {
 function ColourInput({ value, onChange }) {
   let [text, setText] = useState(value.slice(1))
   return (
-    <div className="mt-3 inline-flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
-      <label className="flex items-center rounded-md bg-white px-2 py-1 font-mono text-zinc-900 ring-1 ring-zinc-900/10 focus-within:ring-2 focus-within:ring-emerald-500 dark:bg-white/5 dark:text-white dark:ring-white/10">
+    <div className="flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
+      <label className="flex flex-auto items-center rounded-md bg-white px-2 py-1 font-mono text-zinc-900 ring-1 ring-zinc-900/10 focus-within:ring-2 focus-within:ring-emerald-500 dark:bg-white/5 dark:text-white dark:ring-white/10">
         <span className="text-zinc-400">#</span>
         <input
           value={text}
@@ -272,7 +352,7 @@ function ColourInput({ value, onChange }) {
             setText(v)
             if (v.length === 6) onChange(`#${v.toLowerCase()}`)
           }}
-          className="ml-0.5 w-16 bg-transparent uppercase outline-none"
+          className="ml-0.5 w-full bg-transparent uppercase outline-none"
         />
       </label>
       <input
@@ -289,13 +369,18 @@ function ColourInput({ value, onChange }) {
   )
 }
 
-// A fixed part of the button: shown, but not changeable
-function Locked({ children }) {
+// The text: part of the button, but fixed, so it's dashed and locked rather than clickable
+function TextRow() {
   return (
-    <span className="inline-flex items-center gap-2 rounded-full bg-zinc-100 px-3 py-1.5 text-sm text-zinc-600 dark:bg-white/5 dark:text-zinc-400">
-      <LockIcon className="size-3.5 flex-none text-zinc-400" />
-      {children}
-    </span>
+    <div className={clsx(ROW, 'border border-dashed border-zinc-300 dark:border-white/15')}>
+      <span className="text-zinc-500 dark:text-zinc-400">Text</span>
+      <span className="flex items-center gap-2">
+        <span style={{ fontFamily: INTER, letterSpacing: '-0.03em' }} className="text-zinc-900 dark:text-white">
+          Pay by <strong className="font-bold">Bank</strong>
+        </span>
+        <LockIcon className="size-3.5 flex-none text-zinc-400" />
+      </span>
+    </div>
   )
 }
 
@@ -310,7 +395,7 @@ function Builder() {
   let code = buttonCode(c)
 
   // Bank app icons only go on white or light grey, with a black or grey border
-  function changeIcon(next) {
+  function changeTheme(next) {
     setIcon(next)
     if (next === 'apps') {
       if (bg === 'black' || bg === 'brand') setBg('white')
@@ -321,58 +406,42 @@ function Builder() {
   let backgrounds = BACKGROUNDS.map((b) => ({
     ...b,
     hex: b.id === 'brand' ? brand : b.hex(icon),
-    off: apps && b.generic ? 'not with bank app icons' : null,
+    off: apps && b.generic ? 'Generic icon only' : null,
   }))
   let borders = BORDERS.map((b) => ({
     ...b,
-    text: b.id === 'none' ? 'None' : null,
     hex: b.id === 'brand' ? brand : b.hex,
-    off: apps && b.generic ? 'not with bank app icons' : null,
+    off: apps && b.generic ? 'Generic icon only' : null,
   }))
-  let showColour = bg === 'brand' || (bg === 'white' && border === 'brand')
 
   return (
     <Row>
       <Col>
-        <div className="not-prose">
-          <Setting label="Icon" rule="What sits next to the text.">
-            <IconCards value={icon} onChange={changeIcon} />
-            {apps && (
-              <p className="mt-3 text-xs/5 text-amber-700 dark:text-amber-400">
-                Token.io’s permission doesn’t cover banks’ app icons. Check with your legal team before you use them.
-              </p>
-            )}
-          </Setting>
-          <Setting label="Background" rule={apps ? 'White or light grey.' : 'White, light grey, black or one colour of your own.'}>
-            <Dots label="Background" value={bg} onChange={setBg} options={backgrounds} />
-            {showColour && <ColourInput value={brand} onChange={setBrand} />}
-          </Setting>
-          <Setting label="Border" rule="2px, on white backgrounds only.">
-            <Dots
-              label="Border"
-              value={bg === 'white' ? border : 'none'}
-              onChange={setBorder}
-              options={borders}
-              disabled={bg === 'white' ? null : 'Only on a white background'}
-            />
-          </Setting>
-          <Setting label="Text" rule="Must be displayed as “Pay by Bank”, in Inter, with “Bank” bold.">
-            <Locked>
-              <span style={{ fontFamily: INTER, letterSpacing: '-0.03em' }} className="text-zinc-900 dark:text-white">
-                Pay by <strong className="font-bold">Bank</strong>
-              </span>
-              <span className="text-xs text-zinc-400">Inter, −3% spacing</span>
-            </Locked>
-          </Setting>
-          <Setting label="Effects" rule="Not allowed. Pay by Bank buttons are flat.">
-            <div className="flex flex-wrap gap-2">
-              {EFFECTS.map((e) => (
-                <span key={e} className="rounded-full px-3 py-1 text-xs text-zinc-400 line-through ring-1 ring-zinc-900/10 dark:text-zinc-500 dark:ring-white/10">
-                  {e}
-                </span>
-              ))}
-            </div>
-          </Setting>
+        <div className="not-prose space-y-2">
+          <ThemeBox value={icon} onChange={changeTheme} />
+          <ColourRow
+            label="Background"
+            rule={apps ? 'White or light grey with bank app icons.' : 'White, light grey, black or one colour of your own.'}
+            value={bg}
+            options={backgrounds}
+            onChange={setBg}
+            brand={brand}
+            onBrand={setBrand}
+          />
+          <ColourRow
+            label="Border"
+            rule="2px wide, on white backgrounds only."
+            value={bg === 'white' ? border : 'none'}
+            options={borders}
+            onChange={setBorder}
+            brand={brand}
+            onBrand={setBrand}
+            disabled={bg === 'white' ? null : 'White backgrounds only'}
+          />
+          <TextRow />
+          <p className="px-1 pt-1 text-xs/5 text-zinc-500 dark:text-zinc-400">
+            The text must read “Pay by Bank” in Inter, with “Bank” bold. Pay by Bank buttons are flat: no shadows, glows or gradients.
+          </p>
         </div>
       </Col>
       <Col sticky>
@@ -406,9 +475,12 @@ function PaperClipIcon(props) {
 }
 
 // Token.io's files as an attachments list (Tailwind Plus description list attachments)
-function Downloads() {
+function Downloads({ className }) {
   return (
-    <ul role="list" className="not-prose my-6 divide-y divide-zinc-100 rounded-lg border border-zinc-200 dark:divide-white/5 dark:border-white/10">
+    <ul
+      role="list"
+      className={clsx('not-prose divide-y divide-zinc-100 rounded-lg border border-zinc-200 dark:divide-white/5 dark:border-white/10', className)}
+    >
       {DOWNLOADS.map((d) => (
         <li key={d.label} className="flex items-center justify-between py-4 pr-5 pl-4 text-sm/6">
           <div className="flex w-0 flex-1 items-center">
@@ -432,7 +504,47 @@ function Downloads() {
   )
 }
 
+function XIcon(props) {
+  return (
+    <svg viewBox="0 0 20 20" fill="none" aria-hidden="true" {...props}>
+      <path d="m5 5 10 10M15 5 5 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+function AssetsDialog({ open, onClose }) {
+  return (
+    <Dialog open={open} onClose={onClose} className="relative z-[60]">
+      <DialogBackdrop
+        transition
+        className="fixed inset-0 bg-zinc-900/30 backdrop-blur-xs transition-opacity duration-200 ease-out data-closed:opacity-0 dark:bg-black/50"
+      />
+      <div className="fixed inset-0 flex items-center justify-center p-4">
+        <DialogPanel
+          transition
+          className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl ring-1 ring-zinc-900/10 transition duration-200 ease-out data-closed:scale-95 data-closed:opacity-0 dark:bg-zinc-900 dark:ring-white/10"
+        >
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <DialogTitle className="text-base font-semibold text-zinc-900 dark:text-white">Reference and assets</DialogTitle>
+              <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">Token.io’s Pay by Bank files, free to use with Pay by Bank.</p>
+            </div>
+            <CloseButton
+              aria-label="Close"
+              className="-mt-1 -mr-1 flex size-8 flex-none items-center justify-center rounded-full text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-white/10 dark:hover:text-white"
+            >
+              <XIcon className="size-5" />
+            </CloseButton>
+          </div>
+          <Downloads className="mt-5" />
+        </DialogPanel>
+      </div>
+    </Dialog>
+  )
+}
+
 export function PayByBankCheckout() {
+  let [assets, setAssets] = useState(false)
   return (
     <>
       <hr />
@@ -440,15 +552,19 @@ export function PayByBankCheckout() {
         {CHECKOUT_SECTION.title}
       </Heading>
       <p>
-        With Server to Server, you add the Pay by Bank button to your own checkout, and the shopper’s click starts step 1. Token.io’s Pay by
-        Bank design system sets how it looks, so shoppers recognise it wherever they see it. Get the assets below, then build your button: the
-        builder only offers what the design system allows.
+        With Server to Server, you add the Pay by Bank button to your own checkout, and the shopper’s click starts step 1. Create yours below:
+        switch the theme and colours to explore samples, then copy the code. Every option follows Token.io’s Pay by Bank design system.
       </p>
-
-      <h3>Reference and assets</h3>
-      <Downloads />
-
-      <h3>Build your Pay by Bank button</h3>
+      <button
+        type="button"
+        onClick={() => setAssets(true)}
+        className="not-prose mb-8 inline-flex items-center gap-2 rounded-full bg-zinc-100 px-3 py-1.5 text-sm font-medium text-zinc-700 ring-1 ring-zinc-900/5 transition hover:bg-zinc-200 hover:text-zinc-900 dark:bg-white/5 dark:text-zinc-300 dark:ring-white/10 dark:hover:bg-white/10 dark:hover:text-white"
+      >
+        <PaperClipIcon className="size-4 text-zinc-400" />
+        Reference and assets
+        <span className="font-normal text-zinc-400 dark:text-zinc-500">{DOWNLOADS.length} downloads</span>
+      </button>
+      <AssetsDialog open={assets} onClose={() => setAssets(false)} />
       <Builder />
     </>
   )
