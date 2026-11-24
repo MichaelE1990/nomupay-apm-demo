@@ -1,9 +1,10 @@
 'use client'
 
-// "Brand customisations" on the Integration page (Server to Server): a builder for the Pay by
-// Bank button that only offers what Token.io's Pay by Bank design system (Nov 2026) allows, with
-// Token.io's files in a modal. The preview uses placeholder tiles for bank app icons: Token.io's
-// permission doesn't cover real ones.
+// "Brand customisations" on the Integration page (Server to Server): an intro beside a link to
+// Token.io's files (in a modal), then a two-step builder for the Pay by Bank button: pick a theme,
+// then a code box with Preview and HTML tabs, a back button and a settings tray. Every option is
+// one Token.io's Pay by Bank design system (Nov 2026) allows. The theme mock-ups and bank icons
+// come from Mikey's Canva boards ("Button Mock Ups", "Bank App Icons").
 import '@fontsource-variable/inter'
 
 import {
@@ -22,7 +23,6 @@ import clsx from 'clsx'
 import { useState } from 'react'
 
 import { CodeWindow } from '@/components/CodeWindow'
-import { Col, Row } from '@/components/content'
 import { Heading } from '@/components/Heading'
 import { highlightHtml } from '@/lib/highlight'
 
@@ -65,13 +65,20 @@ function textOn(hex) {
 // What Token.io's design system allows on a button. Effects (shadows, glows, gradients) aren't. With bank app icons the background is
 // white or #f2f2f2 only, with a black or grey border; the generic icon also takes black or
 // one colour of your own. Borders are 2px and go on white backgrounds only.
+// The themes, with mock-ups from the "Button Mock Ups" Canva board (public/images/pay-by-bank)
 const THEMES = [
-  { id: 'generic', label: 'Generic icon', text: 'A generic bank icon, with a plus for every other bank. Works in every market.' },
+  {
+    id: 'generic',
+    label: 'Generic bank icon',
+    text: 'A bank icon and a plus sign. Works in every market.',
+    image: '/images/pay-by-bank/theme-generic.png',
+  },
   {
     id: 'apps',
     label: 'Bank app icons',
-    text: 'Your market’s top three banks’ app icons, with a plus for the rest.',
+    text: 'Your market’s top three banks’ app icons and a plus sign, so shoppers spot their own bank.',
     warning: 'Token.io’s permission doesn’t cover banks’ app icons. Check with your legal team before you use them.',
+    image: '/images/pay-by-bank/theme-apps.png',
   },
 ]
 const BACKGROUNDS = [
@@ -87,8 +94,13 @@ const BORDERS = [
   { id: 'brand', label: 'Your colour', generic: true },
 ]
 
-// Placeholder colours for the bank app icons in the preview (not real banks)
-const APP_TILES = ['#2563eb', '#be123c', '#059669']
+// The UK's top three banks for the preview, from the "Bank App Icons" Canva board. The HTML keeps
+// placeholders: merchants add their own market's banks.
+const BANK_ICONS = [
+  { name: 'Barclays', src: '/images/pay-by-bank/bank-barclays.png' },
+  { name: 'NatWest', src: '/images/pay-by-bank/bank-natwest.png' },
+  { name: 'Lloyds', src: '/images/pay-by-bank/bank-lloyds.png' },
+]
 
 function settle({ icon, bg, border, brand }) {
   let fill = bg === 'brand' ? brand : BACKGROUNDS.find((b) => b.id === bg).hex(icon)
@@ -156,8 +168,9 @@ function buttonCode(c) {
 function AppIcons() {
   return (
     <span className="inline-flex gap-[0.17em]" aria-hidden="true">
-      {APP_TILES.map((t) => (
-        <span key={t} className="size-[1.15em] rounded-[25%]" style={{ background: t }} />
+      {BANK_ICONS.map((b) => (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img key={b.name} src={b.src} alt="" className="size-[1.15em] rounded-[25%]" />
       ))}
       <span className="inline-flex size-[1.15em] items-center justify-center rounded-[25%] bg-[#b4b4b4] text-white">
         <svg viewBox="0 0 10 10" className="size-[0.6em]" aria-hidden="true">
@@ -231,38 +244,115 @@ function TickIcon(props) {
 
 const ROW = 'flex w-full items-center justify-between gap-3 rounded-xl px-4 py-3 text-sm'
 
-// The theme: one box with a toggle at the top; the picture and description follow it
-function ThemeBox({ value, onChange }) {
-  let theme = THEMES.find((t) => t.id === value)
+function ArrowLeftIcon(props) {
   return (
-    <div className="rounded-xl bg-zinc-100 p-1.5 dark:bg-white/5">
-      <div className="flex flex-wrap items-center justify-between gap-2 py-1 pr-0.5 pl-2.5">
-        <span className="text-sm text-zinc-500 dark:text-zinc-400">Theme</span>
-        <RadioGroup value={value} onChange={onChange} aria-label="Theme" className="flex rounded-lg bg-zinc-900/5 p-0.5 dark:bg-white/5">
-          {THEMES.map((t) => (
-            <HeadlessRadio
-              key={t.id}
-              value={t.id}
-              className="cursor-pointer rounded-md px-2.5 py-1 text-xs font-medium text-zinc-500 transition hover:text-zinc-900 focus:outline-none data-checked:bg-white data-checked:text-zinc-900 data-checked:shadow-sm data-checked:ring-1 data-checked:ring-zinc-900/5 data-focus:ring-2 data-focus:ring-emerald-500 dark:text-zinc-400 dark:hover:text-white dark:data-checked:bg-zinc-800 dark:data-checked:text-white dark:data-checked:ring-white/10"
-            >
-              {t.label}
-            </HeadlessRadio>
-          ))}
-        </RadioGroup>
-      </div>
-      <div className="mt-1.5 rounded-lg bg-white p-4 ring-1 ring-zinc-900/5 dark:bg-zinc-900 dark:ring-white/10">
-        <div className="flex h-16 items-center justify-center text-zinc-900 dark:text-white">
-          {value === 'apps' ? (
-            <span style={{ fontSize: 30 }}>
-              <AppIcons />
+    <svg viewBox="0 0 16 16" fill="none" aria-hidden="true" {...props}>
+      <path d="M12.5 8h-9m0 0 3.5-3.5M3.5 8l3.5 3.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+function ArrowRightIcon(props) {
+  return (
+    <svg viewBox="0 0 16 16" fill="none" aria-hidden="true" {...props}>
+      <path d="M3.5 8h9m0 0L9 4.5M12.5 8 9 11.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+function GearIcon(props) {
+  return (
+    <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" {...props}>
+      <path
+        fillRule="evenodd"
+        d="M7.84 1.804A1 1 0 0 1 8.82 1h2.36a1 1 0 0 1 .98.804l.331 1.652a6.993 6.993 0 0 1 1.929 1.115l1.598-.54a1 1 0 0 1 1.186.447l1.18 2.044a1 1 0 0 1-.205 1.251l-1.267 1.113a7.047 7.047 0 0 1 0 2.228l1.267 1.113a1 1 0 0 1 .206 1.25l-1.18 2.045a1 1 0 0 1-1.187.447l-1.598-.54a6.993 6.993 0 0 1-1.929 1.115l-.33 1.652a1 1 0 0 1-.98.804H8.82a1 1 0 0 1-.98-.804l-.331-1.652a6.993 6.993 0 0 1-1.929-1.115l-1.598.54a1 1 0 0 1-1.186-.447l-1.18-2.044a1 1 0 0 1 .205-1.251l1.267-1.114a7.05 7.05 0 0 1 0-2.227L1.821 7.773a1 1 0 0 1-.206-1.25l1.18-2.045a1 1 0 0 1 1.187-.447l1.598.54A6.992 6.992 0 0 1 7.51 3.456l.33-1.652ZM10 13a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"
+        clipRule="evenodd"
+      />
+    </svg>
+  )
+}
+
+// The two steps; the finished first step is also a way back
+function Stepper({ step, onBack }) {
+  let steps = [
+    { id: 'theme', label: 'Theme' },
+    { id: 'code', label: 'Customise and copy' },
+  ]
+  return (
+    <ol className="mb-3 flex items-center gap-3 text-xs font-medium">
+      {steps.map((s, i) => {
+        let current = s.id === step
+        let done = step === 'code' && s.id === 'theme'
+        let badge = (
+          <span
+            className={clsx(
+              'flex size-5 flex-none items-center justify-center rounded-full text-[0.6875rem]',
+              current
+                ? 'bg-emerald-500 text-white'
+                : done
+                  ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
+                  : 'bg-zinc-100 text-zinc-500 dark:bg-white/5',
+            )}
+          >
+            {i + 1}
+          </span>
+        )
+        return (
+          <li key={s.id} className="flex items-center gap-3">
+            {i > 0 && <span className="h-px w-6 bg-zinc-300 dark:bg-white/15" aria-hidden="true" />}
+            {done ? (
+              <button
+                type="button"
+                onClick={onBack}
+                className="flex items-center gap-2 text-zinc-600 transition hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white"
+              >
+                {badge}
+                {s.label}
+              </button>
+            ) : (
+              <span
+                className={clsx('flex items-center gap-2', current ? 'text-zinc-900 dark:text-white' : 'text-zinc-400 dark:text-zinc-500')}
+                aria-current={current ? 'step' : undefined}
+              >
+                {badge}
+                {s.label}
+              </span>
+            )}
+          </li>
+        )
+      })}
+    </ol>
+  )
+}
+
+// Step 1: the themes as cards, the name and description on the left and the mock-up on the right
+function ThemePicker({ onPick }) {
+  return (
+    <div className="space-y-2 rounded-2xl bg-zinc-50 p-2 ring-1 ring-zinc-900/7.5 dark:bg-white/2.5 dark:ring-white/10">
+      {THEMES.map((t) => (
+        <button
+          key={t.id}
+          type="button"
+          onClick={() => onPick(t.id)}
+          className="group flex w-full items-center gap-4 rounded-xl bg-white p-3 text-left shadow-xs ring-1 ring-zinc-900/5 transition hover:shadow-md hover:ring-emerald-500/40 focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:outline-none sm:gap-6 sm:p-4 dark:bg-zinc-900 dark:ring-white/10 dark:hover:ring-emerald-400/40"
+        >
+          <div className="min-w-0 flex-1">
+            <div className="text-base font-semibold text-zinc-900 dark:text-white">{t.label}</div>
+            <p className="mt-1 text-sm/6 text-zinc-600 dark:text-zinc-400">{t.text}</p>
+            {t.warning && <p className="mt-2 text-xs/5 text-amber-700 dark:text-amber-400">{t.warning}</p>}
+            <span className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-emerald-600 dark:text-emerald-400">
+              Use this theme
+              <ArrowRightIcon className="size-4 transition group-hover:translate-x-0.5" />
             </span>
-          ) : (
-            <BankIconMark style={{ height: 30 }} />
-          )}
-        </div>
-        <p className="mt-3 text-xs/5 text-zinc-600 dark:text-zinc-400">{theme.text}</p>
-        {theme.warning && <p className="mt-1 text-xs/5 text-amber-700 dark:text-amber-400">{theme.warning}</p>}
-      </div>
+          </div>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={t.image}
+            alt={`${t.label}: Pay by Bank in a list of payment options`}
+            className="aspect-[8/5] w-32 flex-none rounded-lg object-cover ring-1 ring-zinc-900/5 sm:w-60 dark:ring-white/10"
+          />
+        </button>
+      ))}
     </div>
   )
 }
@@ -385,22 +475,26 @@ function TextRow() {
 }
 
 function Builder() {
+  let [step, setStep] = useState('theme')
   let [icon, setIcon] = useState('generic')
   let [bg, setBg] = useState('white')
   let [border, setBorder] = useState('black')
   let [brand, setBrand] = useState(BRAND_DEFAULT)
+  let [settings, setSettings] = useState(false)
 
   let apps = icon === 'apps'
+  let theme = THEMES.find((t) => t.id === icon)
   let c = settle({ icon, bg, border, brand })
   let code = buttonCode(c)
 
   // Bank app icons only go on white or light grey, with a black or grey border
-  function changeTheme(next) {
+  function pickTheme(next) {
     setIcon(next)
     if (next === 'apps') {
       if (bg === 'black' || bg === 'brand') setBg('white')
       if (border === 'brand') setBorder('black')
     }
+    setStep('code')
   }
 
   let backgrounds = BACKGROUNDS.map((b) => ({
@@ -415,50 +509,91 @@ function Builder() {
   }))
 
   return (
-    <Row>
-      <Col>
-        <div className="not-prose space-y-2">
-          <ThemeBox value={icon} onChange={changeTheme} />
-          <ColourRow
-            label="Background"
-            rule={apps ? 'White or light grey with bank app icons.' : 'White, light grey, black or one colour of your own.'}
-            value={bg}
-            options={backgrounds}
-            onChange={setBg}
-            brand={brand}
-            onBrand={setBrand}
+    <div className="not-prose my-6">
+      <Stepper step={step} onBack={() => setStep('theme')} />
+      {step === 'theme' ? (
+        <ThemePicker onPick={pickTheme} />
+      ) : (
+        <>
+          <CodeWindow
+            className="relative z-10 my-0!"
+            code={code}
+            html={highlightHtml(code)}
+            codeTab="HTML"
+            preview={
+              <div className="flex min-h-56 items-center justify-center bg-white bg-[radial-gradient(var(--color-zinc-200)_1px,transparent_1px)] [background-size:12px_12px] p-6">
+                <ButtonPreview c={c} />
+              </div>
+            }
+            footer={
+              <div className="flex items-center justify-between gap-3">
+                <button
+                  type="button"
+                  onClick={() => setStep('theme')}
+                  className="inline-flex min-w-0 items-center gap-1.5 text-xs font-medium text-zinc-400 transition hover:text-white"
+                >
+                  <ArrowLeftIcon className="size-4 flex-none" />
+                  <span className="truncate">{theme.label}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSettings((open) => !open)}
+                  aria-expanded={settings}
+                  aria-controls="pay-by-bank-settings"
+                  className={clsx(
+                    'inline-flex flex-none items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ring-1 transition ring-inset',
+                    settings
+                      ? 'bg-emerald-400/15 text-emerald-300 ring-emerald-400/30'
+                      : 'bg-white/5 text-zinc-200 ring-white/10 hover:bg-white/10 hover:text-white',
+                  )}
+                >
+                  <GearIcon className={clsx('size-3.5 transition duration-300', settings && 'rotate-90')} />
+                  Customise
+                </button>
+              </div>
+            }
           />
-          <ColourRow
-            label="Border"
-            rule="2px wide, on white backgrounds only."
-            value={bg === 'white' ? border : 'none'}
-            options={borders}
-            onChange={setBorder}
-            brand={brand}
-            onBrand={setBrand}
-            disabled={bg === 'white' ? null : 'White backgrounds only'}
-          />
-          <TextRow />
-          <p className="px-1 pt-1 text-xs/5 text-zinc-500 dark:text-zinc-400">
-            The text must read “Pay by Bank” in Inter, with “Bank” bold. Pay by Bank buttons are flat: no shadows, glows or gradients.
-          </p>
-        </div>
-      </Col>
-      <Col sticky>
-        <CodeWindow
-          title="Pay by Bank button"
-          label="Your checkout page"
-          code={code}
-          html={highlightHtml(code)}
-          codeTab="HTML"
-          preview={
-            <div className="flex min-h-56 items-center justify-center bg-white bg-[radial-gradient(var(--color-zinc-200)_1px,transparent_1px)] [background-size:12px_12px] p-6">
-              <ButtonPreview c={c} />
+          {/* The settings tray slides out from under the code box */}
+          <div className={clsx('grid transition-[grid-template-rows] duration-300 ease-out', settings ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]')}>
+            <div className="overflow-hidden">
+              <div
+                id="pay-by-bank-settings"
+                inert={!settings}
+                className="mx-2 -mt-4 rounded-b-2xl bg-zinc-50 px-3 pt-7 pb-3 ring-1 ring-zinc-900/7.5 dark:bg-white/2.5 dark:ring-white/10"
+              >
+                <div className="grid gap-2 sm:grid-cols-2">
+                  <ColourRow
+                    label="Background"
+                    rule={apps ? 'White or light grey with bank app icons.' : 'White, light grey, black or one colour of your own.'}
+                    value={bg}
+                    options={backgrounds}
+                    onChange={setBg}
+                    brand={brand}
+                    onBrand={setBrand}
+                  />
+                  <ColourRow
+                    label="Border"
+                    rule="2px wide, on white backgrounds only."
+                    value={bg === 'white' ? border : 'none'}
+                    options={borders}
+                    onChange={setBorder}
+                    brand={brand}
+                    onBrand={setBrand}
+                    disabled={bg === 'white' ? null : 'White backgrounds only'}
+                  />
+                  <div className="sm:col-span-2">
+                    <TextRow />
+                  </div>
+                </div>
+                <p className="px-1 pt-3 text-xs/5 text-zinc-500 dark:text-zinc-400">
+                  The text must read “Pay by Bank” in Inter, with “Bank” bold. Pay by Bank buttons are flat: no shadows, glows or gradients.
+                </p>
+              </div>
             </div>
-          }
-        />
-      </Col>
-    </Row>
+          </div>
+        </>
+      )}
+    </div>
   )
 }
 
@@ -551,19 +686,25 @@ export function PayByBankCheckout() {
       <Heading level={2} id={CHECKOUT_SECTION.id}>
         {CHECKOUT_SECTION.title}
       </Heading>
-      <p>
-        With Server to Server, you add the Pay by Bank button to your own checkout, and the shopper’s click starts step 1. Create yours below:
-        switch the theme and colours to explore samples, then copy the code. Every option follows Token.io’s Pay by Bank design system.
-      </p>
-      <button
-        type="button"
-        onClick={() => setAssets(true)}
-        className="not-prose mb-8 inline-flex items-center gap-2 rounded-full bg-zinc-100 px-3 py-1.5 text-sm font-medium text-zinc-700 ring-1 ring-zinc-900/5 transition hover:bg-zinc-200 hover:text-zinc-900 dark:bg-white/5 dark:text-zinc-300 dark:ring-white/10 dark:hover:bg-white/10 dark:hover:text-white"
-      >
-        <PaperClipIcon className="size-4 text-zinc-400" />
-        Reference and assets
-        <span className="font-normal text-zinc-400 dark:text-zinc-500">{DOWNLOADS.length} downloads</span>
-      </button>
+      <div className="not-prose my-6 grid gap-6 sm:grid-cols-[1fr_15rem] sm:gap-8">
+        <p className="text-sm/7 text-zinc-700 dark:text-zinc-400">
+          With Server to Server, you add the Pay by Bank button to your own checkout, and the shopper’s click starts step 1. Start below: choose
+          a theme, adjust its colours, then copy the code. Every option follows Token.io’s Pay by Bank design system.
+        </p>
+        <div className="sm:border-l sm:border-zinc-900/7.5 sm:pl-6 dark:sm:border-white/10">
+          <h3 className="text-sm font-semibold text-zinc-900 dark:text-white">Further details</h3>
+          <p className="mt-1 text-sm/6 text-zinc-600 dark:text-zinc-400">Token.io’s buttons, marks and fonts, free to use with Pay by Bank.</p>
+          <button
+            type="button"
+            onClick={() => setAssets(true)}
+            className="mt-3 inline-flex items-center gap-2 rounded-full bg-zinc-100 px-3 py-1.5 text-sm font-medium text-zinc-700 ring-1 ring-zinc-900/5 transition hover:bg-zinc-200 hover:text-zinc-900 dark:bg-white/5 dark:text-zinc-300 dark:ring-white/10 dark:hover:bg-white/10 dark:hover:text-white"
+          >
+            <PaperClipIcon className="size-4 text-emerald-500 dark:text-emerald-400" />
+            Reference and assets
+          </button>
+          <div className="mt-1.5 text-xs text-zinc-400 dark:text-zinc-500">{DOWNLOADS.length} downloads</div>
+        </div>
+      </div>
       <AssetsDialog open={assets} onClose={() => setAssets(false)} />
       <Builder />
     </>
