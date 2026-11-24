@@ -7,6 +7,8 @@
 // Customise, which opens a row for icon placement, a badge and a line of context (Token.io's tips
 // for driving adoption, each with one example). Colours are left to Token.io's files. The theme
 // mock-ups and bank icons come from Mikey's Canva boards ("Button Mock Ups", "Bank App Icons").
+import '@fontsource-variable/inter'
+
 import {
   CloseButton,
   Dialog,
@@ -41,6 +43,8 @@ const DOWNLOADS = [
   { label: 'Word mark', meta: 'PNG, SVG', href: 'https://drive.google.com/drive/folders/13iIvewb8WG4bW18fxF-Bz2L-PlccVRWG' },
   { label: 'Inter font', meta: 'Google Fonts', href: 'https://fonts.google.com/specimen/Inter' },
 ]
+
+const INTER = "'Inter Variable', Inter, system-ui, sans-serif"
 
 const escape = (t) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 
@@ -136,7 +140,7 @@ function optionCode(s) {
   let radio = '<input type="radio" name="payment-method" value="pay-by-bank">'
   let label = [
     '<span class="pay-by-bank-label">',
-    '    <span class="pay-by-bank-name">Pay by Bank</span>',
+    '    <span class="pay-by-bank-name">Pay by <strong>Bank</strong></span>',
     ...(s.badge ? [`    <span class="pay-by-bank-badge">${BADGE.text}</span>`] : []),
     ...(s.context ? [`    <span class="pay-by-bank-context">${escape(CONTEXT)}</span>`] : []),
     '  </span>',
@@ -144,6 +148,9 @@ function optionCode(s) {
   let order = s.placement === 'left' ? [radio, mark, label] : [radio, label, mark]
 
   return [
+    '<!-- Inter, from Google Fonts -->',
+    '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap">',
+    '',
     '<style>',
     '  .pay-by-bank-option {',
     '    display: flex;',
@@ -155,8 +162,10 @@ function optionCode(s) {
     '    cursor: pointer;',
     '  }',
     '  .pay-by-bank-option:has(input:checked) { border-color: #000000; }',
-    '  .pay-by-bank-label { flex: 1; min-width: 0; }',
-    '  .pay-by-bank-name { font-weight: 600; }',
+    '  .pay-by-bank-label { flex: 1; min-width: 0; font-family: Inter, system-ui, sans-serif; }',
+    '  /* Token.io’s spec: “Pay by” regular, “Bank” bold, −3% letter spacing */',
+    '  .pay-by-bank-name { font-weight: 400; letter-spacing: -0.03em; }',
+    '  .pay-by-bank-name strong { font-weight: 700; }',
     ...(s.badge
       ? [
           '  .pay-by-bank-badge {',
@@ -202,8 +211,10 @@ function OptionPreview({ s }) {
     </span>
   )
   let label = (
-    <span className="min-w-0 flex-1">
-      <span className="font-semibold">Pay by Bank</span>
+    <span className="min-w-0 flex-1" style={{ fontFamily: INTER }}>
+      <span className="font-normal tracking-[-0.03em]">
+        Pay by <strong className="font-bold">Bank</strong>
+      </span>
       {s.badge && (
         <span className="ml-2 rounded-full px-2 py-0.5 text-xs whitespace-nowrap" style={{ background: BADGE.bg, color: BADGE.color }}>
           {BADGE.text}
