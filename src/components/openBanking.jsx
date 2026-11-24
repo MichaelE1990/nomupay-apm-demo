@@ -21,15 +21,9 @@ export const FingerprintIcon = icon(
   'M5.5 15.25c.9-1.4 1.25-3 1.25-5.25a3.25 3.25 0 0 1 6.5 0c0 .9-.05 1.75-.15 2.5M10 10c0 2.6-.6 4.75-1.75 6.5M12.75 15.25c.3-.75.55-1.6.7-2.5M3.6 12.5c.25-.8.4-1.6.4-2.5a6 6 0 0 1 10.75-3.65M15.75 8.25c.15.55.25 1.15.25 1.75 0 1.5-.15 2.75-.45 3.9',
 )
 export const CheckCircleIcon = icon('M6.75 10.25 9 12.5l4.25-4.75M17.25 10a7.25 7.25 0 1 1-14.5 0 7.25 7.25 0 0 1 14.5 0Z')
-export const TagIcon = icon('M10.5 3.25h5.25a1 1 0 0 1 1 1V9.5a1 1 0 0 1-.3.7l-6.55 6.55a1 1 0 0 1-1.4 0L3.25 11.5a1 1 0 0 1 0-1.4L9.8 3.55a1 1 0 0 1 .7-.3ZM13.5 6.5h.01')
 export const ShieldIcon = icon('M10 2.75 4 5v4.5c0 3.6 2.55 6.55 6 7.75 3.45-1.2 6-4.15 6-7.75V5l-6-2.25ZM7.5 10l1.75 1.75L12.75 8')
-export const ChartIcon = icon('M4.25 16.25V11M8.08 16.25V8M11.92 16.25V9.5M15.75 16.25V4.75M2.75 16.25h14.5')
-export const ClockIcon = icon('M10 6.25V10l2.5 1.5M17.25 10a7.25 7.25 0 1 1-14.5 0 7.25 7.25 0 0 1 14.5 0Z')
-export const ReceiptIcon = icon('M5 2.75h10a.75.75 0 0 1 .75.75v13.75l-2.25-1.5-2.25 1.5L10 15.75l-1.25 1.5-2.25-1.5-2.25 1.5V3.5A.75.75 0 0 1 5 2.75ZM7.25 7h5.5M7.25 10h5.5M7.25 13h3')
-export const HeadsetIcon = icon('M3.75 12.25V10a6.25 6.25 0 0 1 12.5 0v2.25M3.75 12.25a1.5 1.5 0 0 1 1.5-1.5h.5a1 1 0 0 1 1 1v2.5a1 1 0 0 1-1 1h-.5a1.5 1.5 0 0 1-1.5-1.5v-1.5ZM16.25 12.25a1.5 1.5 0 0 0-1.5-1.5h-.5a1 1 0 0 0-1 1v2.5a1 1 0 0 0 1 1h.5a1.5 1.5 0 0 0 1.5-1.5v-1.5ZM14.75 15.25c0 1.1-1.75 2-3.75 2')
 export const LinkIcon = icon('M8.25 11.75a3.25 3.25 0 0 0 4.6 0l2.4-2.4a3.25 3.25 0 0 0-4.6-4.6l-.9.9M11.75 8.25a3.25 3.25 0 0 0-4.6 0l-2.4 2.4a3.25 3.25 0 0 0 4.6 4.6l.9-.9')
 export const ServerIcon = icon('M4.75 3.25h10.5a1.5 1.5 0 0 1 1.5 1.5v2.5a1.5 1.5 0 0 1-1.5 1.5H4.75a1.5 1.5 0 0 1-1.5-1.5v-2.5a1.5 1.5 0 0 1 1.5-1.5ZM4.75 11.25h10.5a1.5 1.5 0 0 1 1.5 1.5v2.5a1.5 1.5 0 0 1-1.5 1.5H4.75a1.5 1.5 0 0 1-1.5-1.5v-2.5a1.5 1.5 0 0 1 1.5-1.5ZM6 6h.01M6 14h.01M9 6h4.5M9 14h4.5')
-export const SettingsIcon = icon('M10 12.25a2.25 2.25 0 1 0 0-4.5 2.25 2.25 0 0 0 0 4.5ZM10 2.75v1.5M10 15.75v1.5M17.25 10h-1.5M4.25 10h-1.5M15.13 4.87l-1.06 1.06M5.93 14.07l-1.06 1.06M15.13 15.13l-1.06-1.06M5.93 5.93 4.87 4.87')
 export const ArrowRightIcon = icon('M4.25 10h11.5m0 0-4-4m4 4-4 4')
 export const DownloadIcon = icon('M10 3.25v9.5m0 0-3.5-3.5M10 12.75l3.5-3.5M3.75 13.25v1.5a1.5 1.5 0 0 0 1.5 1.5h9.5a1.5 1.5 0 0 0 1.5-1.5v-1.5')
 
@@ -74,41 +68,6 @@ export function JourneySteps({ steps, className }) {
   )
 }
 
-// Figures with their sources, in the style of Catalyst's stat
-export function StatGrid({ stats, footnote }) {
-  return (
-    <div className="not-prose my-10 xl:max-w-none">
-      <dl className="grid grid-cols-2 gap-x-6 gap-y-8 lg:grid-cols-4">
-        {stats.map((s) => (
-          <div key={s.label} className="border-t border-zinc-900/10 pt-5 dark:border-white/10">
-            <dd className="text-3xl/8 font-semibold tracking-tight text-zinc-900 dark:text-white">{s.value}</dd>
-            <dt className="mt-2 text-sm/6 text-zinc-600 dark:text-zinc-400">{s.label}</dt>
-            <p className="mt-1 text-xs/5 text-zinc-400 dark:text-zinc-500">{s.source}</p>
-          </div>
-        ))}
-      </dl>
-      {footnote && <p className="mt-6 text-xs/5 text-zinc-400 dark:text-zinc-500">{footnote}</p>}
-    </div>
-  )
-}
-
-// Icon, title and a line of text, three to a row
-export function FeatureGrid({ features }) {
-  return (
-    <dl className="not-prose my-8 grid grid-cols-1 gap-x-8 gap-y-8 sm:grid-cols-2 lg:grid-cols-3 xl:max-w-none">
-      {features.map((f) => (
-        <div key={f.title} className="flex gap-4">
-          <IconBadge icon={f.icon} className="size-9" />
-          <div>
-            <dt className="text-sm font-semibold text-zinc-900 dark:text-white">{f.title}</dt>
-            <dd className="mt-1 text-sm/6 text-zinc-600 dark:text-zinc-400">{f.text}</dd>
-          </div>
-        </div>
-      ))}
-    </dl>
-  )
-}
-
 // A spec sheet: a label with its value under it, three to a row (like a marketplace listing)
 export function SpecGrid({ items }) {
   return (
@@ -122,20 +81,6 @@ export function SpecGrid({ items }) {
         </div>
       ))}
     </dl>
-  )
-}
-
-// A short list with check marks, two columns on wide screens
-export function CheckList({ items }) {
-  return (
-    <ul className="not-prose my-6 grid grid-cols-1 gap-x-8 gap-y-3 text-sm/6 text-zinc-700 sm:grid-cols-2 dark:text-zinc-300">
-      {items.map((item) => (
-        <li key={item} className="flex gap-3">
-          <CheckCircleIcon className="mt-0.5 size-5 flex-none stroke-emerald-500" />
-          {item}
-        </li>
-      ))}
-    </ul>
   )
 }
 
@@ -160,30 +105,6 @@ export function StepList({ steps }) {
   )
 }
 
-// Two links in one pill, after a "Get started" pill button: a raised white button on a grey
-// track, with the second link (a download, say) on the track
-export function PillLinks({ primary, secondary }) {
-  return (
-    <div className="inline-flex max-w-full items-center rounded-full bg-zinc-100 p-1 shadow-[inset_0_1px_2px_rgb(23_33_71/0.06)] ring-1 ring-zinc-900/5 dark:bg-white/5 dark:shadow-none dark:ring-white/10">
-      <Link
-        href={primary.href}
-        className="flex-none rounded-full bg-linear-to-b from-white to-zinc-50 px-4 py-1.5 text-sm font-semibold text-zinc-900 shadow-[0_1px_2px_rgb(23_33_71/0.08),0_2px_6px_rgb(23_33_71/0.06)] ring-1 ring-zinc-900/7.5 transition hover:to-white dark:from-zinc-700 dark:to-zinc-800 dark:text-white dark:ring-white/10 dark:hover:to-zinc-700"
-      >
-        {primary.label}
-      </Link>
-      <a
-        href={secondary.href}
-        download={secondary.download}
-        title={secondary.title}
-        className="group flex min-w-0 items-center gap-1.5 rounded-full py-1.5 pr-3.5 pl-3 text-sm font-medium text-zinc-600 transition hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white"
-      >
-        <span className="truncate">{secondary.label}</span>
-        <DownloadIcon className="size-4 flex-none stroke-current transition group-hover:translate-y-0.5" />
-      </a>
-    </div>
-  )
-}
-
 // The next page, as one compact row (after Compass's "up next" link)
 export function UpNext({ href, title, text }) {
   return (
@@ -198,30 +119,6 @@ export function UpNext({ href, title, text }) {
       </div>
       <ArrowRightIcon className="size-5 flex-none stroke-zinc-400 transition group-hover:translate-x-0.5 group-hover:stroke-emerald-500" />
     </Link>
-  )
-}
-
-// Settings in three columns, one per group, each setting with its description under it
-export function SettingColumns({ groups }) {
-  return (
-    <div className="not-prose my-8 grid grid-cols-1 gap-8 border-t border-zinc-900/7.5 pt-6 sm:grid-cols-2 lg:grid-cols-3 xl:max-w-none dark:border-white/10">
-      {groups.map((g) => (
-        <section key={g.title}>
-          <div className="flex items-center gap-3">
-            <IconBadge icon={g.icon} className="size-8 [&_svg]:size-4" />
-            <h3 className="text-sm font-semibold text-zinc-900 dark:text-white">{g.title}</h3>
-          </div>
-          <dl className="mt-4 space-y-4">
-            {g.items.map((f) => (
-              <div key={f.term}>
-                <dt className="text-sm font-medium text-zinc-900 dark:text-white">{f.term}</dt>
-                <dd className="mt-0.5 text-sm/6 text-zinc-600 dark:text-zinc-400">{f.details}</dd>
-              </div>
-            ))}
-          </dl>
-        </section>
-      ))}
-    </div>
   )
 }
 
@@ -273,6 +170,151 @@ export function ConfirmationChart({ rows, source }) {
         ))}
       </dl>
       {source && <p className="mt-5 text-xs/5 text-zinc-400 dark:text-zinc-500">{source}</p>}
+    </figure>
+  )
+}
+
+// A single raised pill that downloads a file (the settings form, say)
+export function DownloadPill({ href, label, title }) {
+  return (
+    <a
+      href={href}
+      download
+      title={title}
+      className="group inline-flex items-center gap-2 rounded-full bg-linear-to-b from-white to-zinc-50 py-1.5 pr-3.5 pl-4 text-sm font-semibold text-zinc-900 shadow-[0_1px_2px_rgb(23_33_71/0.08),0_2px_6px_rgb(23_33_71/0.06)] ring-1 ring-zinc-900/7.5 transition hover:to-white dark:from-zinc-700 dark:to-zinc-800 dark:text-white dark:ring-white/10 dark:hover:to-zinc-700"
+    >
+      {label}
+      <DownloadIcon className="size-4 flex-none stroke-current transition group-hover:translate-y-0.5" />
+    </a>
+  )
+}
+
+const INTER = "'Inter Variable', Inter, system-ui, sans-serif"
+const PBB = '/images/pay-by-bank'
+
+// The Get started intro's picture: Pay by Bank at the top of a checkout's payment options, over a
+// moving strip of UK banks' app icons (icons and logos from Mikey's Canva boards)
+const HERO_BANKS = ['natwest', 'barclays', 'lloyds', 'hsbc', 'halifax', 'nationwide', 'starling', 'santander', 'revolut', 'monzo']
+
+function HeroRadio({ on }) {
+  return (
+    <span className={clsx('flex size-4 flex-none items-center justify-center rounded-full ring-1', on ? 'ring-zinc-900' : 'ring-zinc-400')}>
+      {on && <span className="size-2 rounded-full bg-zinc-900" />}
+    </span>
+  )
+}
+
+export function PayByBankHero() {
+  return (
+    <div
+      role="img"
+      aria-label="Pay by Bank at the top of a checkout’s payment options, above card and PayPal, with UK banks’ app icons"
+      className="not-prose relative overflow-hidden rounded-3xl bg-zinc-100/70 px-6 pt-8 pb-6 ring-1 ring-zinc-900/5 dark:bg-white/2.5 dark:ring-white/10"
+    >
+      <div aria-hidden="true" className="pointer-events-none absolute -top-28 -left-24 size-80 rounded-full border-[44px] border-white/80 dark:border-white/5" />
+      <div aria-hidden="true" className="pointer-events-none absolute -right-32 -bottom-36 size-96 rounded-full border-[52px] border-white/80 dark:border-white/5" />
+      <div className="relative mx-auto max-w-sm rounded-2xl bg-white p-4 text-sm text-zinc-900 shadow-xl shadow-zinc-900/5 ring-1 ring-zinc-900/5" style={{ fontFamily: INTER }}>
+        <div className="mb-3 text-zinc-400">Payment options</div>
+        <div className="space-y-2">
+          <div className="flex items-center gap-3 rounded-lg px-3.5 py-3 ring-1 ring-zinc-300">
+            <HeroRadio on />
+            <span className="flex-1 tracking-[-0.03em]">
+              Pay by <strong className="font-bold">Bank</strong>
+            </span>
+            <span className="flex gap-1">
+              {['barclays', 'natwest', 'lloyds'].map((b) => (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img key={b} src={`${PBB}/bank-${b}.png`} alt="" className="size-6 rounded-[25%]" />
+              ))}
+              <span className="flex size-6 items-center justify-center rounded-[25%] bg-[#b4b4b4] text-white">
+                <svg viewBox="0 0 10 10" className="size-3" aria-hidden="true">
+                  <path d="M5 1v8M1 5h8" stroke="currentColor" strokeWidth="1.3" />
+                </svg>
+              </span>
+            </span>
+          </div>
+          <div className="flex items-center gap-3 rounded-lg px-3.5 py-3 text-zinc-500 opacity-70 ring-1 ring-zinc-200">
+            <HeroRadio />
+            <span className="flex-1">Card</span>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={`${PBB}/logo-visa.png`} alt="" className="h-6 w-auto rounded" />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={`${PBB}/logo-mastercard.png`} alt="" className="h-6 w-auto rounded" />
+          </div>
+          <div className="flex items-center gap-3 rounded-lg px-3.5 py-3 text-zinc-500 opacity-70 ring-1 ring-zinc-200">
+            <HeroRadio />
+            <span className="flex-1">PayPal</span>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={`${PBB}/logo-paypal.png`} alt="" className="h-4 w-auto" />
+          </div>
+        </div>
+      </div>
+      <div className="relative mt-6 overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_12%,black_88%,transparent)]">
+        <div className="flex w-max animate-[pbb-marquee_45s_linear_infinite] gap-3 pr-3 motion-reduce:animate-none">
+          {[...HERO_BANKS, ...HERO_BANKS].map((b, i) => (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img key={i} src={`${PBB}/bank-${b}.png`} alt="" className="size-10 flex-none rounded-[23%]" />
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// Token.io's banner, on an off-white background instead of black
+function BasketIcon(props) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" {...props}>
+      <path d="M3 9.75h18l-1.7 8.5a2 2 0 0 1-2 1.6H6.7a2 2 0 0 1-2-1.6L3 9.75ZM8 9.75 11 4.5M16 9.75 13 4.5M3.8 13.75h16.4M9.25 9.75v10M14.75 9.75v10" />
+    </svg>
+  )
+}
+
+function LockIcon(props) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" {...props}>
+      <path d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" />
+    </svg>
+  )
+}
+
+function ArrowDownCircleIcon(props) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" {...props}>
+      <path d="m9 12.75 3 3m0 0 3-3m-3 3v-7.5M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+    </svg>
+  )
+}
+
+const BANNER_POINTS = [
+  { icon: BasketIcon, title: 'Easy to use.', text: 'No registration or card details required.' },
+  { icon: LockIcon, title: 'Secure.', text: '2.4x lower* fraud vs. traditional payment methods.' },
+  { icon: ArrowDownCircleIcon, title: 'Lower cost.', text: 'Substantial savings vs. other methods.' },
+]
+
+export function PayByBankBanner() {
+  return (
+    <figure className="not-prose my-10 xl:max-w-none">
+      <div className="grid gap-8 rounded-3xl bg-zinc-50 px-8 py-9 ring-1 ring-zinc-900/5 lg:grid-cols-[auto_1fr] lg:items-center lg:gap-14 lg:px-12 dark:bg-white/2.5 dark:ring-white/10">
+        <p className="text-3xl/9 font-medium tracking-tight text-zinc-900 dark:text-white">
+          Lower fees.
+          <br />
+          Faster payments.
+          <br />
+          No compromises.
+        </p>
+        <dl className="grid gap-6 sm:grid-cols-3 sm:gap-8">
+          {BANNER_POINTS.map((p) => (
+            <div key={p.title} className="text-sm/6 text-zinc-700 dark:text-zinc-300">
+              <p.icon className="size-8 text-zinc-900 dark:text-white" />
+              <dt className="mt-4 inline font-semibold text-zinc-900 dark:text-white">{p.title}</dt> <dd className="inline">{p.text}</dd>
+            </div>
+          ))}
+        </dl>
+      </div>
+      <figcaption className="mt-2 px-2 text-xs text-zinc-500 dark:text-zinc-400">
+        *Against payments industry norms, from Open Banking Limited data. Banner by Token.io.
+      </figcaption>
     </figure>
   )
 }

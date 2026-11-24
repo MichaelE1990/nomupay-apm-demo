@@ -6,8 +6,9 @@ import { useState } from 'react'
 import { SequenceDiagram } from '@/components/s2sParts'
 import { OB_STEPS } from '@/lib/openBanking'
 
-// The transaction flow on Get started: the requests for each API integration, with a toggle
-// between them. It's a static picture, so nothing in the Integration page's Playground changes it.
+// The payment workflow model on the Integration page: the requests for each API integration, with a
+// toggle between them. It's a static picture, so nothing in the Playground changes it, and its
+// numbered requests link to the steps below it.
 
 const LANES = [
   { id: 'shopper', label: 'Shopper', bar: 'bg-emerald-500 dark:bg-emerald-400' },
@@ -17,7 +18,7 @@ const LANES = [
 ]
 
 const [PAYMENT, REDIRECT, STATUS] = OB_STEPS
-const linked = (s, detail) => ({ step: s.step, href: `/open-banking/integration#${s.id}`, label: s.title, detail })
+const linked = (s, detail) => ({ step: s.step, href: s.id, label: s.title, detail })
 
 // The shopper's part and what follows it are the same for both integrations
 const BANK_AND_RESULT = [

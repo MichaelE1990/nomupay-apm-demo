@@ -171,3 +171,10 @@ html[data-embedded] .embedded-return {
   display: flex;
   visibility: visible;
 }
+
+/* The Pay by Bank intro's strip of bank icons, which loops: the track holds the icons twice */
+@keyframes pbb-marquee {
+  to {
+    transform: translateX(-50%);
+  }
+}

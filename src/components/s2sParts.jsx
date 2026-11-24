@@ -153,6 +153,51 @@ export function FlowCard({ mode, selected, onSelect, tray }) {
 
 // modes: [{ value, title, description, icon?, pattern?, flows: [{ value, title, types: ['PA','CP'] }] }]
 // trayLabel: the heading over each card's options
+// A card in the FlowCard style that goes somewhere instead of opening a tray: another page (external,
+// in a new tab) or a section further down this one (onClick)
+export function LinkCard({ mode, href, external, onClick, cue }) {
+  let mouseX = useMotionValue(0)
+  let mouseY = useMotionValue(0)
+  function onMouseMove({ currentTarget, clientX, clientY }) {
+    let { left, top } = currentTarget.getBoundingClientRect()
+    mouseX.set(clientX - left)
+    mouseY.set(clientY - top)
+  }
+  return (
+    <div
+      onMouseMove={onMouseMove}
+      className="group relative flex rounded-2xl bg-zinc-50 transition-shadow hover:shadow-md hover:shadow-zinc-900/5 dark:bg-white/2.5 dark:hover:shadow-black/5"
+    >
+      <ResourcePattern {...(mode.pattern || FLOW_PATTERNS.async)} mouseX={mouseX} mouseY={mouseY} />
+      <div className="absolute inset-0 rounded-2xl ring-1 ring-zinc-900/7.5 ring-inset group-hover:ring-zinc-900/10 dark:ring-white/10 dark:group-hover:ring-white/20" />
+      <a
+        href={href}
+        onClick={onClick}
+        {...(external ? { target: '_blank', rel: 'noreferrer' } : {})}
+        className="relative flex w-full flex-col justify-start rounded-2xl px-4 pt-5 pb-4 text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-500"
+      >
+        <span className="flex items-start justify-between">
+          <ResourceIcon icon={mode.icon || RedirectIcon} />
+          <span className="flex items-center gap-1 text-xs font-medium text-zinc-500 transition group-hover:text-emerald-600 dark:text-zinc-400 dark:group-hover:text-emerald-400">
+            {cue}
+            <svg viewBox="0 0 16 16" fill="none" aria-hidden="true" className={clsx('size-3.5 transition', external ? 'group-hover:translate-x-0.5 group-hover:-translate-y-0.5' : 'group-hover:translate-y-0.5')}>
+              <path
+                d={external ? 'M5.5 10.5 10.5 5.5m0 0h-4m4 0v4' : 'M8 3.5v9m0 0-3.5-3.5M8 12.5l3.5-3.5'}
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </span>
+        </span>
+        <span className="mt-6 block text-sm/7 font-semibold text-zinc-900 dark:text-white">{mode.title}</span>
+        <span className="mt-1 block text-sm text-zinc-600 dark:text-zinc-400">{mode.description}</span>
+      </a>
+    </div>
+  )
+}
+
 export function FlowCards({ modes, mode, tx, onChange, label = 'Payment flow', trayLabel = 'Transaction flow' }) {
   return (
     <div role="radiogroup" aria-label={label} className="not-prose my-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:max-w-none">

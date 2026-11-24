@@ -2,7 +2,6 @@ import { Suspense } from 'react'
 
 import { Article } from '@/components/Article'
 import { OpenBankingFlow } from '@/components/OpenBankingFlow'
-import { OpenBankingSettings } from '@/components/OpenBankingSettings'
 import { ReturnBridge } from '@/components/ReturnBridge'
 
 export const metadata = {
@@ -25,7 +24,6 @@ export default function OpenBankingReturnPage() {
       <Suspense>
         <OpenBankingFlow mode="return" />
       </Suspense>
-      <OpenBankingSettings />
     </Article>
   )
 }

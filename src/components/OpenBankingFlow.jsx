@@ -15,6 +15,7 @@ import {
 } from "@/components/CodeWindow";
 import { Col, Note, Row } from "@/components/content";
 import { Heading } from "@/components/Heading";
+import { OpenBankingTransactionFlow } from "@/components/OpenBankingTransactionFlow";
 import { CHECKOUT_SECTION, PayByBankCheckout } from "@/components/PayByBankCheckout";
 import {
   Callout,
@@ -32,12 +33,7 @@ import {
   TextField,
 } from "@/components/Playground";
 import { StepLink, StepNote, resultText } from "@/components/S2SFlow";
-import {
-  FlowCard,
-  ParamGroup,
-  ParamGroups,
-  Radio,
-} from "@/components/s2sParts";
+import { LinkCard, ParamGroup, ParamGroups } from "@/components/s2sParts";
 import { useSyncSections } from "@/components/SectionProvider";
 import { SelectMenu } from "@/components/select";
 import { postJson, usePersistentState } from "@/lib/flowState";
@@ -109,9 +105,9 @@ function ResponseGroup({ docs, response }) {
   );
 }
 
-// The two ways to take Pay by Bank, as cards like the use cases on the other guides. The chosen
-// card opens a tray: No code links to the Help Centre's Pay by Links guide; API offers Server to
-// Server (Copy & Pay is still to come)
+// The two ways to take Pay by Bank. No code goes to the Help Centre's Pay by Links guide; API goes
+// down to the payment workflow model
+const MODEL = { id: "payment-workflow-model", title: "Payment workflow model" };
 const INTEGRATIONS = [
   {
     value: "nocode",
@@ -119,6 +115,7 @@ const INTEGRATIONS = [
     description:
       "Send Pay by links from your Nomupay Dashboard. There’s nothing to build.",
     icon: LinkIcon,
+    cue: "Pay by Links guide",
     pattern: {
       y: 16,
       squares: [
@@ -133,6 +130,7 @@ const INTEGRATIONS = [
     description:
       "Add Pay by Bank to your own checkout, with your server sending the requests.",
     icon: ServerIcon,
+    cue: "Start below",
     pattern: {
       y: -6,
       squares: [
@@ -143,95 +141,26 @@ const INTEGRATIONS = [
   },
 ];
 
-const trayItem =
-  "flex items-center gap-3 rounded-lg px-3 py-2 text-left text-sm transition";
-
-function IntegrationCards({ value, onChange }) {
+function IntegrationCards() {
   return (
-    <div
-      role="radiogroup"
-      aria-label="Integration"
-      className="not-prose my-6 grid grid-cols-1 items-start gap-4 sm:grid-cols-2 xl:max-w-none"
-    >
-      {INTEGRATIONS.map((m) => (
-        <FlowCard
-          key={m.value}
-          mode={m}
-          selected={m.value === value}
-          onSelect={() => onChange(m.value)}
-          tray={
-            <div className="px-4 pt-3.5 pb-4">
-              <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
-                {m.value === "nocode"
-                  ? "Dashboard integration"
-                  : "Integration type"}
-              </p>
-              {m.value === "nocode" ? (
-                <div className="mt-2 grid gap-1">
-                  <a
-                    href={PAY_BY_LINKS_URL}
-                    target="_blank"
-                    rel="noreferrer"
-                    className={clsx(
-                      trayItem,
-                      "group bg-white font-medium text-zinc-900 shadow-sm ring-1 ring-zinc-900/5 dark:bg-zinc-800 dark:text-white dark:ring-white/10",
-                    )}
-                  >
-                    <LinkIcon className="size-4 flex-none stroke-emerald-600 dark:stroke-emerald-400" />
-                    <span className="min-w-0 flex-auto">Pay by link</span>
-                    <span className="flex flex-none items-center gap-1 text-xs font-normal text-zinc-500 group-hover:text-emerald-600 dark:text-zinc-400 dark:group-hover:text-emerald-400">
-                      Help Centre guide
-                      <NewWindowIcon className="size-3" />
-                    </span>
-                  </a>
-                  <p className="px-3 pt-1 text-xs/5 text-zinc-500 dark:text-zinc-400">
-                    Choose OpenBanking as the payment method when you create the
-                    link.
-                  </p>
-                </div>
-              ) : (
-                <div
-                  role="radiogroup"
-                  aria-label="API: integration type"
-                  className="mt-2 grid gap-1"
-                >
-                  <button
-                    type="button"
-                    role="radio"
-                    aria-checked="true"
-                    className={clsx(
-                      trayItem,
-                      "bg-white font-medium text-zinc-900 shadow-sm ring-1 ring-zinc-900/5 dark:bg-zinc-800 dark:text-white dark:ring-white/10",
-                    )}
-                  >
-                    <Radio on />
-                    <span className="min-w-0 flex-auto">Server to Server</span>
-                    <span className="flex-none font-mono text-[0.6875rem] text-zinc-400 dark:text-zinc-500">
-                      POST · GET
-                    </span>
-                  </button>
-                  <button
-                    type="button"
-                    role="radio"
-                    aria-checked="false"
-                    disabled
-                    className={clsx(
-                      trayItem,
-                      "cursor-not-allowed text-zinc-400 dark:text-zinc-500",
-                    )}
-                  >
-                    <Radio on={false} />
-                    <span className="min-w-0 flex-auto">Copy &amp; Pay</span>
-                    <span className="flex-none rounded-full bg-zinc-900/5 px-2 py-0.5 text-[0.6875rem] font-medium text-zinc-500 dark:bg-white/10 dark:text-zinc-400">
-                      Coming soon
-                    </span>
-                  </button>
-                </div>
-              )}
-            </div>
-          }
-        />
-      ))}
+    <div className="not-prose my-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:max-w-none">
+      {INTEGRATIONS.map((m) =>
+        m.value === "nocode" ? (
+          <LinkCard key={m.value} mode={m} href={PAY_BY_LINKS_URL} external cue={m.cue} />
+        ) : (
+          <LinkCard
+            key={m.value}
+            mode={m}
+            href={`#${MODEL.id}`}
+            cue={m.cue}
+            onClick={(e) => {
+              e.preventDefault();
+              document.getElementById(MODEL.id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+              history.replaceState(null, "", `#${MODEL.id}`);
+            }}
+          />
+        ),
+      )}
     </div>
   );
 }
@@ -323,13 +252,11 @@ export function OpenBankingFlow({ mode = "start" }) {
   let [playground, setPlayground] = useState(false);
   let autoScrolled = useRef(false);
 
-  // A shopper coming back from their bank is always on the API flow
-  let api =
-    mode === "return" || (state.integration ?? INITIAL.integration) === "api";
-  let setIntegration = (integration) =>
-    setState((s) => ({ ...s, integration }));
+  // The page is the API path: No code leaves for the Help Centre's Pay by Links guide
+  let api = true;
   useSyncSections([
-    { id: "pay-by-bank-workflow", title: "Pay by Bank workflow" },
+    { id: "choose-your-integration", title: "Choose your integration" },
+    MODEL,
     ...(api ? [CHECKOUT_SECTION] : []),
     ...(api
       ? STEPS.map((x) => ({
@@ -339,7 +266,6 @@ export function OpenBankingFlow({ mode = "start" }) {
           tag: x.tag,
         }))
       : []),
-    { id: "account-settings", title: "Account settings" },
   ]);
 
   let form = { ...INITIAL.form, ...state.form };
@@ -526,56 +452,31 @@ export function OpenBankingFlow({ mode = "start" }) {
 
   return (
     <>
-      {/* Workflow: the integration to use, then for the API what's asynchronous about it, the requests and testing */}
-      <Heading level={2} id="pay-by-bank-workflow">
-        Pay by Bank workflow
+      {/* Choose: No code goes to the Help Centre; API carries on to the model and the steps */}
+      <Heading level={2} id="choose-your-integration">
+        Choose your integration
       </Heading>
       <p>
-        Pick how you’ll integrate. Each option shows what to do next.
+        Choose how you’ll take Pay by Bank payments.
       </p>
-      <IntegrationCards
-        value={api ? "api" : "nocode"}
-        onChange={setIntegration}
-      />
-      {api ? (
-        <>
-          <p>
-            A Pay by Bank payment is asynchronous. It stays pending while the
-            shopper approves it with their bank, and the bank’s confirmation can
-            arrive after the shopper is back on your site. So you send the
-            payment, send the shopper to their bank, then get the final status.
-            The <a href="/open-banking#transaction-flow">transaction flow</a>{" "}
-            shows how the requests fit together.
-          </p>
-          <p>
-            The requests run on the demo’s test account, which has the Open
-            Banking channel, with Token.io’s sandbox. Set the amount, currency and bank country in the{" "}
-            {link()}.
-          </p>
-          <h3>Testing Pay by Bank</h3>
-          <p>
-            Token.io’s sandbox lists test versions of real banks. Not every one
-            completes a payment: some end it straight away, and others open the
-            bank’s own sandbox login, which needs that bank’s test credentials.
-            Until the shopper finishes, the payment stays pending.
-          </p>
-        </>
-      ) : (
-        <>
-          <h3>Pay by link</h3>
-          <p>
-            Your customer opens the link, picks their bank on Token.io’s page and approves the payment in their banking app. The Pay by Links guide
-            in the card above covers creating, sending and managing links.
-          </p>
-          <p>
-            Your Pay by link page shows Pay by Bank for you. Set its logo, company details and checkout options in the Dashboard’s Pay by Link
-            settings.
-          </p>
-          <Callout title="Before you start">
-            Your account needs Pay by link as its integration type. See <a href="#account-settings">Account settings</a>.
-          </Callout>
-        </>
-      )}
+      <IntegrationCards />
+
+      <hr />
+      <Heading level={2} id={MODEL.id}>
+        {MODEL.title}
+      </Heading>
+      <OpenBankingTransactionFlow />
+      <p>
+        A Pay by Bank payment is asynchronous. It stays pending while the
+        shopper approves it with their bank, and the bank’s confirmation can
+        arrive after the shopper is back on your site. So you send the payment,
+        send the shopper to their bank, then get the final status.
+      </p>
+      <p>
+        The requests run on the demo’s test account, which has the Open
+        Banking channel, with Token.io’s sandbox. Set the amount, currency and
+        bank country in the {link()}.
+      </p>
 
       {api && <PayByBankCheckout />}
 
