@@ -1,10 +1,11 @@
 'use client'
 
-// "Brand customisations" on the Integration page (Server to Server): an intro beside a link to
-// Token.io's files (in a modal), then a two-step builder for the Pay by Bank button: pick a theme,
-// then a code box with Preview and HTML tabs, a back button and a settings tray. Every option is
-// one Token.io's Pay by Bank design system (Nov 2026) allows. The theme mock-ups and bank icons
-// come from Mikey's Canva boards ("Button Mock Ups", "Bank App Icons").
+// "Brand customisations" on the Integration page (Server to Server), laid out like the steps: the
+// intro and a link to Token.io's files (in a modal) on the left, the code box on the right. The
+// code box has Preview and HTML tabs, a theme picker and Customise in its bottom bar, and a tray of
+// colour settings. Every option is one Token.io's Pay by Bank design system (Nov 2026) allows.
+// The theme mock-ups and bank icons come from Mikey's Canva boards ("Button Mock Ups", "Bank App
+// Icons").
 import '@fontsource-variable/inter'
 
 import {
@@ -13,6 +14,10 @@ import {
   DialogBackdrop,
   DialogPanel,
   DialogTitle,
+  Listbox,
+  ListboxButton,
+  ListboxOption,
+  ListboxOptions,
   Radio as HeadlessRadio,
   Popover,
   PopoverButton,
@@ -23,6 +28,7 @@ import clsx from 'clsx'
 import { useState } from 'react'
 
 import { CodeWindow } from '@/components/CodeWindow'
+import { Col, Row } from '@/components/content'
 import { Heading } from '@/components/Heading'
 import { highlightHtml } from '@/lib/highlight'
 
@@ -204,14 +210,6 @@ function ButtonPreview({ c, size = 18, pad = '1.75em' }) {
   )
 }
 
-function LockIcon(props) {
-  return (
-    <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true" {...props}>
-      <path fillRule="evenodd" d="M8 1a3.5 3.5 0 0 0-3.5 3.5V7A1.5 1.5 0 0 0 3 8.5v5A1.5 1.5 0 0 0 4.5 15h7a1.5 1.5 0 0 0 1.5-1.5v-5A1.5 1.5 0 0 0 11.5 7V4.5A3.5 3.5 0 0 0 8 1Zm2 6V4.5a2 2 0 1 0-4 0V7h4Z" clipRule="evenodd" />
-    </svg>
-  )
-}
-
 // A colour dot. "None" is a dashed ring; options the rules don't allow are crossed out.
 function Dot({ hex, none, off, size = 'size-6' }) {
   return (
@@ -226,14 +224,6 @@ function Dot({ hex, none, off, size = 'size-6' }) {
   )
 }
 
-function ChevronIcon(props) {
-  return (
-    <svg viewBox="0 0 16 16" fill="none" aria-hidden="true" {...props}>
-      <path d="m5 6.5 3-3 3 3M5 9.5l3 3 3-3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  )
-}
-
 function TickIcon(props) {
   return (
     <svg viewBox="0 0 16 16" fill="none" aria-hidden="true" {...props}>
@@ -244,18 +234,10 @@ function TickIcon(props) {
 
 const ROW = 'flex w-full items-center justify-between gap-3 rounded-xl px-4 py-3 text-sm'
 
-function ArrowLeftIcon(props) {
+function SwapIcon(props) {
   return (
     <svg viewBox="0 0 16 16" fill="none" aria-hidden="true" {...props}>
-      <path d="M12.5 8h-9m0 0 3.5-3.5M3.5 8l3.5 3.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  )
-}
-
-function ArrowRightIcon(props) {
-  return (
-    <svg viewBox="0 0 16 16" fill="none" aria-hidden="true" {...props}>
-      <path d="M3.5 8h9m0 0L9 4.5M12.5 8 9 11.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="m6 4.5-3.5 3.5L6 11.5M10 4.5l3.5 3.5-3.5 3.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   )
 }
@@ -272,88 +254,48 @@ function GearIcon(props) {
   )
 }
 
-// The two steps; the finished first step is also a way back
-function Stepper({ step, onBack }) {
-  let steps = [
-    { id: 'theme', label: 'Theme' },
-    { id: 'code', label: 'Customise and copy' },
-  ]
+// The theme, as a pill in the code box's bottom bar: its name, and a list of the themes (with
+// their mock-ups) to switch to
+function ThemePicker({ value, onChange }) {
+  let current = THEMES.find((t) => t.id === value)
   return (
-    <ol className="mb-3 flex items-center gap-3 text-xs font-medium">
-      {steps.map((s, i) => {
-        let current = s.id === step
-        let done = step === 'code' && s.id === 'theme'
-        let badge = (
-          <span
-            className={clsx(
-              'flex size-5 flex-none items-center justify-center rounded-full text-[0.6875rem]',
-              current
-                ? 'bg-emerald-500 text-white'
-                : done
-                  ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
-                  : 'bg-zinc-100 text-zinc-500 dark:bg-white/5',
-            )}
+    <Listbox value={value} onChange={onChange}>
+      <ListboxButton aria-label={`Theme: ${current.label}`} className="group flex min-w-0 items-center gap-2 rounded-full bg-white/5 py-1 pr-1 pl-1 text-xs min-[420px]:pl-3 ring-1 ring-white/10 transition ring-inset hover:bg-white/10 focus:outline-none data-focus:ring-2 data-focus:ring-emerald-400">
+        <span className="hidden text-zinc-400 min-[420px]:inline">Theme</span>
+        <span className="flex min-w-0 items-center gap-1.5 rounded-full bg-white/10 py-0.5 pr-1.5 pl-2.5 font-medium text-white">
+          <span className="truncate">{current.label}</span>
+          <SwapIcon className="size-3.5 flex-none text-zinc-400 transition group-hover:text-white" />
+        </span>
+      </ListboxButton>
+      <ListboxOptions
+        anchor={{ to: 'top start', gap: 8 }}
+        transition
+        className="z-50 w-[min(26rem,calc(100vw-2rem))] space-y-1 rounded-xl bg-white p-1.5 shadow-lg ring-1 ring-zinc-900/10 transition duration-150 ease-out focus:outline-none data-closed:translate-y-1 data-closed:opacity-0 dark:bg-zinc-900 dark:ring-white/10"
+      >
+        {THEMES.map((t) => (
+          <ListboxOption
+            key={t.id}
+            value={t.id}
+            className="group flex cursor-pointer items-center gap-4 rounded-lg p-2.5 ring-1 ring-transparent transition data-focus:bg-zinc-50 data-selected:ring-emerald-500/40 dark:data-focus:bg-white/5 dark:data-selected:ring-emerald-400/40"
           >
-            {i + 1}
-          </span>
-        )
-        return (
-          <li key={s.id} className="flex items-center gap-3">
-            {i > 0 && <span className="h-px w-6 bg-zinc-300 dark:bg-white/15" aria-hidden="true" />}
-            {done ? (
-              <button
-                type="button"
-                onClick={onBack}
-                className="flex items-center gap-2 text-zinc-600 transition hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white"
-              >
-                {badge}
-                {s.label}
-              </button>
-            ) : (
-              <span
-                className={clsx('flex items-center gap-2', current ? 'text-zinc-900 dark:text-white' : 'text-zinc-400 dark:text-zinc-500')}
-                aria-current={current ? 'step' : undefined}
-              >
-                {badge}
-                {s.label}
-              </span>
-            )}
-          </li>
-        )
-      })}
-    </ol>
-  )
-}
-
-// Step 1: the themes as cards, the name and description on the left and the mock-up on the right
-function ThemePicker({ onPick }) {
-  return (
-    <div className="space-y-2 rounded-2xl bg-zinc-50 p-2 ring-1 ring-zinc-900/7.5 dark:bg-white/2.5 dark:ring-white/10">
-      {THEMES.map((t) => (
-        <button
-          key={t.id}
-          type="button"
-          onClick={() => onPick(t.id)}
-          className="group flex w-full items-center gap-4 rounded-xl bg-white p-3 text-left shadow-xs ring-1 ring-zinc-900/5 transition hover:shadow-md hover:ring-emerald-500/40 focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:outline-none sm:gap-6 sm:p-4 dark:bg-zinc-900 dark:ring-white/10 dark:hover:ring-emerald-400/40"
-        >
-          <div className="min-w-0 flex-1">
-            <div className="text-base font-semibold text-zinc-900 dark:text-white">{t.label}</div>
-            <p className="mt-1 text-sm/6 text-zinc-600 dark:text-zinc-400">{t.text}</p>
-            {t.warning && <p className="mt-2 text-xs/5 text-amber-700 dark:text-amber-400">{t.warning}</p>}
-            <span className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-emerald-600 dark:text-emerald-400">
-              Use this theme
-              <ArrowRightIcon className="size-4 transition group-hover:translate-x-0.5" />
-            </span>
-          </div>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={t.image}
-            alt={`${t.label}: Pay by Bank in a list of payment options`}
-            className="aspect-[8/5] w-32 flex-none rounded-lg object-cover ring-1 ring-zinc-900/5 sm:w-60 dark:ring-white/10"
-          />
-        </button>
-      ))}
-    </div>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-1.5 text-sm font-semibold text-zinc-900 dark:text-white">
+                {t.label}
+                <TickIcon className="size-4 text-emerald-500 opacity-0 group-data-selected:opacity-100" />
+              </div>
+              <p className="mt-0.5 text-xs/5 text-zinc-600 dark:text-zinc-400">{t.text}</p>
+              {t.warning && <p className="mt-1 text-xs/5 text-amber-700 dark:text-amber-400">{t.warning}</p>}
+            </div>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={t.image}
+              alt={`${t.label}: Pay by Bank in a list of payment options`}
+              className="aspect-[8/5] w-28 flex-none rounded-md object-cover ring-1 ring-zinc-900/5 dark:ring-white/10"
+            />
+          </ListboxOption>
+        ))}
+      </ListboxOptions>
+    </Listbox>
   )
 }
 
@@ -459,23 +401,9 @@ function ColourInput({ value, onChange }) {
   )
 }
 
-// The text: part of the button, but fixed, so it's dashed and locked rather than clickable
-function TextRow() {
-  return (
-    <div className={clsx(ROW, 'border border-dashed border-zinc-300 dark:border-white/15')}>
-      <span className="text-zinc-500 dark:text-zinc-400">Text</span>
-      <span className="flex items-center gap-2">
-        <span style={{ fontFamily: INTER, letterSpacing: '-0.03em' }} className="text-zinc-900 dark:text-white">
-          Pay by <strong className="font-bold">Bank</strong>
-        </span>
-        <LockIcon className="size-3.5 flex-none text-zinc-400" />
-      </span>
-    </div>
-  )
-}
-
+// The code box: Preview and HTML tabs, the theme and Customise in the bottom bar, and the
+// settings tray that slides out from under it
 function Builder() {
-  let [step, setStep] = useState('theme')
   let [icon, setIcon] = useState('generic')
   let [bg, setBg] = useState('white')
   let [border, setBorder] = useState('black')
@@ -483,18 +411,16 @@ function Builder() {
   let [settings, setSettings] = useState(false)
 
   let apps = icon === 'apps'
-  let theme = THEMES.find((t) => t.id === icon)
   let c = settle({ icon, bg, border, brand })
   let code = buttonCode(c)
 
   // Bank app icons only go on white or light grey, with a black or grey border
-  function pickTheme(next) {
+  function changeTheme(next) {
     setIcon(next)
     if (next === 'apps') {
       if (bg === 'black' || bg === 'brand') setBg('white')
       if (border === 'brand') setBorder('black')
     }
-    setStep('code')
   }
 
   let backgrounds = BACKGROUNDS.map((b) => ({
@@ -509,90 +435,67 @@ function Builder() {
   }))
 
   return (
-    <div className="not-prose my-6">
-      <Stepper step={step} onBack={() => setStep('theme')} />
-      {step === 'theme' ? (
-        <ThemePicker onPick={pickTheme} />
-      ) : (
-        <>
-          <CodeWindow
-            className="relative z-10 my-0!"
-            code={code}
-            html={highlightHtml(code)}
-            codeTab="HTML"
-            preview={
-              <div className="flex min-h-56 items-center justify-center bg-white bg-[radial-gradient(var(--color-zinc-200)_1px,transparent_1px)] [background-size:12px_12px] p-6">
-                <ButtonPreview c={c} />
-              </div>
-            }
-            footer={
-              <div className="flex items-center justify-between gap-3">
-                <button
-                  type="button"
-                  onClick={() => setStep('theme')}
-                  className="inline-flex min-w-0 items-center gap-1.5 text-xs font-medium text-zinc-400 transition hover:text-white"
-                >
-                  <ArrowLeftIcon className="size-4 flex-none" />
-                  <span className="truncate">{theme.label}</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setSettings((open) => !open)}
-                  aria-expanded={settings}
-                  aria-controls="pay-by-bank-settings"
-                  className={clsx(
-                    'inline-flex flex-none items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ring-1 transition ring-inset',
-                    settings
-                      ? 'bg-emerald-400/15 text-emerald-300 ring-emerald-400/30'
-                      : 'bg-white/5 text-zinc-200 ring-white/10 hover:bg-white/10 hover:text-white',
-                  )}
-                >
-                  <GearIcon className={clsx('size-3.5 transition duration-300', settings && 'rotate-90')} />
-                  Customise
-                </button>
-              </div>
-            }
-          />
-          {/* The settings tray slides out from under the code box */}
-          <div className={clsx('grid transition-[grid-template-rows] duration-300 ease-out', settings ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]')}>
-            <div className="overflow-hidden">
-              <div
-                id="pay-by-bank-settings"
-                inert={!settings}
-                className="mx-2 -mt-4 rounded-b-2xl bg-zinc-50 px-3 pt-7 pb-3 ring-1 ring-zinc-900/7.5 dark:bg-white/2.5 dark:ring-white/10"
-              >
-                <div className="grid gap-2 sm:grid-cols-2">
-                  <ColourRow
-                    label="Background"
-                    rule={apps ? 'White or light grey with bank app icons.' : 'White, light grey, black or one colour of your own.'}
-                    value={bg}
-                    options={backgrounds}
-                    onChange={setBg}
-                    brand={brand}
-                    onBrand={setBrand}
-                  />
-                  <ColourRow
-                    label="Border"
-                    rule="2px wide, on white backgrounds only."
-                    value={bg === 'white' ? border : 'none'}
-                    options={borders}
-                    onChange={setBorder}
-                    brand={brand}
-                    onBrand={setBrand}
-                    disabled={bg === 'white' ? null : 'White backgrounds only'}
-                  />
-                  <div className="sm:col-span-2">
-                    <TextRow />
-                  </div>
-                </div>
-                <p className="px-1 pt-3 text-xs/5 text-zinc-500 dark:text-zinc-400">
-                  The text must read “Pay by Bank” in Inter, with “Bank” bold. Pay by Bank buttons are flat: no shadows, glows or gradients.
-                </p>
-              </div>
-            </div>
+    <div className="not-prose">
+      <CodeWindow
+        className="relative z-10 my-0!"
+        code={code}
+        html={highlightHtml(code)}
+        codeTab="HTML"
+        preview={
+          <div className="flex min-h-56 items-center justify-center bg-white bg-[radial-gradient(var(--color-zinc-200)_1px,transparent_1px)] [background-size:12px_12px] p-6">
+            <ButtonPreview c={c} />
           </div>
-        </>
-      )}
+        }
+        footer={
+          <div className="flex items-center justify-between gap-3">
+            <ThemePicker value={icon} onChange={changeTheme} />
+            <button
+              type="button"
+              onClick={() => setSettings((open) => !open)}
+              aria-expanded={settings}
+              aria-controls="pay-by-bank-settings"
+              className={clsx(
+                'inline-flex flex-none items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ring-1 transition ring-inset',
+                settings
+                  ? 'bg-emerald-400/15 text-emerald-300 ring-emerald-400/30'
+                  : 'bg-white/5 text-zinc-200 ring-white/10 hover:bg-white/10 hover:text-white',
+              )}
+            >
+              <GearIcon className={clsx('size-3.5 transition duration-300', settings && 'rotate-90')} />
+              Customise
+            </button>
+          </div>
+        }
+      />
+      <div className={clsx('grid transition-[grid-template-rows] duration-300 ease-out', settings ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]')}>
+        <div className="overflow-hidden">
+          <div
+            id="pay-by-bank-settings"
+            inert={!settings}
+            className="mx-2 -mt-4 space-y-2 rounded-b-2xl bg-zinc-50 px-3 pt-7 pb-3 ring-1 ring-zinc-900/7.5 dark:bg-white/2.5 dark:ring-white/10"
+          >
+            <ColourRow
+              label="Background"
+              rule={apps ? 'White or light grey with bank app icons.' : 'White, light grey, black or one colour of your own.'}
+              value={bg}
+              options={backgrounds}
+              onChange={setBg}
+              brand={brand}
+              onBrand={setBrand}
+            />
+            <ColourRow
+              label="Border"
+              rule="2px wide, on white backgrounds only."
+              value={bg === 'white' ? border : 'none'}
+              options={borders}
+              onChange={setBorder}
+              brand={brand}
+              onBrand={setBrand}
+              disabled={bg === 'white' ? null : 'White backgrounds only'}
+            />
+          </div>
+        </div>
+      </div>
     </div>
   )
 }
@@ -686,27 +589,30 @@ export function PayByBankCheckout() {
       <Heading level={2} id={CHECKOUT_SECTION.id}>
         {CHECKOUT_SECTION.title}
       </Heading>
-      <div className="not-prose my-6 grid gap-6 sm:grid-cols-[1fr_15rem] sm:gap-8">
-        <p className="text-sm/7 text-zinc-700 dark:text-zinc-400">
-          With Server to Server, you add the Pay by Bank button to your own checkout, and the shopper’s click starts step 1. Start below: choose
-          a theme, adjust its colours, then copy the code. Every option follows Token.io’s Pay by Bank design system.
-        </p>
-        <div className="sm:border-l sm:border-zinc-900/7.5 sm:pl-6 dark:sm:border-white/10">
-          <h3 className="text-sm font-semibold text-zinc-900 dark:text-white">Further details</h3>
-          <p className="mt-1 text-sm/6 text-zinc-600 dark:text-zinc-400">Token.io’s buttons, marks and fonts, free to use with Pay by Bank.</p>
-          <button
-            type="button"
-            onClick={() => setAssets(true)}
-            className="mt-3 inline-flex items-center gap-2 rounded-full bg-zinc-100 px-3 py-1.5 text-sm font-medium text-zinc-700 ring-1 ring-zinc-900/5 transition hover:bg-zinc-200 hover:text-zinc-900 dark:bg-white/5 dark:text-zinc-300 dark:ring-white/10 dark:hover:bg-white/10 dark:hover:text-white"
-          >
-            <PaperClipIcon className="size-4 text-emerald-500 dark:text-emerald-400" />
-            Reference and assets
-          </button>
-          <div className="mt-1.5 text-xs text-zinc-400 dark:text-zinc-500">{DOWNLOADS.length} downloads</div>
-        </div>
-      </div>
+      <Row>
+        <Col>
+          <p>
+            With Server to Server, you add the Pay by Bank button to your own checkout, and the shopper’s click starts step 1. Pick a theme in
+            the code box, adjust its colours with Customise, then copy the HTML. Every option follows Token.io’s Pay by Bank design system.
+          </p>
+          <p>Token.io’s buttons, marks and fonts are free to use with Pay by Bank.</p>
+          <div className="not-prose flex flex-wrap items-center gap-x-3 gap-y-1">
+            <button
+              type="button"
+              onClick={() => setAssets(true)}
+              className="inline-flex items-center gap-2 rounded-full bg-zinc-100 px-3 py-1.5 text-sm font-medium text-zinc-700 ring-1 ring-zinc-900/5 transition hover:bg-zinc-200 hover:text-zinc-900 dark:bg-white/5 dark:text-zinc-300 dark:ring-white/10 dark:hover:bg-white/10 dark:hover:text-white"
+            >
+              <PaperClipIcon className="size-4 text-emerald-500 dark:text-emerald-400" />
+              Reference and assets
+            </button>
+            <span className="text-xs text-zinc-400 dark:text-zinc-500">{DOWNLOADS.length} downloads</span>
+          </div>
+        </Col>
+        <Col sticky>
+          <Builder />
+        </Col>
+      </Row>
       <AssetsDialog open={assets} onClose={() => setAssets(false)} />
-      <Builder />
     </>
   )
 }
