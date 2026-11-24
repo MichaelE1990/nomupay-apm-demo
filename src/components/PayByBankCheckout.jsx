@@ -2,12 +2,12 @@
 
 // "Brand customisations" on the Integration page (Server to Server), laid out like the steps: the
 // intro and a link to Token.io's files (in a modal) on the left, the code box on the right. The
-// code box has Preview and HTML tabs, a theme picker and Customise in its bottom bar, and a tray of
-// colour settings. Every option is one Token.io's Pay by Bank design system (Nov 2026) allows.
-// The theme mock-ups and bank icons come from Mikey's Canva boards ("Button Mock Ups", "Bank App
-// Icons").
-import '@fontsource-variable/inter'
-
+// code box builds the Pay by Bank payment option for a checkout's list of payment options: Preview
+// and HTML tabs, a theme picker (Token.io's bank icon mark or app icon mark) and Customise in its
+// bottom bar, and a tray for the layout, the mark's colours, a badge and a line of context. Every
+// option follows Token.io's Pay by Bank design system (Nov 2026), including its tips for driving
+// adoption. The theme mock-ups and bank icons come from Mikey's Canva boards ("Button Mock Ups",
+// "Bank App Icons"); the bank icon mark is rebuilt from Token.io's SVG files.
 import {
   CloseButton,
   Dialog,
@@ -34,30 +34,14 @@ import { highlightHtml } from '@/lib/highlight'
 
 export const CHECKOUT_SECTION = { id: 'brand-customisations', title: 'Brand customisations' }
 
-const INTER = "'Inter Variable', Inter, system-ui, sans-serif"
-
 // Token.io's downloads (Google Drive), from the design system's Basics page
 const DOWNLOADS = [
-  { label: 'Pay by Bank buttons', meta: 'PNG, SVG', href: 'https://drive.google.com/drive/folders/13SWDc_5MLZIN_UAZ-K7xcwynLV44eOJc' },
   { label: 'Bank icon mark', meta: 'PNG, SVG', href: 'https://drive.google.com/drive/folders/1HgPiyaoa-iQXfKYiHknFQWQcmHSbZEIt' },
   { label: 'App icon mark', meta: 'PNG, SVG', href: 'https://drive.google.com/drive/folders/1qaNAt-rUemcl0J2MsJPIBbPe_kCy24in' },
+  { label: 'Pay by Bank buttons', meta: 'PNG, SVG', href: 'https://drive.google.com/drive/folders/13SWDc_5MLZIN_UAZ-K7xcwynLV44eOJc' },
   { label: 'Word mark', meta: 'PNG, SVG', href: 'https://drive.google.com/drive/folders/13iIvewb8WG4bW18fxF-Bz2L-PlccVRWG' },
   { label: 'Inter font', meta: 'Google Fonts', href: 'https://fonts.google.com/specimen/Inter' },
 ]
-
-// The generic bank icon (a temple) and the plus sign that means "and many more banks"
-const TEMPLE = 'M12 1.5 1.5 7v2.5h21V7L12 1.5ZM3.25 11h2.5v8h-2.5zM8.25 11h2.5v8h-2.5zM13.25 11h2.5v8h-2.5zM18.25 11h2.5v8h-2.5zM1.5 20h21v2.5h-21z'
-const PLUS = 'M33 6.5v11M27.5 12h11'
-const ICON_SVG = `<svg viewBox="0 0 40 24" aria-hidden="true"><path fill="currentColor" d="${TEMPLE}"/><path fill="none" stroke="currentColor" stroke-width="1.75" d="${PLUS}"/></svg>`
-
-function BankIconMark({ className, style }) {
-  return (
-    <svg viewBox="0 0 40 24" aria-hidden="true" className={clsx('flex-none', className)} style={style}>
-      <path fill="currentColor" d={TEMPLE} />
-      <path fill="none" stroke="currentColor" strokeWidth="1.75" d={PLUS} />
-    </svg>
-  )
-}
 
 const BRAND_DEFAULT = '#0190f7'
 
@@ -67,38 +51,58 @@ function textOn(hex) {
   return 0.2126 * r + 0.7152 * g + 0.0722 * b > 0.4 ? '#000000' : '#ffffff'
 }
 
+const escape = (t) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 
-// What Token.io's design system allows on a button. Effects (shadows, glows, gradients) aren't. With bank app icons the background is
-// white or #f2f2f2 only, with a black or grey border; the generic icon also takes black or
-// one colour of your own. Borders are 2px and go on white backgrounds only.
-// The themes, with mock-ups from the "Button Mock Ups" Canva board (public/images/pay-by-bank)
-const THEMES = [
-  {
-    id: 'generic',
-    label: 'Generic bank icon',
-    text: 'A bank icon and a plus sign. Works in every market.',
-    image: '/images/pay-by-bank/theme-generic.png',
-  },
-  {
-    id: 'apps',
-    label: 'Bank app icons',
-    text: 'Your market’s top three banks’ app icons and a plus sign, so shoppers spot their own bank.',
-    warning: 'Token.io’s permission doesn’t cover banks’ app icons. Check with your legal team before you use them.',
-    image: '/images/pay-by-bank/theme-apps.png',
-  },
+// Token.io's bank icon mark, rebuilt from its SVG files so it takes any of the design system's
+// colours: a box (filled, or with an outline), the bank icon and the plus sign
+const MARK_TEMPLE = 'M 97.98 49.19 C 99.55 49.19 100.83 47.91 100.83 46.33 L 100.83 38.07 C 100.83 37 100.24 36.03 99.29 35.54 L 68.8 19.73 C 67.41 19.02 65.76 19.02 64.38 19.73 L 33.88 35.54 C 32.93 36.02 32.34 37 32.34 38.07 L 32.34 46.33 C 32.34 47.91 33.62 49.19 35.19 49.19 L 36.62 49.19 L 36.62 82.04 L 35.19 82.04 C 33.62 82.04 32.34 83.32 32.34 84.89 L 32.34 90.61 C 32.34 92.18 33.62 93.46 35.19 93.46 L 97.98 93.46 C 99.55 93.46 100.83 92.18 100.83 90.61 L 100.83 84.89 C 100.83 83.32 99.55 82.04 97.98 82.04 L 96.55 82.04 L 96.55 49.19 Z M 70.87 49.19 L 70.87 82.04 L 62.3 82.04 L 62.3 49.19 Z M 45.18 49.19 L 53.74 49.19 L 53.74 82.04 L 45.18 82.04 Z M 87.99 82.04 L 79.43 82.04 L 79.43 49.19 L 87.99 49.19 Z M 87.99 82.04'
+const MARK_PLUS = 'M 153.11 56.95 L 139.38 56.95 C 138.29 56.95 137.41 56.07 137.41 54.98 L 137.41 41.24 C 137.41 40.16 136.53 39.28 135.45 39.28 C 134.36 39.28 133.48 40.16 133.48 41.24 L 133.48 54.98 C 133.48 56.07 132.61 56.95 131.52 56.95 L 117.78 56.95 C 116.7 56.95 115.82 57.82 115.82 58.91 C 115.82 59.99 116.7 60.87 117.78 60.87 L 131.52 60.87 C 132.61 60.87 133.48 61.75 133.48 62.83 L 133.48 76.57 C 133.48 77.66 134.36 78.54 135.45 78.54 C 136.53 78.54 137.41 77.66 137.41 76.57 L 137.41 62.83 C 137.41 61.75 138.29 60.87 139.38 60.87 L 153.11 60.87 C 154.2 60.87 155.08 59.99 155.08 58.91 C 155.08 57.82 154.2 56.95 153.11 56.95 Z M 153.11 56.95'
+
+const MARK_STYLES = [
+  { id: 'black-outline', label: 'Black outline', bg: '#ffffff', line: '#000000', icon: '#000000' },
+  { id: 'grey-outline', label: 'Grey outline', bg: '#ffffff', line: '#b4b4b4', icon: '#000000' },
+  { id: 'grey-fill', label: 'Grey fill', bg: '#f7f7f7', icon: '#000000' },
+  { id: 'black-fill', label: 'Black fill', bg: '#000000', icon: '#ffffff' },
+  { id: 'brand-fill', label: 'Your colour, fill', custom: true },
+  { id: 'brand-outline', label: 'Your colour, outline', custom: true },
 ]
-const BACKGROUNDS = [
-  { id: 'white', label: 'White', hex: () => '#ffffff' },
-  { id: 'grey', label: 'Light grey', hex: (icon) => (icon === 'apps' ? '#f2f2f2' : '#f7f7f7') },
-  { id: 'black', label: 'Black', hex: () => '#000000', generic: true },
-  { id: 'brand', label: 'Your colour', generic: true },
-]
-const BORDERS = [
-  { id: 'none', label: 'None' },
-  { id: 'black', label: 'Black', hex: '#000000' },
-  { id: 'grey', label: 'Grey', hex: '#b4b4b4' },
-  { id: 'brand', label: 'Your colour', generic: true },
-]
+
+function markColours(id, brand) {
+  if (id === 'brand-fill') return { bg: brand, icon: textOn(brand) }
+  if (id === 'brand-outline') return { bg: '#ffffff', line: brand, icon: brand }
+  let { bg, line, icon } = MARK_STYLES.find((s) => s.id === id)
+  return { bg, line, icon }
+}
+
+// The box's outline is 3.7 units wide in a 187 × 116 mark, as in Token.io's files
+function markBox(m) {
+  return m.line
+    ? { x: 2.5, y: 1.85, width: 182.1, height: 111.7, rx: 7, fill: m.bg, stroke: m.line, strokeWidth: 3.7 }
+    : { x: 0.65, y: 0, width: 185.6, height: 115.4, rx: 8, fill: m.bg }
+}
+
+function markSvg(m) {
+  let b = markBox(m)
+  let stroke = b.stroke ? ` stroke="${b.stroke}" stroke-width="${b.strokeWidth}"` : ''
+  return [
+    '<svg class="pay-by-bank-mark" viewBox="0 0 187 116" aria-hidden="true">',
+    `    <rect x="${b.x}" y="${b.y}" width="${b.width}" height="${b.height}" rx="${b.rx}" fill="${b.fill}"${stroke}/>`,
+    `    <path fill="${m.icon}" d="${MARK_TEMPLE}"/>`,
+    `    <path fill="${m.icon}" d="${MARK_PLUS}"/>`,
+    '  </svg>',
+  ].join('\n')
+}
+
+function BankIconMark({ m, className }) {
+  let { strokeWidth, ...b } = markBox(m)
+  return (
+    <svg viewBox="0 0 187 116" aria-hidden="true" className={clsx('flex-none', className)}>
+      <rect {...b} strokeWidth={strokeWidth} />
+      <path fill={m.icon} d={MARK_TEMPLE} />
+      <path fill={m.icon} d={MARK_PLUS} />
+    </svg>
+  )
+}
 
 // The UK's top three banks for the preview, from the "Bank App Icons" Canva board. The HTML keeps
 // placeholders: merchants add their own market's banks.
@@ -108,40 +112,139 @@ const BANK_ICONS = [
   { name: 'Lloyds', src: '/images/pay-by-bank/bank-lloyds.png' },
 ]
 
-function settle({ icon, bg, border, brand }) {
-  let fill = bg === 'brand' ? brand : BACKGROUNDS.find((b) => b.id === bg).hex(icon)
-  let line = bg !== 'white' || border === 'none' ? null : border === 'brand' ? brand : BORDERS.find((b) => b.id === border).hex
-  return { icon, bg: fill, border: line, text: textOn(fill) }
+function AppIconMark({ size = 24 }) {
+  return (
+    <span className="inline-flex flex-none" style={{ gap: Math.round(size * 0.15) }} aria-hidden="true">
+      {BANK_ICONS.map((b) => (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img key={b.name} src={b.src} alt="" className="rounded-[25%]" style={{ width: size, height: size }} />
+      ))}
+      <span className="inline-flex items-center justify-center rounded-[25%] bg-[#b4b4b4] text-white" style={{ width: size, height: size }}>
+        <svg viewBox="0 0 10 10" className="size-[55%]" aria-hidden="true">
+          <path d="M5 1v8M1 5h8" stroke="currentColor" strokeWidth="1.3" />
+        </svg>
+      </span>
+    </span>
+  )
 }
 
-function buttonCode(c) {
-  let apps = c.icon === 'apps'
+// The themes are Token.io's two payment marks, with mock-ups from the "Button Mock Ups" Canva board
+const THEMES = [
+  {
+    id: 'icon',
+    label: 'Bank icon mark',
+    text: 'A bank icon and a plus sign beside the words “Pay by Bank”. Works in every market.',
+    image: '/images/pay-by-bank/theme-generic.png',
+  },
+  {
+    id: 'apps',
+    label: 'App icon mark',
+    text: 'Your market’s top three banks’ app icons and a plus sign, so shoppers spot their own bank.',
+    warning: 'Token.io’s permission doesn’t cover banks’ app icons. Check with your legal team before you use them.',
+    image: '/images/pay-by-bank/theme-apps.png',
+  },
+]
+
+// Where the mark and the radio button sit (Token.io's examples show all three)
+const LAYOUTS = [
+  { id: 'mark-end', label: 'Text, then mark', short: 'Text first' },
+  { id: 'mark-first', label: 'Mark, then text', short: 'Mark first' },
+  { id: 'radio-end', label: 'Mark first, radio at the end', short: 'Radio last' },
+]
+
+// Token.io's tips: flag it as popular, or offer an incentive
+const BADGE_TONES = {
+  blue: { bg: '#d4f3ff', text: '#075985' },
+  green: { bg: '#bdf7dc', text: '#065f46' },
+}
+const BADGES = [
+  { id: 'none', label: 'None' },
+  { id: 'popular', label: 'Popular', text: 'Popular', tone: 'blue' },
+  { id: 'recommended', label: 'Recommended', text: 'Recommended', tone: 'blue' },
+  { id: 'incentive', label: 'Your incentive', tone: 'green', custom: true },
+]
+
+// Token.io's tips: add context, show social proof, promote security
+const CONTEXTS = [
+  { id: 'none', label: 'None' },
+  { id: 'no-card', label: 'Easy & secure. No card details required.' },
+  { id: 'bank-account', label: 'Pay securely from your bank account.' },
+  { id: 'security', label: 'Bank-grade security. Fully encrypted.' },
+  { id: 'own', label: 'Your own text', custom: true },
+]
+
+function badgeOf(s) {
+  let b = BADGES.find((x) => x.id === s.badge)
+  if (b.id === 'none') return null
+  let text = b.custom ? s.incentive.trim() : b.text
+  let tone = BADGE_TONES[b.tone]
+  return text ? { text, bg: tone.bg, color: tone.text } : null
+}
+
+function contextOf(s) {
+  let c = CONTEXTS.find((x) => x.id === s.context)
+  if (c.id === 'none') return null
+  return (c.custom ? s.ownContext.trim() : c.label) || null
+}
+
+// The HTML for the Pay by Bank option, as one row of a checkout's payment options
+function optionCode(s) {
+  let apps = s.theme === 'apps'
+  let badge = badgeOf(s)
+  let context = contextOf(s)
+  let mark = apps
+    ? [
+        '<span class="pay-by-bank-mark" aria-hidden="true">',
+        '    <!-- Your market’s top three banks’ app icons, from the App Store -->',
+        '    <img src="bank-app-icon-1.png" alt="">',
+        '    <img src="bank-app-icon-2.png" alt="">',
+        '    <img src="bank-app-icon-3.png" alt="">',
+        '    <span class="pay-by-bank-more">+</span>',
+        '  </span>',
+      ].join('\n')
+    : markSvg(markColours(s.mark, s.brand))
+  let radio = '<input type="radio" name="payment-method" value="pay-by-bank">'
+  let label = [
+    '<span class="pay-by-bank-label">',
+    '    <span class="pay-by-bank-name">Pay by Bank</span>',
+    ...(badge ? [`    <span class="pay-by-bank-badge">${escape(badge.text)}</span>`] : []),
+    ...(context ? [`    <span class="pay-by-bank-context">${escape(context)}</span>`] : []),
+    '  </span>',
+  ].join('\n')
+  let order = s.layout === 'mark-end' ? [radio, label, mark] : s.layout === 'mark-first' ? [radio, mark, label] : [mark, label, radio]
+
   return [
-    '<!-- Inter, from Google Fonts -->',
-    '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap">',
-    '',
     '<style>',
-    '  .pay-by-bank {',
-    '    display: inline-flex;',
-    '    min-height: 48px;',
-    '    padding: 0 32px;',
+    '  .pay-by-bank-option {',
+    '    display: flex;',
     '    align-items: center;',
-    '    justify-content: center;',
-    '    gap: 0.5em;',
-    '    font: 400 18px/1 Inter, system-ui, sans-serif;',
-    '    letter-spacing: -0.03em;',
-    `    color: ${c.text};`,
-    `    background: ${c.bg};`,
-    `    border: ${c.border ? `2px solid ${c.border}` : '0'};`,
-    '    border-radius: 6px;',
+    '    gap: 12px;',
+    '    padding: 14px 16px;',
+    '    border: 1px solid #d4d4d8;',
+    '    border-radius: 8px;',
     '    cursor: pointer;',
     '  }',
-    '  .pay-by-bank strong { font-weight: 700; }',
+    '  .pay-by-bank-option:has(input:checked) { border-color: #000000; }',
+    '  .pay-by-bank-label { flex: 1; min-width: 0; }',
+    '  .pay-by-bank-name { font-weight: 600; }',
+    ...(badge
+      ? [
+          '  .pay-by-bank-badge {',
+          '    margin-left: 8px;',
+          '    padding: 2px 8px;',
+          '    border-radius: 999px;',
+          '    font-size: 12px;',
+          `    color: ${badge.color};`,
+          `    background: ${badge.bg};`,
+          '  }',
+        ]
+      : []),
+    ...(context ? ['  .pay-by-bank-context { display: block; margin-top: 2px; font-size: 13px; color: #6b7280; }'] : []),
     ...(apps
       ? [
-          '  .pay-by-bank-icons { display: inline-flex; gap: 0.17em; }',
-          '  .pay-by-bank-icons img,',
-          '  .pay-by-bank-more { width: 1.15em; height: 1.15em; border-radius: 25%; }',
+          '  .pay-by-bank-mark { display: inline-flex; flex: none; gap: 4px; }',
+          '  .pay-by-bank-mark img,',
+          '  .pay-by-bank-more { width: 24px; height: 24px; border-radius: 25%; }',
           '  /* Give icons with a white background a 2px #b4b4b4 border */',
           '  .pay-by-bank-more {',
           '    display: inline-flex;',
@@ -151,62 +254,58 @@ function buttonCode(c) {
           '    background: #b4b4b4;',
           '  }',
         ]
-      : ['  .pay-by-bank svg { height: 1em; flex: none; }']),
+      : ['  .pay-by-bank-mark { flex: none; height: 32px; }']),
     '</style>',
     '',
-    '<button type="submit" class="pay-by-bank">',
-    '  <span>Pay by <strong>Bank</strong></span>',
-    ...(apps
-      ? [
-          '  <span class="pay-by-bank-icons" aria-hidden="true">',
-          '    <!-- Your market’s top three banks’ app icons, from the App Store -->',
-          '    <img src="bank-app-icon-1.png" alt="">',
-          '    <img src="bank-app-icon-2.png" alt="">',
-          '    <img src="bank-app-icon-3.png" alt="">',
-          '    <span class="pay-by-bank-more">+</span>',
-          '  </span>',
-        ]
-      : [`  ${ICON_SVG}`]),
-    '</button>',
+    '<label class="pay-by-bank-option">',
+    ...order.map((part) => `  ${part}`),
+    '</label>',
   ].join('\n')
 }
 
-function AppIcons() {
-  return (
-    <span className="inline-flex gap-[0.17em]" aria-hidden="true">
-      {BANK_ICONS.map((b) => (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img key={b.name} src={b.src} alt="" className="size-[1.15em] rounded-[25%]" />
-      ))}
-      <span className="inline-flex size-[1.15em] items-center justify-center rounded-[25%] bg-[#b4b4b4] text-white">
-        <svg viewBox="0 0 10 10" className="size-[0.6em]" aria-hidden="true">
-          <path d="M5 1v8M1 5h8" stroke="currentColor" strokeWidth="1.4" />
-        </svg>
-      </span>
+// The preview: the option in a list of payment options, as in Token.io's examples
+function OptionPreview({ s }) {
+  let apps = s.theme === 'apps'
+  let badge = badgeOf(s)
+  let context = contextOf(s)
+  let mark = apps ? <AppIconMark size={22} /> : <BankIconMark m={markColours(s.mark, s.brand)} className="h-7 w-auto" />
+  let radio = (
+    <span className="flex size-4 flex-none items-center justify-center rounded-full ring-1 ring-zinc-900">
+      <span className="size-2 rounded-full bg-zinc-900" />
     </span>
   )
-}
-
-function ButtonPreview({ c, size = 18, pad = '1.75em' }) {
-  return (
-    <span
-      className="inline-flex items-center justify-center gap-[0.5em] rounded-md leading-none whitespace-nowrap"
-      style={{
-        paddingInline: pad,
-        fontFamily: INTER,
-        fontSize: size,
-        letterSpacing: '-0.03em',
-        minHeight: size * 2.67,
-        color: c.text,
-        background: c.bg,
-        border: c.border ? `2px solid ${c.border}` : 0,
-      }}
-    >
-      <span>
-        Pay by <strong className="font-bold">Bank</strong>
-      </span>
-      {c.icon === 'apps' ? <AppIcons /> : <BankIconMark style={{ height: '1em' }} />}
+  let label = (
+    <span className="min-w-0 flex-1">
+      <span className="font-semibold">Pay by Bank</span>
+      {badge && (
+        <span className="ml-2 rounded-full px-2 py-0.5 text-xs whitespace-nowrap" style={{ background: badge.bg, color: badge.color }}>
+          {badge.text}
+        </span>
+      )}
+      {context && <span className="mt-0.5 block text-[0.8125rem] text-zinc-500">{context}</span>}
     </span>
+  )
+  let order = s.layout === 'mark-end' ? [radio, label, mark] : s.layout === 'mark-first' ? [radio, mark, label] : [mark, label, radio]
+  return (
+    <div className="w-full max-w-md rounded-xl bg-white p-4 text-left text-sm text-zinc-900 shadow-sm ring-1 ring-zinc-900/5" style={{ fontFamily: 'system-ui, sans-serif' }}>
+      <div className="mb-2.5 text-xs text-zinc-400">Payment options</div>
+      <div className="space-y-2">
+        <div className="flex items-center gap-3 rounded-lg px-4 py-3.5 ring-1 ring-zinc-900">
+          {order.map((part, i) => (
+            <span key={i} className={clsx('flex items-center', part === label && 'min-w-0 flex-1')}>
+              {part}
+            </span>
+          ))}
+        </div>
+        {['Card', 'PayPal'].map((name) => (
+          <div key={name} className={clsx('flex items-center gap-3 rounded-lg px-4 py-3.5 text-zinc-500 ring-1 ring-zinc-200', s.layout === 'radio-end' && 'flex-row-reverse')}>
+            <span className="size-4 flex-none rounded-full ring-1 ring-zinc-300" />
+            <span className="flex-1">{name}</span>
+            <span className="h-6 w-10 flex-none rounded bg-zinc-100" />
+          </div>
+        ))}
+      </div>
+    </div>
   )
 }
 
@@ -232,8 +331,6 @@ function TickIcon(props) {
   )
 }
 
-const ROW = 'flex w-full items-center justify-between gap-3 rounded-xl px-4 py-3 text-sm'
-
 function SwapIcon(props) {
   return (
     <svg viewBox="0 0 16 16" fill="none" aria-hidden="true" {...props}>
@@ -254,13 +351,129 @@ function GearIcon(props) {
   )
 }
 
+// Your colour, typed as a hex value or picked
+function ColourInput({ value, onChange }) {
+  let [text, setText] = useState(value.slice(1))
+  return (
+    <div className="flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
+      <label className="flex flex-auto items-center rounded-md bg-white px-2 py-1 font-mono text-zinc-900 ring-1 ring-zinc-900/10 focus-within:ring-2 focus-within:ring-emerald-500 dark:bg-white/5 dark:text-white dark:ring-white/10">
+        <span className="text-zinc-400">#</span>
+        <input
+          value={text}
+          maxLength={6}
+          spellCheck={false}
+          aria-label="Your colour, as a hex value"
+          onChange={(e) => {
+            let v = e.target.value.replace(/[^0-9a-f]/gi, '')
+            setText(v)
+            if (v.length === 6) onChange(`#${v.toLowerCase()}`)
+          }}
+          className="ml-0.5 w-full bg-transparent uppercase outline-none"
+        />
+      </label>
+      <input
+        type="color"
+        value={value}
+        onChange={(e) => {
+          onChange(e.target.value)
+          setText(e.target.value.slice(1))
+        }}
+        aria-label="Pick your colour"
+        className="size-7 cursor-pointer rounded-full border-0 bg-transparent p-0 [&::-webkit-color-swatch]:rounded-full [&::-webkit-color-swatch]:border-2 [&::-webkit-color-swatch]:border-white [&::-webkit-color-swatch-wrapper]:p-0 [&::-moz-color-swatch]:rounded-full"
+      />
+    </div>
+  )
+}
+
+const ROW = 'flex w-full items-center justify-between gap-3 rounded-xl px-4 py-3 text-sm'
+
+function ChevronIcon(props) {
+  return (
+    <svg viewBox="0 0 16 16" fill="none" aria-hidden="true" {...props}>
+      <path d="m5 6.5 3-3 3 3M5 9.5l3 3 3-3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+// One setting as a row: its name, then the current choice. Clicking it opens the choices (with a
+// swatch each, if given) and, for "your own" choices, a field under them.
+function OptionRow({ label, rule, value, options, onChange, swatch, extra }) {
+  let current = options.find((o) => o.id === value)
+  return (
+    <Popover>
+      <PopoverButton
+        className={clsx(
+          ROW,
+          'bg-white text-left ring-1 ring-zinc-900/5 transition hover:bg-zinc-100 focus:outline-none data-focus:ring-2 data-focus:ring-emerald-500 data-open:bg-zinc-100 dark:bg-white/5 dark:ring-white/10 dark:hover:bg-white/10 dark:data-open:bg-white/10',
+        )}
+      >
+        <span className="flex-none text-zinc-500 dark:text-zinc-400">{label}</span>
+        <span className="flex min-w-0 items-center gap-2.5">
+          <span className="truncate font-medium text-zinc-900 dark:text-white">{current.short || current.label}</span>
+          {swatch ? swatch(current) : <ChevronIcon className="size-4 flex-none text-zinc-400" />}
+        </span>
+      </PopoverButton>
+      <PopoverPanel
+        anchor={{ to: 'bottom end', gap: 8 }}
+        transition
+        className="z-50 w-80 rounded-xl bg-white p-2 shadow-lg ring-1 ring-zinc-900/10 transition duration-150 ease-out data-closed:-translate-y-1 data-closed:opacity-0 dark:bg-zinc-900 dark:ring-white/10"
+      >
+        {({ close }) => (
+          <>
+            {rule && <p className="px-2 pt-1 pb-2 text-xs/5 text-zinc-500 dark:text-zinc-400">{rule}</p>}
+            <RadioGroup
+              value={value}
+              onChange={(v) => {
+                onChange(v)
+                if (!options.find((o) => o.id === v)?.custom) close()
+              }}
+              aria-label={label}
+            >
+              {options.map((o) => (
+                <HeadlessRadio
+                  key={o.id}
+                  value={o.id}
+                  className="group flex cursor-pointer items-center gap-3 rounded-lg px-2 py-1.5 text-sm text-zinc-700 transition hover:bg-zinc-50 focus:outline-none data-focus:bg-zinc-50 dark:text-zinc-300 dark:hover:bg-white/5 dark:data-focus:bg-white/5"
+                >
+                  {swatch && swatch(o)}
+                  <span className="flex-auto group-data-checked:font-medium group-data-checked:text-zinc-900 dark:group-data-checked:text-white">{o.label}</span>
+                  <TickIcon className="size-4 flex-none text-emerald-500 opacity-0 group-data-checked:opacity-100" />
+                </HeadlessRadio>
+              ))}
+            </RadioGroup>
+            {current.custom && extra && <div className="mt-2 border-t border-zinc-900/7.5 px-2 pt-3 pb-1 dark:border-white/10">{extra}</div>}
+          </>
+        )}
+      </PopoverPanel>
+    </Popover>
+  )
+}
+
+function TextField({ value, onChange, label, placeholder, maxLength }) {
+  return (
+    <label className="block text-xs text-zinc-500 dark:text-zinc-400">
+      {label}
+      <input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        maxLength={maxLength}
+        className="mt-1.5 block w-full rounded-md bg-white px-2.5 py-1.5 text-sm text-zinc-900 ring-1 ring-zinc-900/10 outline-none focus:ring-2 focus:ring-emerald-500 dark:bg-white/5 dark:text-white dark:ring-white/10"
+      />
+    </label>
+  )
+}
+
 // The theme, as a pill in the code box's bottom bar: its name, and a list of the themes (with
 // their mock-ups) to switch to
 function ThemePicker({ value, onChange }) {
   let current = THEMES.find((t) => t.id === value)
   return (
     <Listbox value={value} onChange={onChange}>
-      <ListboxButton aria-label={`Theme: ${current.label}`} className="group flex min-w-0 items-center gap-2 rounded-full bg-white/5 py-1 pr-1 pl-1 text-xs min-[420px]:pl-3 ring-1 ring-white/10 transition ring-inset hover:bg-white/10 focus:outline-none data-focus:ring-2 data-focus:ring-emerald-400">
+      <ListboxButton
+        aria-label={`Theme: ${current.label}`}
+        className="group flex min-w-0 items-center gap-2 rounded-full bg-white/5 py-1 pr-1 pl-1 text-xs ring-1 ring-white/10 transition ring-inset hover:bg-white/10 focus:outline-none data-focus:ring-2 data-focus:ring-emerald-400 min-[420px]:pl-3"
+      >
         <span className="hidden text-zinc-400 min-[420px]:inline">Theme</span>
         <span className="flex min-w-0 items-center gap-1.5 rounded-full bg-white/10 py-0.5 pr-1.5 pl-2.5 font-medium text-white">
           <span className="truncate">{current.label}</span>
@@ -299,140 +512,28 @@ function ThemePicker({ value, onChange }) {
   )
 }
 
-// A colour setting as one row: its name, then the current colour. Clicking it opens the colours
-// the rules allow, with your own colour at the end.
-function ColourRow({ label, rule, value, options, onChange, brand, onBrand, disabled }) {
-  let current = options.find((o) => o.id === value)
-  return (
-    <Popover>
-      <PopoverButton
-        disabled={Boolean(disabled)}
-        className={clsx(
-          ROW,
-          'bg-zinc-100 text-left transition hover:bg-zinc-200/60 focus:outline-none data-disabled:cursor-not-allowed data-disabled:hover:bg-zinc-100 data-focus:ring-2 data-focus:ring-emerald-500 data-open:bg-zinc-200/60 dark:bg-white/5 dark:hover:bg-white/10 dark:data-disabled:hover:bg-white/5 dark:data-open:bg-white/10',
-        )}
-      >
-        <span className="text-zinc-500 dark:text-zinc-400">{label}</span>
-        <span className="flex min-w-0 items-center gap-3">
-          <span className={clsx('truncate', disabled ? 'text-xs text-zinc-400 dark:text-zinc-500' : 'font-medium text-zinc-900 dark:text-white')}>
-            {disabled || current.label}
-          </span>
-          <Dot hex={current.hex} none={value === 'none'} size="size-7" />
-        </span>
-      </PopoverButton>
-      <PopoverPanel
-        anchor={{ to: 'bottom end', gap: 8 }}
-        transition
-        className="z-50 w-72 rounded-xl bg-white p-2 shadow-lg ring-1 ring-zinc-900/10 transition duration-150 ease-out data-closed:-translate-y-1 data-closed:opacity-0 dark:bg-zinc-900 dark:ring-white/10"
-      >
-        {({ close }) => (
-          <>
-            <p className="px-2 pt-1 pb-2 text-xs/5 text-zinc-500 dark:text-zinc-400">{rule}</p>
-            <RadioGroup
-              value={value}
-              onChange={(v) => {
-                onChange(v)
-                if (v !== 'brand') close()
-              }}
-              aria-label={label}
-            >
-              {options.map((o) => (
-                <HeadlessRadio
-                  key={o.id}
-                  value={o.id}
-                  disabled={Boolean(o.off)}
-                  className="group flex cursor-pointer items-center gap-3 rounded-lg px-2 py-1.5 text-sm text-zinc-700 transition hover:bg-zinc-50 focus:outline-none data-disabled:cursor-not-allowed data-disabled:hover:bg-transparent data-focus:bg-zinc-50 dark:text-zinc-300 dark:hover:bg-white/5 dark:data-focus:bg-white/5"
-                >
-                  <Dot hex={o.hex} none={o.id === 'none'} off={o.off} size="size-5" />
-                  <span className="flex-auto group-data-checked:font-medium group-data-checked:text-zinc-900 group-data-disabled:text-zinc-400 group-data-disabled:line-through dark:group-data-checked:text-white dark:group-data-disabled:text-zinc-500">
-                    {o.label}
-                  </span>
-                  {o.off ? (
-                    <span className="text-xs text-zinc-400 dark:text-zinc-500">{o.off}</span>
-                  ) : (
-                    <TickIcon className="size-4 text-emerald-500 opacity-0 group-data-checked:opacity-100" />
-                  )}
-                </HeadlessRadio>
-              ))}
-            </RadioGroup>
-            {value === 'brand' && (
-              <div className="mt-2 border-t border-zinc-900/7.5 px-2 pt-3 pb-1 dark:border-white/10">
-                <ColourInput value={brand} onChange={onBrand} />
-              </div>
-            )}
-          </>
-        )}
-      </PopoverPanel>
-    </Popover>
-  )
-}
-
-// Your colour, typed as a hex value or picked
-function ColourInput({ value, onChange }) {
-  let [text, setText] = useState(value.slice(1))
-  return (
-    <div className="flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
-      <label className="flex flex-auto items-center rounded-md bg-white px-2 py-1 font-mono text-zinc-900 ring-1 ring-zinc-900/10 focus-within:ring-2 focus-within:ring-emerald-500 dark:bg-white/5 dark:text-white dark:ring-white/10">
-        <span className="text-zinc-400">#</span>
-        <input
-          value={text}
-          maxLength={6}
-          spellCheck={false}
-          aria-label="Your colour, as a hex value"
-          onChange={(e) => {
-            let v = e.target.value.replace(/[^0-9a-f]/gi, '')
-            setText(v)
-            if (v.length === 6) onChange(`#${v.toLowerCase()}`)
-          }}
-          className="ml-0.5 w-full bg-transparent uppercase outline-none"
-        />
-      </label>
-      <input
-        type="color"
-        value={value}
-        onChange={(e) => {
-          onChange(e.target.value)
-          setText(e.target.value.slice(1))
-        }}
-        aria-label="Pick your colour"
-        className="size-7 cursor-pointer rounded-full border-0 bg-transparent p-0 [&::-webkit-color-swatch]:rounded-full [&::-webkit-color-swatch]:border-2 [&::-webkit-color-swatch]:border-white [&::-webkit-color-swatch-wrapper]:p-0 [&::-moz-color-swatch]:rounded-full"
-      />
-    </div>
-  )
-}
-
 // The code box: Preview and HTML tabs, the theme and Customise in the bottom bar, and the
-// settings tray that slides out from under it
+// settings tray that slides out from under it, the same width as the box
 function Builder() {
-  let [icon, setIcon] = useState('generic')
-  let [bg, setBg] = useState('white')
-  let [border, setBorder] = useState('black')
-  let [brand, setBrand] = useState(BRAND_DEFAULT)
+  let [s, setS] = useState({
+    theme: 'icon',
+    layout: 'mark-end',
+    mark: 'black-outline',
+    brand: BRAND_DEFAULT,
+    badge: 'none',
+    incentive: '10% off',
+    context: 'none',
+    ownContext: '',
+  })
   let [settings, setSettings] = useState(false)
+  let set = (key) => (value) => setS((prev) => ({ ...prev, [key]: value }))
+  let code = optionCode(s)
 
-  let apps = icon === 'apps'
-  let c = settle({ icon, bg, border, brand })
-  let code = buttonCode(c)
-
-  // Bank app icons only go on white or light grey, with a black or grey border
-  function changeTheme(next) {
-    setIcon(next)
-    if (next === 'apps') {
-      if (bg === 'black' || bg === 'brand') setBg('white')
-      if (border === 'brand') setBorder('black')
-    }
+  let markSwatch = (o) => <BankIconMark m={markColours(o.id, s.brand)} className="h-5 w-auto" />
+  let badgeSwatch = (o) => {
+    let tone = o.tone && BADGE_TONES[o.tone]
+    return tone ? <span className="size-4 flex-none rounded-full" style={{ background: tone.bg, boxShadow: `inset 0 0 0 1px ${tone.text}33` }} /> : <Dot none size="size-4" />
   }
-
-  let backgrounds = BACKGROUNDS.map((b) => ({
-    ...b,
-    hex: b.id === 'brand' ? brand : b.hex(icon),
-    off: apps && b.generic ? 'Generic icon only' : null,
-  }))
-  let borders = BORDERS.map((b) => ({
-    ...b,
-    hex: b.id === 'brand' ? brand : b.hex,
-    off: apps && b.generic ? 'Generic icon only' : null,
-  }))
 
   return (
     <div className="not-prose">
@@ -442,13 +543,13 @@ function Builder() {
         html={highlightHtml(code)}
         codeTab="HTML"
         preview={
-          <div className="flex min-h-56 items-center justify-center bg-white bg-[radial-gradient(var(--color-zinc-200)_1px,transparent_1px)] [background-size:12px_12px] p-6">
-            <ButtonPreview c={c} />
+          <div className="flex min-h-80 items-center justify-center bg-zinc-50 bg-[radial-gradient(var(--color-zinc-200)_1px,transparent_1px)] [background-size:12px_12px] p-6">
+            <OptionPreview s={s} />
           </div>
         }
         footer={
           <div className="flex items-center justify-between gap-3">
-            <ThemePicker value={icon} onChange={changeTheme} />
+            <ThemePicker value={s.theme} onChange={set('theme')} />
             <button
               type="button"
               onClick={() => setSettings((open) => !open)}
@@ -472,26 +573,49 @@ function Builder() {
           <div
             id="pay-by-bank-settings"
             inert={!settings}
-            className="mx-2 -mt-4 space-y-2 rounded-b-2xl bg-zinc-50 px-3 pt-7 pb-3 ring-1 ring-zinc-900/7.5 dark:bg-white/2.5 dark:ring-white/10"
+            className="-mt-4 grid gap-2 rounded-b-2xl bg-zinc-100 px-3 pt-7 pb-3 ring-1 ring-zinc-900/7.5 ring-inset sm:grid-cols-2 dark:bg-zinc-800/60 dark:ring-white/10"
           >
-            <ColourRow
-              label="Background"
-              rule={apps ? 'White or light grey with bank app icons.' : 'White, light grey, black or one colour of your own.'}
-              value={bg}
-              options={backgrounds}
-              onChange={setBg}
-              brand={brand}
-              onBrand={setBrand}
+            <OptionRow label="Layout" value={s.layout} options={LAYOUTS} onChange={set('layout')} rule="Where the mark and the radio button sit." />
+            {s.theme === 'icon' ? (
+              <OptionRow
+                label="Mark"
+                value={s.mark}
+                options={MARK_STYLES}
+                onChange={set('mark')}
+                swatch={markSwatch}
+                rule="Token.io’s bank icon mark colours, or one of your own."
+                extra={<ColourInput value={s.brand} onChange={set('brand')} />}
+              />
+            ) : (
+              <div className={clsx(ROW, 'text-zinc-500 ring-1 ring-zinc-900/5 ring-inset dark:text-zinc-400 dark:ring-white/10')}>
+                <span>Mark</span>
+                <span className="text-xs">Set by the theme</span>
+              </div>
+            )}
+            <OptionRow
+              label="Badge"
+              value={s.badge}
+              options={BADGES}
+              onChange={set('badge')}
+              swatch={badgeSwatch}
+              rule="Flag Pay by Bank as popular, or offer an incentive such as a discount or loyalty points."
+              extra={<TextField label="Your incentive" value={s.incentive} onChange={set('incentive')} placeholder="10% off" maxLength={24} />}
             />
-            <ColourRow
-              label="Border"
-              rule="2px wide, on white backgrounds only."
-              value={bg === 'white' ? border : 'none'}
-              options={borders}
-              onChange={setBorder}
-              brand={brand}
-              onBrand={setBrand}
-              disabled={bg === 'white' ? null : 'White backgrounds only'}
+            <OptionRow
+              label="Context"
+              value={s.context}
+              options={CONTEXTS.map((c) => ({ ...c, short: c.id === 'none' ? 'None' : c.custom ? 'Your own' : c.label }))}
+              onChange={set('context')}
+              rule="A line under “Pay by Bank”. A little context helps shoppers choose it."
+              extra={
+                <TextField
+                  label="Your text"
+                  value={s.ownContext}
+                  onChange={set('ownContext')}
+                  placeholder="No card details or registration required."
+                  maxLength={60}
+                />
+              }
             />
           </div>
         </div>
@@ -592,8 +716,8 @@ export function PayByBankCheckout() {
       <Row>
         <Col>
           <p>
-            With Server to Server, you add the Pay by Bank button to your own checkout, and the shopper’s click starts step 1. Pick a theme in
-            the code box, adjust its colours with Customise, then copy the HTML. Every option follows Token.io’s Pay by Bank design system.
+            With Server to Server, you add Pay by Bank to the payment options on your own checkout, and the shopper’s click starts step 1. Pick
+            a theme in the code box, adjust it with Customise, then copy the HTML. Every option follows Token.io’s Pay by Bank design system.
           </p>
           <p>Token.io’s buttons, marks and fonts are free to use with Pay by Bank.</p>
           <div className="not-prose flex flex-wrap items-center gap-x-3 gap-y-1">
