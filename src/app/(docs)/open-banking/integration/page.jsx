@@ -5,7 +5,7 @@ import { OpenBankingFlow } from '@/components/OpenBankingFlow'
 
 export const metadata = {
   title: 'Pay by Bank integration',
-  description: 'Take Pay by Bank with Pay by links from your Dashboard, or at your checkout with the API: send the payment, send the shopper to their bank and get the result.',
+  description: 'Add Pay by Bank to your checkout with our API: show the option, send the payment, send the shopper to their bank and get the result.',
 }
 
 export default function OpenBankingIntegrationPage() {
@@ -13,8 +13,7 @@ export default function OpenBankingIntegrationPage() {
     <Article>
       <h1>Integration</h1>
       <p className="lead">
-        Choose how shoppers pay: from a Pay by link you send from your Dashboard, or at your own checkout with the API. Try the API on the test
-        gateway.
+        Add Pay by Bank to your checkout with our API, and try each request on our test environment.
       </p>
       <Suspense>
         <OpenBankingFlow />

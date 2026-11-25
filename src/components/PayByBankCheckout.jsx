@@ -35,7 +35,7 @@ import { highlightHtml } from '@/lib/highlight'
 import { OB_STEPS } from '@/lib/openBanking'
 
 // Step 1 of the API integration: the Pay by Bank option on the merchant's checkout
-export const [CHECKOUT_SECTION, PAYMENT_STEP] = OB_STEPS
+export const [CHECKOUT_SECTION] = OB_STEPS
 
 // Token.io's downloads (Google Drive), from the design system's Basics page
 const DOWNLOADS = [
@@ -530,8 +530,7 @@ export function PayByBankCheckout() {
       <Row>
         <Col>
           <p>
-            Add Pay by Bank to the payment options on your checkout. The shopper’s click on it starts step {PAYMENT_STEP.step}. Pick a theme in
-            the code box, adjust it with Customise, then copy the HTML.
+            Add Pay by Bank to the payment options on your checkout. Pick a theme, customise it, then copy the HTML.
           </p>
           <p>
             For colours and other styles, see Token.io’s reference and assets. The buttons, marks and fonts are free to use with Pay by Bank.

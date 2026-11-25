@@ -18,7 +18,6 @@ import { Heading } from "@/components/Heading";
 import { OpenBankingTransactionFlow } from "@/components/OpenBankingTransactionFlow";
 import { PayByBankCheckout } from "@/components/PayByBankCheckout";
 import {
-  Callout,
   ConfirmationChart,
   JourneySteps,
   PAY_BY_BANK_JOURNEY,
@@ -119,8 +118,7 @@ function OpenBankingPlayground({
     <PlaygroundShell open={open} onClose={onClose} onReset={onReset}>
       <div className="px-5 py-4">
         <Banner>
-          Runs on the demo’s test account with the Open Banking channel, and
-          Token.io’s sandbox banks.
+          Requests go to our test environment and Token.io’s sandbox banks.
         </Banner>
       </div>
       <Section
@@ -394,22 +392,18 @@ export function OpenBankingFlow({ mode = "start" }) {
       <Row>
         <Col>
           <p>
-            Pay by Bank is our Payment Initiation Service (PIS), powered by
-            Open Banking and delivered with our partner Token.io. Each payment
-            is a one-off payment the shopper approves with their own bank, in
-            three steps.
+            Pay by Bank lets shoppers pay from their bank account through Open
+            Banking, with our partner Token.io. The shopper approves each
+            payment in their banking app.
           </p>
           <p>
-            The payment is asynchronous. It stays pending while the shopper
-            approves it, and the bank’s confirmation can arrive after they’re
-            back on your site. So you send the payment, send the shopper to
-            their bank, then get the final status.
+            Payments are asynchronous. A payment stays pending until the bank
+            confirms it, which can be after the shopper is back on your site,
+            so always get the final status before you confirm the order.
           </p>
         </Col>
         <Col>
-          <div className="not-prose rounded-2xl bg-zinc-50 px-6 py-6 ring-1 ring-zinc-900/5 dark:bg-white/2.5 dark:ring-white/10">
-            <JourneySteps steps={PAY_BY_BANK_JOURNEY} vertical />
-          </div>
+          <JourneySteps steps={PAY_BY_BANK_JOURNEY} vertical />
         </Col>
       </Row>
       <OpenBankingTransactionFlow />
@@ -419,13 +413,13 @@ export function OpenBankingFlow({ mode = "start" }) {
         {START.title}
       </Heading>
       <p>
-        Add Pay by Bank to your checkout and take payments with the API,
-        following the steps below. The requests run on the demo’s test account,
-        which has the Open Banking channel, with Token.io’s sandbox. Set the
-        amount, currency and bank country in the {link()}.
+        Follow the steps below to add Pay by Bank to your checkout and take
+        payments with our API. You can send each request to our test
+        environment from this page, and change the amount, currency and bank
+        country in the {link()}.
       </p>
       <p>
-        For Pay by link integration, use our{" "}
+        Using Pay by links instead? See our{" "}
         <a href={PAY_BY_LINKS_URL} target="_blank" rel="noreferrer">
           Pay by Links guide
         </a>
@@ -445,10 +439,9 @@ export function OpenBankingFlow({ mode = "start" }) {
           <Row>
             <Col>
               <p>
-                Send a server-to-server POST request with paymentBrand
-                ACI_INSTANTPAY and the country of the shopper’s bank. The
-                response is pending, with a redirect to Token.io’s page for step{" "}
-                {REDIRECT.step}.
+                Send a POST request with <code>paymentBrand=ACI_INSTANTPAY</code>{" "}
+                and the shopper’s bank country. The payment comes back pending,
+                with a redirect URL for step {REDIRECT.step}.
               </p>
               <h3>Properties</h3>
               <RequestProperties
@@ -566,20 +559,16 @@ export function OpenBankingFlow({ mode = "start" }) {
           <Row>
             <Col>
               <p>
-                Send the shopper to the redirect URL from step {PAYMENT.step}’s
-                response. It’s always a GET request, with no parameters. On
-                Token.io’s page they pick their bank and approve the payment in
-                their banking app, then come back to your shopperResultUrl.
+                Redirect the shopper to <code>redirect.url</code> from step{" "}
+                {PAYMENT.step}’s response. They choose their bank, approve the
+                payment and return to your <code>shopperResultUrl</code>.
               </p>
               <p>
-                Token.io’s page can’t open inside another site, so open it in a
-                new window or redirect the whole page.
+                Token.io’s page can’t load in an iframe, so open it in a new
+                window or redirect the whole page.
               </p>
               <h3>Parameters</h3>
-              <p>
-                The request comes from the redirect object in step{" "}
-                {PAYMENT.step}’s response.
-              </p>
+              <p>These come from step {PAYMENT.step}’s response.</p>
               <ParamGroups>
                 <ParamGroup title="Request">
                   {REDIRECT_DOC.children.map((d) => (
@@ -637,9 +626,16 @@ export function OpenBankingFlow({ mode = "start" }) {
           <Row>
             <Col>
               <p>
-                When the shopper comes back to your shopperResultUrl, it carries
-                the payment’s id and resourcePath. Send a GET request for the
-                payment with your entityId to get its status. {THROTTLED_TEXT}
+                When the shopper returns to your <code>shopperResultUrl</code>,
+                send a GET request with the payment’s <code>id</code> to get its
+                status. You can check each payment twice a minute.
+              </p>
+              <p>
+                Some banks take longer to confirm. A result code of{" "}
+                <code>000.200.000</code> or <code>000.200.001</code> means it’s
+                still pending: check again or wait for the webhook. Meanwhile,
+                tell the shopper you’ll email them once it’s confirmed, so they
+                don’t pay twice.
               </p>
               <h3>Properties</h3>
               <RequestProperties
@@ -668,20 +664,6 @@ export function OpenBankingFlow({ mode = "start" }) {
                   response={state.result?.response}
                 />
               </ParamGroups>
-              <h3>When the payment is still pending</h3>
-              <p>
-                Some banks take longer to confirm, so the shopper can be back
-                before the payment is final. A status of 000.200.000 or
-                000.200.001 is still pending, not declined. Get the final status
-                by checking again, or with a webhook notification when the bank
-                confirms.
-              </p>
-              <Callout title="Don’t keep the shopper waiting">
-                Show a message like this, and email them when the payment is
-                approved: “Your order is being processed. We’re confirming your
-                payment with your bank and will email you when it’s approved, so
-                there’s no need to pay again.”
-              </Callout>
               <ConfirmationChart
                 rows={CONFIRMATION_TIMES}
                 source="Source: Nomupay, Open Banking API guide."
