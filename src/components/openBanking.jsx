@@ -16,10 +16,6 @@ const icon = (d, extra = null) =>
     )
   }
 
-export const BankIcon = icon('M2.75 7.25 10 3.25l7.25 4H2.75ZM4.75 9.5v5M8.25 9.5v5M11.75 9.5v5M15.25 9.5v5M2.75 16.75h14.5')
-export const FingerprintIcon = icon(
-  'M5.5 15.25c.9-1.4 1.25-3 1.25-5.25a3.25 3.25 0 0 1 6.5 0c0 .9-.05 1.75-.15 2.5M10 10c0 2.6-.6 4.75-1.75 6.5M12.75 15.25c.3-.75.55-1.6.7-2.5M3.6 12.5c.25-.8.4-1.6.4-2.5a6 6 0 0 1 10.75-3.65M15.75 8.25c.15.55.25 1.15.25 1.75 0 1.5-.15 2.75-.45 3.9',
-)
 export const CheckCircleIcon = icon('M6.75 10.25 9 12.5l4.25-4.75M17.25 10a7.25 7.25 0 1 1-14.5 0 7.25 7.25 0 0 1 14.5 0Z')
 export const ShieldIcon = icon('M10 2.75 4 5v4.5c0 3.6 2.55 6.55 6 7.75 3.45-1.2 6-4.15 6-7.75V5l-6-2.25ZM7.5 10l1.75 1.75L12.75 8')
 export const LinkIcon = icon('M8.25 11.75a3.25 3.25 0 0 0 4.6 0l2.4-2.4a3.25 3.25 0 0 0-4.6-4.6l-.9.9M11.75 8.25a3.25 3.25 0 0 0-4.6 0l-2.4 2.4a3.25 3.25 0 0 0 4.6 4.6l.9-.9')
@@ -29,41 +25,51 @@ export const DownloadIcon = icon('M10 3.25v9.5m0 0-3.5-3.5M10 12.75l3.5-3.5M3.75
 
 // The shopper's journey, from the Pay by Bank one-pager
 export const PAY_BY_BANK_JOURNEY = [
-  { icon: BankIcon, title: 'Select bank', text: 'The shopper chooses Pay by Bank at checkout, or opens your Pay by link, and picks their bank.' },
-  { icon: FingerprintIcon, title: 'Authenticate', text: 'They sign in to their banking app to verify the payment.' },
-  { icon: CheckCircleIcon, title: 'Approve', text: 'They approve the payment, and their bank confirms it.' },
+  { title: 'Select bank', text: 'Chooses Pay by Bank at checkout or in your Pay by link, then picks their bank.' },
+  { title: 'Authenticate', text: 'Signs in to their banking app.' },
+  { title: 'Approve', text: 'Approves the payment, and their bank confirms it.' },
 ]
 
-function IconBadge({ icon: Icon, className }) {
+function StepCheck(props) {
   return (
-    <span
-      className={clsx(
-        'flex size-10 flex-none items-center justify-center rounded-full bg-emerald-50 ring-1 ring-emerald-500/15 dark:bg-emerald-400/10 dark:ring-emerald-400/20',
-        className,
-      )}
-    >
-      <Icon className="size-5 stroke-emerald-600 dark:stroke-emerald-400" />
-    </span>
+    <svg viewBox="0 0 16 16" fill="none" aria-hidden="true" {...props}>
+      <path d="m4.5 8.25 2.25 2.25 4.75-5" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
   )
 }
 
-// The shopper's three steps, joined by arrows on wide screens
+// Steps as a tracker: circles joined by a line, the earlier steps grey and the last one in the brand
+// colour. Across on wider screens, down on phones
 export function JourneySteps({ steps, className }) {
   return (
-    <ol className={clsx('not-prose my-8 grid grid-cols-1 gap-4 sm:grid-cols-3 xl:max-w-none', className)}>
-      {steps.map((s, i) => (
-        <li key={s.title} className="relative rounded-2xl bg-zinc-50 p-5 ring-1 ring-zinc-900/7.5 dark:bg-white/2.5 dark:ring-white/10">
-          <IconBadge icon={s.icon} />
-          <p className="mt-4 text-sm font-semibold text-zinc-900 dark:text-white">
-            <span className="mr-1.5 text-emerald-600 dark:text-emerald-400">{i + 1}.</span>
-            {s.title}
-          </p>
-          <p className="mt-1 text-sm/6 text-zinc-600 dark:text-zinc-400">{s.text}</p>
-          {i < steps.length - 1 && (
-            <ArrowRightIcon className="absolute top-10 -right-3.5 z-10 hidden size-5 rounded-full bg-white stroke-zinc-400 ring-1 ring-zinc-900/10 sm:block dark:bg-zinc-900 dark:ring-white/10" />
-          )}
-        </li>
-      ))}
+    <ol className={clsx('not-prose my-8 grid grid-cols-1 gap-6 sm:grid-cols-3 sm:gap-0', className)}>
+      {steps.map((s, i) => {
+        let last = i === steps.length - 1
+        return (
+          <li key={s.title} className="relative flex gap-4 sm:block sm:pr-8">
+            {!last && (
+              <span
+                aria-hidden="true"
+                className="absolute top-10 -bottom-4 left-[15px] w-0.5 rounded-full bg-emerald-600/70 sm:top-[15px] sm:right-2 sm:bottom-auto sm:left-10 sm:h-0.5 sm:w-auto dark:bg-emerald-400/60"
+              />
+            )}
+            <span
+              className={clsx(
+                'relative flex size-8 flex-none items-center justify-center rounded-full text-white',
+                last
+                  ? 'bg-emerald-600 ring-4 ring-emerald-600/15 dark:bg-emerald-500 dark:ring-emerald-400/20'
+                  : 'bg-zinc-300 dark:bg-zinc-600',
+              )}
+            >
+              <StepCheck className="size-4" />
+            </span>
+            <div className="min-w-0 pt-1 sm:mt-4 sm:pt-0">
+              <p className="text-sm font-semibold text-zinc-900 dark:text-white">{s.title}</p>
+              <p className="mt-1 text-[0.8125rem]/5 text-zinc-500 dark:text-zinc-400">{s.text}</p>
+            </div>
+          </li>
+        )
+      })}
     </ol>
   )
 }
@@ -85,6 +91,19 @@ export function SpecGrid({ items }) {
 }
 
 // Numbered steps down a line, like Tailwind Plus's vertical progress steps
+export function TickList({ items }) {
+  return (
+    <ul className="mt-1 space-y-1">
+      {items.map((t) => (
+        <li key={t} className="flex items-start gap-2">
+          <StepCheck className="mt-1 size-4 flex-none text-emerald-600 dark:text-emerald-400" />
+          {t}
+        </li>
+      ))}
+    </ul>
+  )
+}
+
 export function StepList({ steps }) {
   return (
     <ol className="not-prose my-8">
@@ -258,63 +277,5 @@ export function PayByBankHero() {
         </div>
       </div>
     </div>
-  )
-}
-
-// Token.io's banner, on an off-white background instead of black
-function BasketIcon(props) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" {...props}>
-      <path d="M3 9.75h18l-1.7 8.5a2 2 0 0 1-2 1.6H6.7a2 2 0 0 1-2-1.6L3 9.75ZM8 9.75 11 4.5M16 9.75 13 4.5M3.8 13.75h16.4M9.25 9.75v10M14.75 9.75v10" />
-    </svg>
-  )
-}
-
-function LockIcon(props) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" {...props}>
-      <path d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" />
-    </svg>
-  )
-}
-
-function ArrowDownCircleIcon(props) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" {...props}>
-      <path d="m9 12.75 3 3m0 0 3-3m-3 3v-7.5M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-    </svg>
-  )
-}
-
-const BANNER_POINTS = [
-  { icon: BasketIcon, title: 'Easy to use.', text: 'No registration or card details required.' },
-  { icon: LockIcon, title: 'Secure.', text: '2.4x lower* fraud vs. traditional payment methods.' },
-  { icon: ArrowDownCircleIcon, title: 'Lower cost.', text: 'Substantial savings vs. other methods.' },
-]
-
-export function PayByBankBanner() {
-  return (
-    <figure className="not-prose my-10 xl:max-w-none">
-      <div className="grid gap-8 rounded-3xl bg-zinc-50 px-8 py-9 ring-1 ring-zinc-900/5 lg:grid-cols-[auto_1fr] lg:items-center lg:gap-14 lg:px-12 dark:bg-white/2.5 dark:ring-white/10">
-        <p className="text-3xl/9 font-medium tracking-tight text-zinc-900 dark:text-white">
-          Lower fees.
-          <br />
-          Faster payments.
-          <br />
-          No compromises.
-        </p>
-        <dl className="grid gap-6 sm:grid-cols-3 sm:gap-8">
-          {BANNER_POINTS.map((p) => (
-            <div key={p.title} className="text-sm/6 text-zinc-700 dark:text-zinc-300">
-              <p.icon className="size-8 text-zinc-900 dark:text-white" />
-              <dt className="mt-4 inline font-semibold text-zinc-900 dark:text-white">{p.title}</dt> <dd className="inline">{p.text}</dd>
-            </div>
-          ))}
-        </dl>
-      </div>
-      <figcaption className="mt-2 px-2 text-xs text-zinc-500 dark:text-zinc-400">
-        *Against payments industry norms, from Open Banking Limited data. Banner by Token.io.
-      </figcaption>
-    </figure>
   )
 }
