@@ -419,7 +419,7 @@ export function OpenBankingFlow({ mode = "start" }) {
         {START.title}
       </Heading>
       <p>
-        Add Pay by Bank to checkout and take payments with the API,
+        Add Pay by Bank to your checkout and take payments with the API,
         following the steps below. The requests run on the demo’s test account,
         which has the Open Banking channel, with Token.io’s sandbox. Set the
         amount, currency and bank country in the {link()}.
