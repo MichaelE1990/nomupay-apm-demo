@@ -5,6 +5,8 @@
 
 export const OPEN_BANKING_SECTION_URL = 'https://support.nomupay.com/hc/en-gb/sections/19215253523089-Open-Banking'
 export const PAY_BY_LINKS_URL = 'https://support.nomupay.com/hc/en-gb/articles/9409128173201-Pay-by-Links'
+// The gateway's parameter reference: every request and response parameter, with formats
+export const PARAMETERS_URL = 'https://nomupay.docs.oppwa.com/reference/parameters'
 export const COVERAGE_URL = 'https://token.io/coverage'
 export const SALES_EMAIL = 'sales@nomupay.com'
 export const SUPPORT_EMAIL = 'support@nomupay.com'

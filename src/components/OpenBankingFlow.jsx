@@ -22,7 +22,7 @@ import {
   JourneySteps,
   PAY_BY_BANK_JOURNEY,
 } from "@/components/openBanking";
-import { ParamDoc, RequestProperties } from "@/components/params";
+import { RequestProperties } from "@/components/params";
 import {
   Banner,
   PlaygroundShell,
@@ -32,7 +32,6 @@ import {
   TextField,
 } from "@/components/Playground";
 import { StepLink, StepNote, resultText } from "@/components/S2SFlow";
-import { ParamGroup, ParamGroups } from "@/components/s2sParts";
 import { useSyncSections } from "@/components/SectionProvider";
 import { SelectMenu } from "@/components/select";
 import { postJson, usePersistentState } from "@/lib/flowState";
@@ -42,18 +41,13 @@ import {
   OB_COUNTRIES,
   OB_CURRENCIES,
   OB_STEPS,
+  PARAMETERS_URL,
   PAY_BY_LINKS_URL,
   buildPaymentParams,
   currencyFor,
   defaultForm,
   missingPayment,
 } from "@/lib/openBanking";
-import {
-  PAYMENT_RESPONSE_DOCS,
-  STATUS_RESPONSE_DOCS,
-  obDoc,
-} from "@/lib/openBankingDocs";
-import { REDIRECT_DOC } from "@/lib/paramDocs";
 import {
   RETURN_MESSAGE,
   redirectSnippet,
@@ -92,15 +86,6 @@ function isEmbedded() {
   );
 }
 
-function ResponseParams({ docs, response }) {
-  return (
-    <ParamGroup title="Response">
-      {docs.map((d) => (
-        <ParamDoc key={d.name} doc={d} value={response?.[d.name]} />
-      ))}
-    </ParamGroup>
-  );
-}
 
 const MODEL = { id: "payment-workflow", title: "Payment workflow" };
 const START = { id: "integrate-pay-by-bank", title: "Integrate Pay by Bank" };
@@ -223,7 +208,6 @@ export function OpenBankingFlow({
     entityId: ENTITY_SHOWN,
     shopperResultUrl: SHOPPER_RESULT_URL_SHOWN,
   });
-  let values = Object.fromEntries(params);
 
   let payment = state.payment;
   let paymentId = payment?.response?.id;
@@ -353,25 +337,6 @@ export function OpenBankingFlow({
   let snippet = redirectSnippet(redirect, PAYMENT.step);
   let back = state.returned || (mode === "return" && Boolean(returnId));
 
-  let row = (key, extra = {}) => ({
-    doc: obDoc(key, extra.doc),
-    value: extra.value ?? values[key],
-    note: extra.note,
-    missing: missing.includes(key),
-  });
-  let requestRows = [
-    row("amount", { doc: { req: "M" } }),
-    row("currency", { doc: { req: "M" } }),
-    row("paymentBrand", { doc: { req: "M" } }),
-    row("paymentType", { doc: { req: "M" } }),
-    row("bankAccount.country", { doc: { req: "M" } }),
-    row("shopperResultUrl", { doc: { req: "M" } }),
-    row("merchantTransactionId", {
-      doc: { req: "O" },
-      note: "Your own reference, for reconciliation.",
-    }),
-  ];
-
   let link = (text = "Playground") => (
     <button
       type="button"
@@ -399,26 +364,11 @@ export function OpenBankingFlow({
       <Heading level={2} id={MODEL.id}>
         {MODEL.title}
       </Heading>
-      <Row>
-        <Col>
-          <p>
-            Pay by Bank runs on Open Banking, with our partner Token.io. At
-            checkout, the shopper approves the payment with their own bank, in
-            three steps.
-          </p>
-        </Col>
-        <Col>
-          <JourneySteps steps={PAY_BY_BANK_JOURNEY} vertical />
-        </Col>
-      </Row>
       <p>
-        Behind the scenes, your server sends the payment to our gateway and
-        redirects the shopper to Token.io to approve it. The payment is
-        asynchronous: the bank confirms it after the shopper approves, sometimes
-        once they’re back on your site, so get the final status before you
-        confirm the order.
+        Pay by Bank runs on Open Banking, with our partner Token.io. At checkout,
+        the shopper approves the payment with their own bank, in three steps.
       </p>
-      <OpenBankingTransactionFlow />
+      <JourneySteps steps={PAY_BY_BANK_JOURNEY} />
 
       {setup}
 
@@ -430,12 +380,23 @@ export function OpenBankingFlow({
         payments with our API.
       </p>
       <p>
-        Using Pay by links instead? See our{" "}
+        Prefer a no-code integration? Check out our{" "}
         <a href={PAY_BY_LINKS_URL} target="_blank" rel="noreferrer">
           Pay by Links guide
         </a>
         .
       </p>
+      <p>
+        Your server sends the payment to our gateway, and the shopper approves
+        it with Token.io. The bank confirms it afterwards, sometimes once the
+        shopper is back on your site, so get the final status before you confirm
+        the order. Each step has a sample request; for every parameter, see our{" "}
+        <a href={PARAMETERS_URL} target="_blank" rel="noreferrer">
+          parameter reference
+        </a>
+        .
+      </p>
+      <OpenBankingTransactionFlow />
 
       {api && <PayByBankCheckout />}
 
@@ -463,28 +424,6 @@ export function OpenBankingFlow({
                 path="/v1/payments"
                 base={base}
               />
-              <h4>Parameters</h4>
-              <ParamGroups>
-                <ParamGroup
-                  title="Request"
-                  missing={requestRows.filter((r) => r.missing).length}
-                >
-                  {requestRows.map((r) => (
-                    <ParamDoc
-                      key={r.doc.name}
-                      doc={r.doc}
-                      value={r.value}
-                      note={r.note}
-                      missing={r.missing}
-                      onPlayground={() => setPlayground(true)}
-                    />
-                  ))}
-                </ParamGroup>
-                <ResponseParams
-                  docs={PAYMENT_RESPONSE_DOCS}
-                  response={payment?.response}
-                />
-              </ParamGroups>
             </Col>
             <Col sticky>
               <CodeWindow
@@ -572,32 +511,10 @@ export function OpenBankingFlow({
           <Row>
             <Col>
               <p>
-                Redirect the shopper to <code>redirect.url</code> from step{" "}
-                {PAYMENT.step}’s response. They choose their bank, approve the
-                payment and return to your <code>shopperResultUrl</code>.
+                Use the <code>redirect.url</code> from step {PAYMENT.step}’s
+                response to send the shopper to Token.io in a new window. They
+                then choose their bank and confirm the payment.
               </p>
-              <p>
-                Token.io’s page can’t load in an iframe, so open it in a new
-                window or redirect the whole page.
-              </p>
-              <h4>Parameters</h4>
-              <p>These come from step {PAYMENT.step}’s response.</p>
-              <ParamGroups>
-                <ParamGroup title="Request">
-                  {REDIRECT_DOC.children.map((d) => (
-                    <ParamDoc
-                      key={d.name}
-                      doc={d}
-                      prefix="redirect."
-                      value={
-                        d.name === "method"
-                          ? redirect?.method
-                          : redirect?.[d.name]
-                      }
-                    />
-                  ))}
-                </ParamGroup>
-              </ParamGroups>
             </Col>
             <Col sticky>
               <CodeWindow
@@ -655,27 +572,6 @@ export function OpenBankingFlow({
                 path="/v1/payments/{id}"
                 base={base}
               />
-              <h4>Parameters</h4>
-              <ParamGroups>
-                <ParamGroup title="Request">
-                  <ParamDoc
-                    doc={{
-                      name: "id",
-                      format: "AN32",
-                      pattern: "[a-zA-Z0-9]{32}",
-                      req: "M",
-                      text: "The identifier of the payment, in the path.",
-                      example: "8ac7a4a1a1f5d12001a203497d145db9",
-                    }}
-                    value={statusId}
-                    note={`The id from step ${PAYMENT.step}’s response.`}
-                  />
-                </ParamGroup>
-                <ResponseParams
-                  docs={STATUS_RESPONSE_DOCS}
-                  response={state.result?.response}
-                />
-              </ParamGroups>
               <ConfirmationChart
                 rows={CONFIRMATION_TIMES}
                 source="Source: Nomupay, Open Banking API guide."

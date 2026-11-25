@@ -8,7 +8,7 @@ import { OpenBankingFlow } from '@/components/OpenBankingFlow'
 import { PayByBankHero, SpecGrid, TickList } from '@/components/openBanking'
 import { PayByBankResources } from '@/components/PayByBankCheckout'
 import { PayByBankSettings } from '@/components/PayByBankSettings'
-import { COVERAGE_URL, SALES_EMAIL } from '@/lib/openBanking'
+import { COVERAGE_URL, PAY_BY_LINKS_URL, SALES_EMAIL } from '@/lib/openBanking'
 
 // The Pay by Bank article: what it is and its features, how it works and how to get set up, then the
 // API integration.
@@ -33,8 +33,14 @@ const FEATURES = [
     term: 'Integration method',
     details: (
       <ul className="space-y-1">
-        <li>Pay by link</li>
-        <li>API</li>
+        <li>
+          <a href={PAY_BY_LINKS_URL} target="_blank" rel="noreferrer">
+            Pay by link
+          </a>
+        </li>
+        <li>
+          <a href="#integrate-pay-by-bank">API</a>
+        </li>
       </ul>
     ),
   },
