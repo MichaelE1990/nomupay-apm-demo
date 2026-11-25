@@ -109,6 +109,7 @@ function ResponseGroup({ docs, response }) {
 // The two ways to take Pay by Bank. No code goes to the Help Centre's Pay by Links guide; API carries
 // on below, from Brand customisations
 const MODEL = { id: "payment-workflow-model", title: "Payment workflow model" };
+const START = { id: "start-integrating", title: "Start integrating" };
 const INTEGRATIONS = [
   {
     value: "nocode",
@@ -258,7 +259,7 @@ export function OpenBankingFlow({ mode = "start" }) {
   useSyncSections([
     { id: "how-it-works", title: "How it works" },
     MODEL,
-    { id: "choose-your-integration", title: "Choose your integration" },
+    START,
     ...(api ? [CHECKOUT_SECTION] : []),
     ...(api
       ? STEPS.map((x) => ({
@@ -454,30 +455,29 @@ export function OpenBankingFlow({ mode = "start" }) {
 
   return (
     <>
-      {/* How it works for the shopper, then the requests behind it, then the choice of integration */}
+      {/* How it works for the shopper, then the requests behind it, then where to start */}
       <HowItWorks />
 
       <Heading level={2} id={MODEL.id}>
         {MODEL.title}
       </Heading>
-      <OpenBankingTransactionFlow />
       <p>
         A Pay by Bank payment is asynchronous. It stays pending while the
         shopper approves it with their bank, and the bank’s confirmation can
         arrive after the shopper is back on your site. So you send the payment,
         send the shopper to their bank, then get the final status.
       </p>
+      <OpenBankingTransactionFlow />
+
+      <hr />
+      <Heading level={2} id={START.id}>
+        {START.title}
+      </Heading>
       <p>
         The requests run on the demo’s test account, which has the Open
         Banking channel, with Token.io’s sandbox. Set the amount, currency and
-        bank country in the {link()}.
+        bank country in the {link()}, then choose your integration.
       </p>
-
-      <hr />
-      <Heading level={2} id="choose-your-integration">
-        Choose your integration
-      </Heading>
-      <p>Choose how you’ll take Pay by Bank payments.</p>
       <IntegrationCards />
 
       {api && <PayByBankCheckout />}

@@ -66,7 +66,7 @@ export const allSections = {
   '/open-banking/integration': [
     { id: 'how-it-works', title: 'How it works' },
     { id: 'payment-workflow-model', title: 'Payment workflow model' },
-    { id: 'choose-your-integration', title: 'Choose your integration' },
+    { id: 'start-integrating', title: 'Start integrating' },
     { id: 'brand-customisations', title: 'Brand customisations' },
     { id: 'send-the-payment', step: 1, title: 'Send the payment', tag: 'POST' },
     { id: 'send-the-shopper-to-their-bank', step: 2, title: 'Send the shopper to their bank' },

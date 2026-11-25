@@ -55,7 +55,7 @@ const COPY_AND_PAY = [
 
 const FLOWS = [
   { value: 'server-to-server', label: 'Server to Server', messages: SERVER_TO_SERVER },
-  { value: 'copy-and-pay', label: 'Copy & Pay', messages: COPY_AND_PAY, note: 'Copy & Pay for Pay by Bank is coming soon. This is how it will work.' },
+  { value: 'copy-and-pay', label: 'Copy & Pay', messages: COPY_AND_PAY },
 ]
 
 function FlowToggle({ value, onChange }) {
@@ -85,7 +85,6 @@ export function OpenBankingTransactionFlow() {
         lanes={LANES}
         actions={<FlowToggle value={value} onChange={setValue} />}
       />
-      {flow.note && <p className="-mt-2 text-sm text-zinc-500 dark:text-zinc-400">{flow.note}</p>}
     </>
   )
 }
