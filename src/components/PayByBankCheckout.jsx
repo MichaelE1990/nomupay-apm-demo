@@ -438,6 +438,24 @@ function Builder() {
   )
 }
 
+function FolderIcon(props) {
+  return (
+    <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" {...props}>
+      <path d="M3.75 3A1.75 1.75 0 0 0 2 4.75v3.26a3.235 3.235 0 0 1 1.75-.51h12.5c.644 0 1.245.188 1.75.51V6.75A1.75 1.75 0 0 0 16.25 5h-4.836a.25.25 0 0 1-.177-.073L9.823 3.513A1.75 1.75 0 0 0 8.586 3H3.75ZM3.75 9A1.75 1.75 0 0 0 2 10.75v4.5c0 .966.784 1.75 1.75 1.75h12.5A1.75 1.75 0 0 0 18 15.25v-4.5A1.75 1.75 0 0 0 16.25 9H3.75Z" />
+    </svg>
+  )
+}
+
+// Opens in a window over the page (a modal), not a link elsewhere
+function WindowIcon(props) {
+  return (
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" {...props}>
+      <rect x="2.25" y="2.75" width="11.5" height="10.5" rx="2" />
+      <path d="M2.25 5.75h11.5" />
+    </svg>
+  )
+}
+
 function PaperClipIcon(props) {
   return (
     <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" {...props}>
@@ -525,17 +543,16 @@ export function PayByBankResources() {
   let [open, setOpen] = useState(false)
   return (
     <>
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-        <button
-          type="button"
-          onClick={() => setOpen(true)}
-          className="inline-flex items-center gap-2 rounded-full bg-zinc-100 px-3 py-1.5 text-sm font-medium text-zinc-700 ring-1 ring-zinc-900/5 transition hover:bg-zinc-200 hover:text-zinc-900 dark:bg-white/5 dark:text-zinc-300 dark:ring-white/10 dark:hover:bg-white/10 dark:hover:text-white"
-        >
-          <PaperClipIcon className="size-4 text-emerald-500 dark:text-emerald-400" />
-          Reference and assets
-        </button>
-        <span className="text-xs text-zinc-400 dark:text-zinc-500">{DOWNLOADS.length} downloads</span>
-      </div>
+      <button
+        type="button"
+        aria-haspopup="dialog"
+        onClick={() => setOpen(true)}
+        className="group mt-1 inline-flex items-center gap-2 rounded-full bg-zinc-100 py-1.5 pr-2.5 pl-3 text-sm font-medium text-zinc-700 ring-1 ring-zinc-900/5 transition hover:bg-zinc-200 hover:text-zinc-900 dark:bg-white/5 dark:text-zinc-300 dark:ring-white/10 dark:hover:bg-white/10 dark:hover:text-white"
+      >
+        <FolderIcon className="size-4 text-emerald-500 dark:text-emerald-400" />
+        Reference and assets
+        <WindowIcon className="size-3.5 text-zinc-400 transition group-hover:text-zinc-600 dark:text-zinc-500 dark:group-hover:text-zinc-300" />
+      </button>
       <AssetsDialog open={open} onClose={() => setOpen(false)} />
     </>
   )

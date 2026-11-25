@@ -95,13 +95,29 @@ export function SpecGrid({ items }) {
 }
 
 // Numbered steps down a line, like Tailwind Plus's vertical progress steps
+function StepCross(props) {
+  return (
+    <svg viewBox="0 0 16 16" fill="none" aria-hidden="true" {...props}>
+      <path d="m5 5 6 6m0-6-6 6" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+// A list with a tick or a cross by each item: items are [label, supported]
 export function TickList({ items }) {
   return (
     <ul className="mt-1 space-y-1">
-      {items.map((t) => (
+      {items.map(([t, yes]) => (
         <li key={t} className="flex items-start gap-2">
-          <StepCheck className="mt-1 size-4 flex-none text-emerald-600 dark:text-emerald-400" />
-          {t}
+          {yes ? (
+            <StepCheck className="mt-1 size-4 flex-none text-emerald-600 dark:text-emerald-400" />
+          ) : (
+            <StepCross className="mt-1 size-4 flex-none text-zinc-400 dark:text-zinc-500" />
+          )}
+          <span>
+            {t}
+            <span className="sr-only">{yes ? ': supported' : ': not supported'}</span>
+          </span>
         </li>
       ))}
     </ul>

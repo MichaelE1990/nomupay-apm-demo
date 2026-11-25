@@ -8,7 +8,7 @@ import { OpenBankingFlow } from '@/components/OpenBankingFlow'
 import { PayByBankHero, SpecGrid, TickList } from '@/components/openBanking'
 import { PayByBankResources } from '@/components/PayByBankCheckout'
 import { PayByBankSettings } from '@/components/PayByBankSettings'
-import { COVERAGE_URL, PAY_BY_LINKS_URL, SALES_EMAIL } from '@/lib/openBanking'
+import { COVERAGE_URL, SALES_EMAIL } from '@/lib/openBanking'
 
 // The Pay by Bank article: what it is and its features, how it works and how to get set up, then the
 // API integration.
@@ -30,35 +30,34 @@ const FEATURES = [
   },
   { term: 'Currencies', details: 'GBP, EUR' },
   {
-    term: 'Setup & integration',
+    term: 'Integration method',
     details: (
-      <>
-        <a href="#getting-started">Set up by our team</a>, then integrate with{' '}
-        <a href={PAY_BY_LINKS_URL} target="_blank" rel="noreferrer">
-          Pay by link
-        </a>{' '}
-        (no code) or the <a href="#integrate-pay-by-bank">API</a>
-      </>
+      <ul className="space-y-1">
+        <li>Pay by link</li>
+        <li>API</li>
+      </ul>
     ),
   },
-  { term: 'Other', details: <TickList items={['Refunds', 'Strong Customer Authentication (SCA)', 'No chargebacks']} /> },
   {
-    id: 'resources',
-    term: 'Resources',
+    term: 'Other',
     details: (
-      <>
-        <p className="mb-3">Token.io’s design reference, buttons, marks and fonts, free to use with Pay by Bank.</p>
-        <PayByBankResources />
-      </>
+      <TickList
+        items={[
+          ['Refunds', true],
+          ['Chargebacks', false],
+          ['3D Secure', false],
+        ]}
+      />
     ),
   },
+  { id: 'resources', term: 'Resources', details: <PayByBankResources /> },
 ]
 
 // The chapters before the integration's, for the page's table of contents
 const SECTIONS = [{ id: 'features', title: 'Features' }]
 
 // Getting started: Pay by Bank's own setup, after Payment workflow. Token.io's questionnaire (sent
-// by sales) covers the business details and logo, so the page only asks for preferences
+// by sales) covers the business details and logo, so the page only mentions the preferences
 const SETUP_SECTION = { id: 'getting-started', title: 'Getting started' }
 
 function GettingStarted() {
@@ -68,28 +67,9 @@ function GettingStarted() {
         {SETUP_SECTION.title}
       </Heading>
       <p>
-        Pay by Bank has its own setup, even if you already take payments with us. Our partner Token.io approves your business, then we set up
-        your account.
+        Pay by Bank has its own setup, even if you already take payments with us. To get started,{' '}
+        <a href={`mailto:${SALES_EMAIL}`}>contact our sales team</a> and tell us your <PayByBankSettings>integration preferences</PayByBankSettings>.
       </p>
-      <ol>
-        <li>
-          <strong>Apply.</strong> <a href={`mailto:${SALES_EMAIL}`}>Contact our sales team</a>. They’ll send you the forms to fill in.
-        </li>
-        <li>
-          <strong>Choose your settings.</strong> Most come from your application. You can also tell us your preferences, such as the countries
-          shoppers can pay from.
-          <div className="mt-3">
-            <PayByBankSettings />
-          </div>
-        </li>
-        <li>
-          <strong>Get your credentials.</strong> We’ll email you when your account is ready. Your Entity ID and Access Token are in the
-          Credentials tab of your Dashboard, and you can only view them once.
-        </li>
-        <li>
-          <strong>Integrate.</strong> Follow the <a href="#integrate-pay-by-bank">steps below</a>, or send Pay by links from your Dashboard.
-        </li>
-      </ol>
     </>
   )
 }

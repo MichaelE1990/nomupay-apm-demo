@@ -401,19 +401,22 @@ export function OpenBankingFlow({
       <Row>
         <Col>
           <p>
-            Pay by Bank uses Open Banking, through our partner Token.io. You
-            send the payment from your server, the shopper approves it in their
-            banking app, and their bank confirms it.
-          </p>
-          <p>
-            The bank’s confirmation can arrive after the shopper is back on
-            your site, so get the final status before you confirm the order.
+            Pay by Bank runs on Open Banking, with our partner Token.io. At
+            checkout, the shopper approves the payment with their own bank, in
+            three steps.
           </p>
         </Col>
         <Col>
           <JourneySteps steps={PAY_BY_BANK_JOURNEY} vertical />
         </Col>
       </Row>
+      <p>
+        Behind the scenes, your server sends the payment to our gateway and
+        redirects the shopper to Token.io to approve it. The payment is
+        asynchronous: the bank confirms it after the shopper approves, sometimes
+        once they’re back on your site, so get the final status before you
+        confirm the order.
+      </p>
       <OpenBankingTransactionFlow />
 
       {setup && (
