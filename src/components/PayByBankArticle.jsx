@@ -94,7 +94,6 @@ export function PayByBankArticle({ mode = 'start', children }) {
       </Heading>
       <SpecGrid items={FEATURES} />
 
-      <hr />
       <Suspense>
         <OpenBankingFlow mode={mode} sections={SECTIONS} setup={<GettingStarted />} setupSection={SETUP_SECTION} />
       </Suspense>

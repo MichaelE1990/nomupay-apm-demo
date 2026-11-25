@@ -211,6 +211,7 @@ export function OpenBankingFlow({
           step: x.step,
           title: x.title,
           tag: x.tag,
+          nested: true,
         }))
       : []),
   ]);
@@ -419,22 +420,14 @@ export function OpenBankingFlow({
       </p>
       <OpenBankingTransactionFlow />
 
-      {setup && (
-        <>
-          <hr />
-          {setup}
-        </>
-      )}
+      {setup}
 
-      <hr />
       <Heading level={2} id={START.id}>
         {START.title}
       </Heading>
       <p>
         Follow the steps below to add Pay by Bank to your checkout and take
-        payments with our API. You can send each request to our test
-        environment from this page, and change the amount, currency and bank
-        country in the {link()}.
+        payments with our API.
       </p>
       <p>
         Using Pay by links instead? See our{" "}
@@ -448,10 +441,9 @@ export function OpenBankingFlow({
 
       {api && (
         <>
-          <hr />
 
           {/* 1. The payment */}
-          <Heading level={2} id={PAYMENT.id} step={PAYMENT.step} tag="POST">
+          <Heading level={3} id={PAYMENT.id} step={PAYMENT.step} tag="POST">
             {PAYMENT.title}
           </Heading>
           <Row>
@@ -461,13 +453,17 @@ export function OpenBankingFlow({
                 and the shopper’s bank country. The payment comes back pending,
                 with a redirect URL for step {REDIRECT.step}.
               </p>
-              <h3>Properties</h3>
+              <p>
+                You can send it to our test environment from this page. Set the
+                amount, currency and bank country in the {link()}.
+              </p>
+              <h4>Properties</h4>
               <RequestProperties
                 method="POST"
                 path="/v1/payments"
                 base={base}
               />
-              <h3>Parameters</h3>
+              <h4>Parameters</h4>
               <ParamGroups>
                 <ParamGroup
                   title="Request"
@@ -570,8 +566,7 @@ export function OpenBankingFlow({
           </Row>
 
           {/* 2. Token.io and the bank */}
-          <hr />
-          <Heading level={2} id={REDIRECT.id} step={REDIRECT.step}>
+          <Heading level={3} id={REDIRECT.id} step={REDIRECT.step}>
             {REDIRECT.title}
           </Heading>
           <Row>
@@ -585,7 +580,7 @@ export function OpenBankingFlow({
                 Token.io’s page can’t load in an iframe, so open it in a new
                 window or redirect the whole page.
               </p>
-              <h3>Parameters</h3>
+              <h4>Parameters</h4>
               <p>These come from step {PAYMENT.step}’s response.</p>
               <ParamGroups>
                 <ParamGroup title="Request">
@@ -637,8 +632,7 @@ export function OpenBankingFlow({
           </Row>
 
           {/* 3. Status, and what to do while it's pending */}
-          <hr />
-          <Heading level={2} id={STATUS.id} step={STATUS.step} tag="GET">
+          <Heading level={3} id={STATUS.id} step={STATUS.step} tag="GET">
             {STATUS.title}
           </Heading>
           <Row>
@@ -655,13 +649,13 @@ export function OpenBankingFlow({
                 tell the shopper you’ll email them once it’s confirmed, so they
                 don’t pay twice.
               </p>
-              <h3>Properties</h3>
+              <h4>Properties</h4>
               <RequestProperties
                 method="GET"
                 path="/v1/payments/{id}"
                 base={base}
               />
-              <h3>Parameters</h3>
+              <h4>Parameters</h4>
               <ParamGroups>
                 <ParamGroup title="Request">
                   <ParamDoc

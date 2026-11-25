@@ -193,6 +193,14 @@ export default {
             marginTop: theme('spacing.10'),
             marginBottom: theme('spacing.2'),
           },
+          h4: {
+            color: 'var(--tw-prose-headings)',
+            fontSize: theme('fontSize.sm')[0],
+            ...theme('fontSize.sm')[1],
+            fontWeight: '600',
+            marginTop: theme('spacing.8'),
+            marginBottom: theme('spacing.2'),
+          },
 
           // Media
           'img, video, figure': {

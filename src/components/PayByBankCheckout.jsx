@@ -446,16 +446,6 @@ function FolderIcon(props) {
   )
 }
 
-// Opens in a window over the page (a modal), not a link elsewhere
-function WindowIcon(props) {
-  return (
-    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" {...props}>
-      <rect x="2.25" y="2.75" width="11.5" height="10.5" rx="2" />
-      <path d="M2.25 5.75h11.5" />
-    </svg>
-  )
-}
-
 function PaperClipIcon(props) {
   return (
     <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" {...props}>
@@ -547,11 +537,10 @@ export function PayByBankResources() {
         type="button"
         aria-haspopup="dialog"
         onClick={() => setOpen(true)}
-        className="group mt-1 inline-flex items-center gap-2 rounded-full bg-zinc-100 py-1.5 pr-2.5 pl-3 text-sm font-medium text-zinc-700 ring-1 ring-zinc-900/5 transition hover:bg-zinc-200 hover:text-zinc-900 dark:bg-white/5 dark:text-zinc-300 dark:ring-white/10 dark:hover:bg-white/10 dark:hover:text-white"
+        className="mt-1 inline-flex items-center gap-1.5 rounded-lg bg-white px-2.5 py-1 text-sm font-medium text-zinc-900 shadow-xs ring-1 ring-zinc-900/10 transition hover:bg-zinc-50 dark:bg-white/5 dark:text-white dark:ring-white/10 dark:hover:bg-white/10"
       >
-        <FolderIcon className="size-4 text-emerald-500 dark:text-emerald-400" />
         Reference and assets
-        <WindowIcon className="size-3.5 text-zinc-400 transition group-hover:text-zinc-600 dark:text-zinc-500 dark:group-hover:text-zinc-300" />
+        <FolderIcon className="size-4 text-emerald-500 dark:text-emerald-400" />
       </button>
       <AssetsDialog open={open} onClose={() => setOpen(false)} />
     </>
@@ -561,8 +550,7 @@ export function PayByBankResources() {
 export function PayByBankCheckout() {
   return (
     <>
-      <hr />
-      <Heading level={2} id={CHECKOUT_SECTION.id} step={CHECKOUT_SECTION.step}>
+      <Heading level={3} id={CHECKOUT_SECTION.id} step={CHECKOUT_SECTION.step}>
         {CHECKOUT_SECTION.title}
       </Heading>
       <Row>

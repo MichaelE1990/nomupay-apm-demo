@@ -1,5 +1,6 @@
 'use client'
 
+import clsx from 'clsx'
 import { useInView } from 'framer-motion'
 import Link from 'next/link'
 import { useEffect, useRef } from 'react'
@@ -22,13 +23,15 @@ function AnchorIcon(props) {
   )
 }
 
-function Eyebrow({ tag, label }) {
+// A sub-heading's eyebrow carries the heading's top margin (an h3's), since the heading itself
+// sits tight under it
+function Eyebrow({ tag, label, level }) {
   if (!tag && !label) {
     return null
   }
 
   return (
-    <div className="flex items-center gap-x-3">
+    <div className={clsx('flex items-center gap-x-3', level > 2 && 'mt-10')}>
       {tag && <Tag>{tag}</Tag>}
       {tag && label && (
         <span className="h-0.5 w-0.5 rounded-full bg-zinc-300 dark:bg-zinc-600" />
@@ -89,7 +92,8 @@ export function Heading({
   })
 
   useEffect(() => {
-    if (level === 2) {
+    // Chapters, and guide steps shown as sub-headings (Pay by Bank's), drive the sidebar's highlight
+    if (level === 2 || step) {
       registerHeading({
         id: props.id,
         ref,
@@ -100,7 +104,7 @@ export function Heading({
 
   return (
     <>
-      <Eyebrow tag={tag} label={label} />
+      <Eyebrow tag={tag} label={label} level={level} />
       <Component
         ref={ref}
         className={tag || label ? 'mt-2 scroll-mt-32' : 'scroll-mt-24'}
