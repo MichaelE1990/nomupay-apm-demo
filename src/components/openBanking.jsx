@@ -83,7 +83,7 @@ export function SpecGrid({ items }) {
   return (
     <dl className="not-prose my-8 grid grid-cols-1 gap-x-8 gap-y-6 border-t border-zinc-900/7.5 pt-6 sm:grid-cols-2 lg:grid-cols-3 xl:max-w-none dark:border-white/10">
       {items.map((f) => (
-        <div key={f.term}>
+        <div key={f.term} id={f.id} className={f.id ? 'scroll-mt-24' : undefined}>
           <dt className="text-sm font-semibold text-zinc-900 dark:text-white">{f.term}</dt>
           <dd className="mt-1 text-sm/6 text-zinc-600 dark:text-zinc-400 [&_a]:font-medium [&_a]:text-emerald-600 dark:[&_a]:text-emerald-400">
             {f.details}

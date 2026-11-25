@@ -519,8 +519,29 @@ function AssetsDialog({ open, onClose }) {
   )
 }
 
+// Token.io's design reference and downloads, as a badge that opens them in a modal (in Features'
+// Resources row)
+export function PayByBankResources() {
+  let [open, setOpen] = useState(false)
+  return (
+    <>
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="inline-flex items-center gap-2 rounded-full bg-zinc-100 px-3 py-1.5 text-sm font-medium text-zinc-700 ring-1 ring-zinc-900/5 transition hover:bg-zinc-200 hover:text-zinc-900 dark:bg-white/5 dark:text-zinc-300 dark:ring-white/10 dark:hover:bg-white/10 dark:hover:text-white"
+        >
+          <PaperClipIcon className="size-4 text-emerald-500 dark:text-emerald-400" />
+          Reference and assets
+        </button>
+        <span className="text-xs text-zinc-400 dark:text-zinc-500">{DOWNLOADS.length} downloads</span>
+      </div>
+      <AssetsDialog open={open} onClose={() => setOpen(false)} />
+    </>
+  )
+}
+
 export function PayByBankCheckout() {
-  let [assets, setAssets] = useState(false)
   return (
     <>
       <hr />
@@ -530,28 +551,14 @@ export function PayByBankCheckout() {
       <Row>
         <Col>
           <p>
-            Add Pay by Bank to the payment options on your checkout. Pick a theme, customise it, then copy the HTML.
+            Start by designing your Pay by Bank button in the builder to suit your checkout, then copy its HTML. For more design references and
+            assets, see <a href="#resources">Resources</a>.
           </p>
-          <p>
-            For colours and other styles, see Token.io’s reference and assets. The buttons, marks and fonts are free to use with Pay by Bank.
-          </p>
-          <div className="not-prose flex flex-wrap items-center gap-x-3 gap-y-1">
-            <button
-              type="button"
-              onClick={() => setAssets(true)}
-              className="inline-flex items-center gap-2 rounded-full bg-zinc-100 px-3 py-1.5 text-sm font-medium text-zinc-700 ring-1 ring-zinc-900/5 transition hover:bg-zinc-200 hover:text-zinc-900 dark:bg-white/5 dark:text-zinc-300 dark:ring-white/10 dark:hover:bg-white/10 dark:hover:text-white"
-            >
-              <PaperClipIcon className="size-4 text-emerald-500 dark:text-emerald-400" />
-              Reference and assets
-            </button>
-            <span className="text-xs text-zinc-400 dark:text-zinc-500">{DOWNLOADS.length} downloads</span>
-          </div>
         </Col>
         <Col sticky>
           <Builder />
         </Col>
       </Row>
-      <AssetsDialog open={assets} onClose={() => setAssets(false)} />
     </>
   )
 }

@@ -58,9 +58,9 @@ export const allSections = {
   // OpenBankingFlow updates this list
   '/open-banking': [
     { id: 'features', title: 'Features' },
-    { id: 'account-setup', title: 'Account setup' },
     { id: 'payment-workflow', title: 'Payment workflow' },
-    { id: 'start-integrating', title: 'Start integrating' },
+    { id: 'getting-started', title: 'Getting started' },
+    { id: 'integrate-pay-by-bank', title: 'Integrate Pay by Bank' },
     { id: 'add-pay-by-bank-to-checkout', step: 1, title: 'Add Pay by Bank to checkout' },
     { id: 'send-the-payment', step: 2, title: 'Send the payment', tag: 'POST' },
     { id: 'send-the-shopper-to-their-bank', step: 3, title: 'Send the shopper to their bank' },

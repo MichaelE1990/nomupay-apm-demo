@@ -5,29 +5,25 @@ import { useState } from 'react'
 
 import { SUPPORT_EMAIL } from '@/lib/openBanking'
 
-// The account settings, from the Help Centre's Account Setup article (the Word form that
-// scripts/settings-form.cjs builds lists the same settings)
+// The account settings. Token.io's due diligence questionnaire (sent by sales) covers the first
+// group, logo included, so merchants don't send it twice; the second is preferences we set for them
 const GROUPS = [
   {
-    title: 'Your business',
+    title: 'From your application',
+    text: 'We take these from the forms you fill in when you apply.',
     items: [
-      { term: 'Business name', details: 'Your business’s legal name.' },
-      { term: 'Display name', details: 'The name shoppers see when they choose their bank.' },
-      { term: 'Logo', details: 'Shown to shoppers when they choose Pay by Bank.' },
-      { term: 'Domain name', details: 'The website you take payments on, such as https://www.mysite.co.uk/.' },
-    ],
-  },
-  {
-    title: 'Your payouts',
-    items: [
+      { term: 'Business name', details: 'Your business’s legal name, and the name shoppers see when they choose their bank.' },
+      { term: 'Website', details: 'The website you take payments on.' },
+      { term: 'Logo', details: 'Shown to shoppers during the payment, on a white background.' },
+      { term: 'Payout account', details: 'Where we pay your funds: account number and sort code for GBP, IBAN for EUR.' },
       { term: 'Currencies', details: 'GBP, EUR or both.' },
-      { term: 'Account details', details: 'Where we pay your funds: account number and sort code for GBP, IBAN for EUR.' },
     ],
   },
   {
-    title: 'Your checkout',
+    title: 'Your preferences',
+    text: 'Tell us when you apply, or ask us to change them later.',
     items: [
-      { term: 'Integration type', details: 'Pay by link from your Nomupay Dashboard, or the API.' },
+      { term: 'Integration', details: 'Pay by link from your Dashboard, the API, or both.' },
       { term: 'Pay by link payment methods', details: 'Pay by Bank only, or Pay by Bank and cards.' },
       { term: 'Default country', details: 'The country already selected when the shopper starts paying.' },
       { term: 'Destination countries', details: 'The countries shoppers can pay from.' },
@@ -53,7 +49,7 @@ function XIcon(props) {
   )
 }
 
-// A raised pill on Get started's Account setup that opens the settings in a modal
+// A raised pill in Getting started that opens the settings in a modal
 export function PayByBankSettings() {
   let [open, setOpen] = useState(false)
   return (
@@ -74,14 +70,12 @@ export function PayByBankSettings() {
         <div className="fixed inset-0 flex items-center justify-center p-4">
           <DialogPanel
             transition
-            className="max-h-[85vh] w-full max-w-3xl overflow-y-auto rounded-2xl bg-white p-6 shadow-xl ring-1 ring-zinc-900/10 transition duration-200 ease-out data-closed:scale-95 data-closed:opacity-0 sm:p-8 dark:bg-zinc-900 dark:ring-white/10"
+            className="max-h-[85vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white p-6 shadow-xl ring-1 ring-zinc-900/10 transition duration-200 ease-out data-closed:scale-95 data-closed:opacity-0 sm:p-8 dark:bg-zinc-900 dark:ring-white/10"
           >
             <div className="flex items-start justify-between gap-4">
               <div>
                 <DialogTitle className="text-base font-semibold text-zinc-900 dark:text-white">Account settings</DialogTitle>
-                <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-                  What we set up for your Pay by Bank account. Have these ready when you apply.
-                </p>
+                <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">What we set up for your Pay by Bank account.</p>
               </div>
               <CloseButton
                 aria-label="Close"
@@ -90,11 +84,12 @@ export function PayByBankSettings() {
                 <XIcon className="size-5" />
               </CloseButton>
             </div>
-            <div className="mt-6 grid grid-cols-1 gap-8 border-t border-zinc-900/7.5 pt-6 sm:grid-cols-3 dark:border-white/10">
+            <div className="mt-6 grid grid-cols-1 gap-8 border-t border-zinc-900/7.5 pt-6 sm:grid-cols-2 dark:border-white/10">
               {GROUPS.map((g) => (
                 <section key={g.title}>
                   <h3 className="text-xs font-semibold tracking-wide text-zinc-500 uppercase dark:text-zinc-400">{g.title}</h3>
-                  <dl className="mt-3 space-y-4">
+                  <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">{g.text}</p>
+                  <dl className="mt-4 space-y-4">
                     {g.items.map((f) => (
                       <div key={f.term}>
                         <dt className="text-sm font-medium text-zinc-900 dark:text-white">{f.term}</dt>

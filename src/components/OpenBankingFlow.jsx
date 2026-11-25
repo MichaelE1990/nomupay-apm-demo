@@ -103,7 +103,7 @@ function ResponseParams({ docs, response }) {
 }
 
 const MODEL = { id: "payment-workflow", title: "Payment workflow" };
-const START = { id: "start-integrating", title: "Start integrating" };
+const START = { id: "integrate-pay-by-bank", title: "Integrate Pay by Bank" };
 
 function OpenBankingPlayground({
   open,
@@ -182,7 +182,14 @@ function OpenBankingPlayground({
   );
 }
 
-export function OpenBankingFlow({ mode = "start", sections = [] }) {
+// sections: the article's chapters before Payment workflow. setup and setupSection: the chapter that
+// sits between Payment workflow and Integrate Pay by Bank (Getting started), rendered by the article
+export function OpenBankingFlow({
+  mode = "start",
+  sections = [],
+  setup = null,
+  setupSection = null,
+}) {
   let config = useConfig();
   let search = useSearchParams();
   let [state, setState, ready] = usePersistentState(KEY, INITIAL);
@@ -196,6 +203,7 @@ export function OpenBankingFlow({ mode = "start", sections = [] }) {
   useSyncSections([
     ...sections,
     MODEL,
+    ...(setupSection ? [setupSection] : []),
     START,
     ...(api
       ? STEPS.map((x) => ({
@@ -393,14 +401,13 @@ export function OpenBankingFlow({ mode = "start", sections = [] }) {
       <Row>
         <Col>
           <p>
-            Pay by Bank lets shoppers pay from their bank account through Open
-            Banking, with our partner Token.io. The shopper approves each
-            payment in their banking app.
+            Pay by Bank uses Open Banking, through our partner Token.io. You
+            send the payment from your server, the shopper approves it in their
+            banking app, and their bank confirms it.
           </p>
           <p>
-            Payments are asynchronous. A payment stays pending until the bank
-            confirms it, which can be after the shopper is back on your site,
-            so always get the final status before you confirm the order.
+            The bank’s confirmation can arrive after the shopper is back on
+            your site, so get the final status before you confirm the order.
           </p>
         </Col>
         <Col>
@@ -408,6 +415,13 @@ export function OpenBankingFlow({ mode = "start", sections = [] }) {
         </Col>
       </Row>
       <OpenBankingTransactionFlow />
+
+      {setup && (
+        <>
+          <hr />
+          {setup}
+        </>
+      )}
 
       <hr />
       <Heading level={2} id={START.id}>
