@@ -15,9 +15,10 @@ export const OB_CURRENCIES = ['GBP', 'EUR']
 
 // The API steps on the Integration page; the transaction flow on Get started links to them
 export const OB_STEPS = [
-  { key: 'payment', id: 'send-the-payment', step: 1, title: 'Send the payment', tag: 'POST' },
-  { key: 'redirect', id: 'send-the-shopper-to-their-bank', step: 2, title: 'Send the shopper to their bank' },
-  { key: 'status', id: 'get-the-payment-status', step: 3, title: 'Get the payment status', tag: 'GET' },
+  { key: 'checkout', id: 'add-pay-by-bank-to-checkout', step: 1, title: 'Add Pay by Bank to checkout' },
+  { key: 'payment', id: 'send-the-payment', step: 2, title: 'Send the payment', tag: 'POST' },
+  { key: 'redirect', id: 'send-the-shopper-to-their-bank', step: 3, title: 'Send the shopper to their bank' },
+  { key: 'status', id: 'get-the-payment-status', step: 4, title: 'Get the payment status', tag: 'GET' },
 ]
 
 // The shopper's bank country (bankAccount.country), with the currency that goes with it

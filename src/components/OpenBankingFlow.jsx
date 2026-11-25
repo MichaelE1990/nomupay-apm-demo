@@ -16,15 +16,14 @@ import {
 import { Col, Note, Row } from "@/components/content";
 import { Heading } from "@/components/Heading";
 import { OpenBankingTransactionFlow } from "@/components/OpenBankingTransactionFlow";
-import { CHECKOUT_SECTION, PayByBankCheckout } from "@/components/PayByBankCheckout";
+import { PayByBankCheckout } from "@/components/PayByBankCheckout";
 import {
   Callout,
   ConfirmationChart,
-  HowItWorks,
-  LinkIcon,
-  ServerIcon,
+  JourneySteps,
+  PAY_BY_BANK_JOURNEY,
 } from "@/components/openBanking";
-import { ParamDoc, ParamList, RequestProperties } from "@/components/params";
+import { ParamDoc, RequestProperties } from "@/components/params";
 import {
   Banner,
   PlaygroundShell,
@@ -34,7 +33,7 @@ import {
   TextField,
 } from "@/components/Playground";
 import { StepLink, StepNote, resultText } from "@/components/S2SFlow";
-import { LinkCard, ParamGroup, ParamGroups } from "@/components/s2sParts";
+import { ParamGroup, ParamGroups } from "@/components/s2sParts";
 import { useSyncSections } from "@/components/SectionProvider";
 import { SelectMenu } from "@/components/select";
 import { postJson, usePersistentState } from "@/lib/flowState";
@@ -84,7 +83,7 @@ const SHOPPER_RESULT_URL_SHOWN = "https://demo/paymentresult";
 const ENTITY_SHOWN = "{entity_id}";
 
 const STEPS = OB_STEPS;
-const [PAYMENT, REDIRECT, STATUS] = STEPS;
+const [, PAYMENT, REDIRECT, STATUS] = STEPS;
 
 // True inside a payment popup (see the return page)
 function isEmbedded() {
@@ -94,78 +93,18 @@ function isEmbedded() {
   );
 }
 
-function ResponseGroup({ docs, response }) {
+function ResponseParams({ docs, response }) {
   return (
-    <ParamGroups>
-      <ParamGroup title="Response parameters">
-        {docs.map((d) => (
-          <ParamDoc key={d.name} doc={d} value={response?.[d.name]} />
-        ))}
-      </ParamGroup>
-    </ParamGroups>
+    <ParamGroup title="Response">
+      {docs.map((d) => (
+        <ParamDoc key={d.name} doc={d} value={response?.[d.name]} />
+      ))}
+    </ParamGroup>
   );
 }
 
-// The two ways to take Pay by Bank. No code goes to the Help Centre's Pay by Links guide; API carries
-// on below, from Brand customisations
-const MODEL = { id: "payment-workflow-model", title: "Payment workflow model" };
+const MODEL = { id: "payment-workflow", title: "Payment workflow" };
 const START = { id: "start-integrating", title: "Start integrating" };
-const INTEGRATIONS = [
-  {
-    value: "nocode",
-    title: "No code",
-    description:
-      "Send Pay by links from your Nomupay Dashboard. There’s nothing to build.",
-    icon: LinkIcon,
-    cue: "Pay by Links guide",
-    pattern: {
-      y: 16,
-      squares: [
-        [0, 1],
-        [1, 3],
-      ],
-    },
-  },
-  {
-    value: "api",
-    title: "API",
-    description:
-      "Add Pay by Bank to your own checkout, with your server sending the requests.",
-    icon: ServerIcon,
-    cue: "Start below",
-    pattern: {
-      y: -6,
-      squares: [
-        [-1, 2],
-        [1, 3],
-      ],
-    },
-  },
-];
-
-function IntegrationCards() {
-  return (
-    <div className="not-prose my-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:max-w-none">
-      {INTEGRATIONS.map((m) =>
-        m.value === "nocode" ? (
-          <LinkCard key={m.value} mode={m} href={PAY_BY_LINKS_URL} external cue={m.cue} />
-        ) : (
-          <LinkCard
-            key={m.value}
-            mode={m}
-            href={`#${CHECKOUT_SECTION.id}`}
-            cue={m.cue}
-            onClick={(e) => {
-              e.preventDefault();
-              document.getElementById(CHECKOUT_SECTION.id)?.scrollIntoView({ behavior: "smooth", block: "start" });
-              history.replaceState(null, "", `#${CHECKOUT_SECTION.id}`);
-            }}
-          />
-        ),
-      )}
-    </div>
-  );
-}
 
 function OpenBankingPlayground({
   open,
@@ -254,13 +193,11 @@ export function OpenBankingFlow({ mode = "start" }) {
   let [playground, setPlayground] = useState(false);
   let autoScrolled = useRef(false);
 
-  // The page is the API path: No code leaves for the Help Centre's Pay by Links guide
+  // The page is the API path: Pay by links have their own guide in the Help Centre
   let api = true;
   useSyncSections([
-    { id: "how-it-works", title: "How it works" },
     MODEL,
     START,
-    ...(api ? [CHECKOUT_SECTION] : []),
     ...(api
       ? STEPS.map((x) => ({
           id: x.id,
@@ -405,7 +342,7 @@ export function OpenBankingFlow({ mode = "start" }) {
     url: `${base}/v1/payments/${statusId || "{id}"}`,
     params: [["entityId", ENTITY_SHOWN]],
   });
-  let snippet = redirectSnippet(redirect);
+  let snippet = redirectSnippet(redirect, PAYMENT.step);
   let back = state.returned || (mode === "return" && Boolean(returnId));
 
   let row = (key, extra = {}) => ({
@@ -414,22 +351,17 @@ export function OpenBankingFlow({ mode = "start" }) {
     note: extra.note,
     missing: missing.includes(key),
   });
-  let groups = [
-    {
-      title: "Payment",
-      rows: [
-        row("amount", { doc: { req: "M" } }),
-        row("currency", { doc: { req: "M" } }),
-        row("paymentBrand", { doc: { req: "M" } }),
-        row("paymentType", { doc: { req: "M" } }),
-        row("bankAccount.country", { doc: { req: "M" } }),
-        row("shopperResultUrl", { doc: { req: "M" } }),
-        row("merchantTransactionId", {
-          doc: { req: "O" },
-          note: "Your own reference, for reconciliation.",
-        }),
-      ],
-    },
+  let requestRows = [
+    row("amount", { doc: { req: "M" } }),
+    row("currency", { doc: { req: "M" } }),
+    row("paymentBrand", { doc: { req: "M" } }),
+    row("paymentType", { doc: { req: "M" } }),
+    row("bankAccount.country", { doc: { req: "M" } }),
+    row("shopperResultUrl", { doc: { req: "M" } }),
+    row("merchantTransactionId", {
+      doc: { req: "O" },
+      note: "Your own reference, for reconciliation.",
+    }),
   ];
 
   let link = (text = "Playground") => (
@@ -455,18 +387,31 @@ export function OpenBankingFlow({ mode = "start" }) {
 
   return (
     <>
-      {/* How it works for the shopper, then the requests behind it, then where to start */}
-      <HowItWorks />
-
+      {/* Payment workflow: what happens, beside the shopper's steps, then the requests behind it */}
       <Heading level={2} id={MODEL.id}>
         {MODEL.title}
       </Heading>
-      <p>
-        A Pay by Bank payment is asynchronous. It stays pending while the
-        shopper approves it with their bank, and the bank’s confirmation can
-        arrive after the shopper is back on your site. So you send the payment,
-        send the shopper to their bank, then get the final status.
-      </p>
+      <Row>
+        <Col>
+          <p>
+            Pay by Bank is our Payment Initiation Service (PIS), powered by
+            Open Banking and delivered with our partner Token.io. Each payment
+            is a one-off payment the shopper approves with their own bank, in
+            three steps.
+          </p>
+          <p>
+            The payment is asynchronous. It stays pending while the shopper
+            approves it, and the bank’s confirmation can arrive after they’re
+            back on your site. So you send the payment, send the shopper to
+            their bank, then get the final status.
+          </p>
+        </Col>
+        <Col>
+          <div className="not-prose rounded-2xl bg-zinc-50 px-6 py-6 ring-1 ring-zinc-900/5 dark:bg-white/2.5 dark:ring-white/10">
+            <JourneySteps steps={PAY_BY_BANK_JOURNEY} vertical />
+          </div>
+        </Col>
+      </Row>
       <OpenBankingTransactionFlow />
 
       <hr />
@@ -474,11 +419,18 @@ export function OpenBankingFlow({ mode = "start" }) {
         {START.title}
       </Heading>
       <p>
-        The requests run on the demo’s test account, which has the Open
-        Banking channel, with Token.io’s sandbox. Set the amount, currency and
-        bank country in the {link()}, then choose your integration.
+        Add Pay by Bank to checkout and take payments with the API,
+        following the steps below. The requests run on the demo’s test account,
+        which has the Open Banking channel, with Token.io’s sandbox. Set the
+        amount, currency and bank country in the {link()}.
       </p>
-      <IntegrationCards />
+      <p>
+        For Pay by link integration, use our{" "}
+        <a href={PAY_BY_LINKS_URL} target="_blank" rel="noreferrer">
+          Pay by Links guide
+        </a>
+        .
+      </p>
 
       {api && <PayByBankCheckout />}
 
@@ -504,36 +456,28 @@ export function OpenBankingFlow({ mode = "start" }) {
                 path="/v1/payments"
                 base={base}
               />
-              <h3>Body parameters</h3>
-              <p>
-                Change the amount, currency or bank country in the {link()}.
-              </p>
+              <h3>Parameters</h3>
               <ParamGroups>
-                {groups.map((g) => (
-                  <ParamGroup
-                    key={g.title}
-                    title={g.title}
-                    defaultOpen
-                    missing={g.rows.filter((r) => r.missing).length}
-                  >
-                    {g.rows.map((r) => (
-                      <ParamDoc
-                        key={r.doc.name}
-                        doc={r.doc}
-                        value={r.value}
-                        note={r.note}
-                        missing={r.missing}
-                        onPlayground={() => setPlayground(true)}
-                      />
-                    ))}
-                  </ParamGroup>
-                ))}
+                <ParamGroup
+                  title="Request"
+                  missing={requestRows.filter((r) => r.missing).length}
+                >
+                  {requestRows.map((r) => (
+                    <ParamDoc
+                      key={r.doc.name}
+                      doc={r.doc}
+                      value={r.value}
+                      note={r.note}
+                      missing={r.missing}
+                      onPlayground={() => setPlayground(true)}
+                    />
+                  ))}
+                </ParamGroup>
+                <ResponseParams
+                  docs={PAYMENT_RESPONSE_DOCS}
+                  response={payment?.response}
+                />
               </ParamGroups>
-              <h3>Response</h3>
-              <ResponseGroup
-                docs={PAYMENT_RESPONSE_DOCS}
-                response={payment?.response}
-              />
             </Col>
             <Col sticky>
               <CodeWindow
@@ -631,10 +575,13 @@ export function OpenBankingFlow({ mode = "start" }) {
                 Token.io’s page can’t open inside another site, so open it in a
                 new window or redirect the whole page.
               </p>
-              <h3>Response parameters</h3>
-              <p>The redirect object from step {PAYMENT.step}’s response.</p>
+              <h3>Parameters</h3>
+              <p>
+                The request comes from the redirect object in step{" "}
+                {PAYMENT.step}’s response.
+              </p>
               <ParamGroups>
-                <ParamGroup title="Redirect" defaultOpen>
+                <ParamGroup title="Request">
                   {REDIRECT_DOC.children.map((d) => (
                     <ParamDoc
                       key={d.name}
@@ -700,26 +647,27 @@ export function OpenBankingFlow({ mode = "start" }) {
                 path="/v1/payments/{id}"
                 base={base}
               />
-              <h3>Path parameters</h3>
-              <ParamList className="not-prose my-6 border-y border-zinc-900/5 dark:border-white/5">
-                <ParamDoc
-                  doc={{
-                    name: "id",
-                    format: "AN32",
-                    pattern: "[a-zA-Z0-9]{32}",
-                    req: "M",
-                    text: "The identifier of the payment, from its response.",
-                    example: "8ac7a4a1a1f5d12001a203497d145db9",
-                  }}
-                  value={statusId}
-                  note={`The id from step ${PAYMENT.step}’s response.`}
+              <h3>Parameters</h3>
+              <ParamGroups>
+                <ParamGroup title="Request">
+                  <ParamDoc
+                    doc={{
+                      name: "id",
+                      format: "AN32",
+                      pattern: "[a-zA-Z0-9]{32}",
+                      req: "M",
+                      text: "The identifier of the payment, in the path.",
+                      example: "8ac7a4a1a1f5d12001a203497d145db9",
+                    }}
+                    value={statusId}
+                    note={`The id from step ${PAYMENT.step}’s response.`}
+                  />
+                </ParamGroup>
+                <ResponseParams
+                  docs={STATUS_RESPONSE_DOCS}
+                  response={state.result?.response}
                 />
-              </ParamList>
-              <h3>Response</h3>
-              <ResponseGroup
-                docs={STATUS_RESPONSE_DOCS}
-                response={state.result?.response}
-              />
+              </ParamGroups>
               <h3>When the payment is still pending</h3>
               <p>
                 Some banks take longer to confirm, so the shopper can be back

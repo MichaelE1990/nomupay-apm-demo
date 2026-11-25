@@ -17,7 +17,7 @@ const LANES = [
   { id: 'bank', label: 'Token.io and bank', bar: 'bg-violet-500 dark:bg-violet-400' },
 ]
 
-const [PAYMENT, REDIRECT, STATUS] = OB_STEPS
+const [CHECKOUT, PAYMENT, REDIRECT, STATUS] = OB_STEPS
 const linked = (s, detail) => ({ step: s.step, href: s.id, label: s.title, detail })
 
 // The shopper's part and what follows it are the same for both integrations
@@ -29,7 +29,8 @@ const BANK_AND_RESULT = [
 const ORDER = { from: 'server', kind: 'note', label: 'Confirms the order once it’s approved' }
 
 const SERVER_TO_SERVER = [
-  { from: 'shopper', to: 'server', label: 'Chooses Pay by Bank at checkout' },
+  { from: 'server', to: 'shopper', ...linked(CHECKOUT, 'Pay by Bank option') },
+  { from: 'shopper', to: 'server', label: 'Chooses Pay by Bank' },
   { from: 'server', to: 'gateway', ...linked(PAYMENT, 'POST /v1/payments · ACI_INSTANTPAY · DB') },
   { from: 'gateway', to: 'server', kind: 'response', label: 'Pending, with a redirect to Token.io' },
   { from: 'server', to: 'bank', ...linked(REDIRECT, 'redirect.url') },

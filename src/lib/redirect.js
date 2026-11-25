@@ -59,10 +59,11 @@ export function sendShopperToPopup(redirect, name = 'nomupay-apm-payment') {
   return true
 }
 
-// Code the merchant would run: before step 1 a template, then the real redirect
-export function redirectSnippet(redirect) {
+// Code the merchant would run: before the payment step a template, then the real redirect. step is
+// the payment step's number on the page
+export function redirectSnippet(redirect, step = 1) {
   if (!redirect?.url) {
-    return `// Redirect object from the step 1 response
+    return `// Redirect object from the step ${step} response
 const { url, method, parameters = [] } = response.redirect
 
 if ((method || (parameters.length ? "POST" : "GET")) === "GET") {
@@ -88,7 +89,7 @@ if ((method || (parameters.length ? "POST" : "GET")) === "GET") {
   }
   let params = redirectParams(redirect)
   let method = redirectMethod(redirect)
-  let head = `// Redirect object from the step 1 response\nconst redirect = ${JSON.stringify({ url: redirect.url, ...(redirect.method ? { method: redirect.method } : {}), parameters: params }, null, 2)}\n\n`
+  let head = `// Redirect object from the step ${step} response\nconst redirect = ${JSON.stringify({ url: redirect.url, ...(redirect.method ? { method: redirect.method } : {}), parameters: params }, null, 2)}\n\n`
   if (method === 'GET')
     return (
       head +

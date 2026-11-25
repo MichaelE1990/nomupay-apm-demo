@@ -1,8 +1,6 @@
 import clsx from 'clsx'
 import Link from 'next/link'
 
-import { Heading } from '@/components/Heading'
-
 // Building blocks for the Open Banking (Pay by Bank) guides. Patterns borrowed from Tailwind Plus:
 // the journey steps and stats from the Pay by Bank one-pager, Catalyst's description list and
 // stat, Syntax's callout and quick links, and Compass's "up next" content links.
@@ -20,14 +18,16 @@ const icon = (d, extra = null) =>
 
 export const CheckCircleIcon = icon('M6.75 10.25 9 12.5l4.25-4.75M17.25 10a7.25 7.25 0 1 1-14.5 0 7.25 7.25 0 0 1 14.5 0Z')
 export const ShieldIcon = icon('M10 2.75 4 5v4.5c0 3.6 2.55 6.55 6 7.75 3.45-1.2 6-4.15 6-7.75V5l-6-2.25ZM7.5 10l1.75 1.75L12.75 8')
-export const LinkIcon = icon('M8.25 11.75a3.25 3.25 0 0 0 4.6 0l2.4-2.4a3.25 3.25 0 0 0-4.6-4.6l-.9.9M11.75 8.25a3.25 3.25 0 0 0-4.6 0l-2.4 2.4a3.25 3.25 0 0 0 4.6 4.6l.9-.9')
-export const ServerIcon = icon('M4.75 3.25h10.5a1.5 1.5 0 0 1 1.5 1.5v2.5a1.5 1.5 0 0 1-1.5 1.5H4.75a1.5 1.5 0 0 1-1.5-1.5v-2.5a1.5 1.5 0 0 1 1.5-1.5ZM4.75 11.25h10.5a1.5 1.5 0 0 1 1.5 1.5v2.5a1.5 1.5 0 0 1-1.5 1.5H4.75a1.5 1.5 0 0 1-1.5-1.5v-2.5a1.5 1.5 0 0 1 1.5-1.5ZM6 6h.01M6 14h.01M9 6h4.5M9 14h4.5')
+export const BankIcon = icon('M2.75 7.25 10 3.25l7.25 4H2.75ZM4.75 9.5v5M8.25 9.5v5M11.75 9.5v5M15.25 9.5v5M2.75 16.75h14.5')
+export const FingerprintIcon = icon(
+  'M5.5 15.25c.9-1.4 1.25-3 1.25-5.25a3.25 3.25 0 0 1 6.5 0c0 .9-.05 1.75-.15 2.5M10 10c0 2.6-.6 4.75-1.75 6.5M12.75 15.25c.3-.75.55-1.6.7-2.5M3.6 12.5c.25-.8.4-1.6.4-2.5a6 6 0 0 1 10.75-3.65M15.75 8.25c.15.55.25 1.15.25 1.75 0 1.5-.15 2.75-.45 3.9',
+)
 
 // The shopper's journey, from the Pay by Bank one-pager
 export const PAY_BY_BANK_JOURNEY = [
-  { title: 'Select bank', text: 'Chooses Pay by Bank at checkout or in your Pay by link, then picks their bank.' },
-  { title: 'Authenticate', text: 'Signs in to their banking app.' },
-  { title: 'Approve', text: 'Approves the payment, and their bank confirms it.' },
+  { icon: BankIcon, title: 'Select bank', text: 'Chooses Pay by Bank at checkout or in your Pay by link, then picks their bank.' },
+  { icon: FingerprintIcon, title: 'Authenticate', text: 'Signs in to their banking app.' },
+  { icon: CheckCircleIcon, title: 'Approve', text: 'Approves the payment, and their bank confirms it.' },
 ]
 
 function StepCheck(props) {
@@ -38,32 +38,36 @@ function StepCheck(props) {
   )
 }
 
-// Steps as a tracker: circles joined by a line, the earlier steps grey and the last one in the brand
-// colour. Across on wider screens, down on phones
-export function JourneySteps({ steps, className }) {
+// Steps as a tracker: circles joined by a line, each with its step's icon, the earlier steps grey and
+// the last one in the brand colour. Across on wider screens and down on phones, or always down
+export function JourneySteps({ steps, vertical = false, className }) {
+  let across = !vertical
   return (
-    <ol className={clsx('not-prose my-8 grid grid-cols-1 gap-6 sm:grid-cols-3 sm:gap-0', className)}>
+    <ol className={clsx('not-prose grid grid-cols-1 gap-6', across && 'my-8 sm:grid-cols-3 sm:gap-0', className)}>
       {steps.map((s, i) => {
         let last = i === steps.length - 1
         return (
-          <li key={s.title} className="relative flex gap-4 sm:block sm:pr-8">
+          <li key={s.title} className={clsx('relative flex gap-4', across && 'sm:block sm:pr-8')}>
             {!last && (
               <span
                 aria-hidden="true"
-                className="absolute top-10 -bottom-4 left-[15px] w-0.5 rounded-full bg-emerald-600/70 sm:top-[15px] sm:right-2 sm:bottom-auto sm:left-10 sm:h-0.5 sm:w-auto dark:bg-emerald-400/60"
+                className={clsx(
+                  'absolute top-11 -bottom-5 left-[17px] w-0.5 rounded-full bg-emerald-600/70 dark:bg-emerald-400/60',
+                  across && 'sm:top-[17px] sm:right-2 sm:bottom-auto sm:left-11 sm:h-0.5 sm:w-auto',
+                )}
               />
             )}
             <span
               className={clsx(
-                'relative flex size-8 flex-none items-center justify-center rounded-full text-white',
+                'relative flex size-9 flex-none items-center justify-center rounded-full',
                 last
                   ? 'bg-emerald-600 ring-4 ring-emerald-600/15 dark:bg-emerald-500 dark:ring-emerald-400/20'
-                  : 'bg-zinc-300 dark:bg-zinc-600',
+                  : 'bg-zinc-400 dark:bg-zinc-600',
               )}
             >
-              <StepCheck className="size-4" />
+              <s.icon className="size-5 stroke-white [&_path]:[stroke-width:1.6]" />
             </span>
-            <div className="min-w-0 pt-1 sm:mt-4 sm:pt-0">
+            <div className={clsx('min-w-0 pt-1.5', across && 'sm:mt-4 sm:pt-0')}>
               <p className="text-sm font-semibold text-zinc-900 dark:text-white">{s.title}</p>
               <p className="mt-1 text-[0.8125rem]/5 text-zinc-500 dark:text-zinc-400">{s.text}</p>
             </div>
@@ -91,22 +95,6 @@ export function SpecGrid({ items }) {
 }
 
 // Numbered steps down a line, like Tailwind Plus's vertical progress steps
-// The top of the Integration page: what the shopper does, in an off-white panel
-export function HowItWorks() {
-  return (
-    <section className="my-10 rounded-3xl bg-zinc-50 px-6 py-8 ring-1 ring-zinc-900/5 *:first:mt-0 *:last:mb-0 sm:px-10 sm:py-10 xl:max-w-none dark:bg-white/2.5 dark:ring-white/10">
-      <Heading level={2} id="how-it-works">
-        How it works
-      </Heading>
-      <p className="max-w-3xl">
-        Pay by Bank is our Payment Initiation Service (PIS), powered by Open Banking and delivered with our partner Token.io. Each payment is a
-        one-off payment the shopper approves with their own bank, in three steps:
-      </p>
-      <JourneySteps steps={PAY_BY_BANK_JOURNEY} className="mb-0" />
-    </section>
-  )
-}
-
 export function TickList({ items }) {
   return (
     <ul className="mt-1 space-y-1">
