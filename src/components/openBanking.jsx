@@ -1,6 +1,8 @@
 import clsx from 'clsx'
 import Link from 'next/link'
 
+import { Heading } from '@/components/Heading'
+
 // Building blocks for the Open Banking (Pay by Bank) guides. Patterns borrowed from Tailwind Plus:
 // the journey steps and stats from the Pay by Bank one-pager, Catalyst's description list and
 // stat, Syntax's callout and quick links, and Compass's "up next" content links.
@@ -20,8 +22,6 @@ export const CheckCircleIcon = icon('M6.75 10.25 9 12.5l4.25-4.75M17.25 10a7.25 
 export const ShieldIcon = icon('M10 2.75 4 5v4.5c0 3.6 2.55 6.55 6 7.75 3.45-1.2 6-4.15 6-7.75V5l-6-2.25ZM7.5 10l1.75 1.75L12.75 8')
 export const LinkIcon = icon('M8.25 11.75a3.25 3.25 0 0 0 4.6 0l2.4-2.4a3.25 3.25 0 0 0-4.6-4.6l-.9.9M11.75 8.25a3.25 3.25 0 0 0-4.6 0l-2.4 2.4a3.25 3.25 0 0 0 4.6 4.6l.9-.9')
 export const ServerIcon = icon('M4.75 3.25h10.5a1.5 1.5 0 0 1 1.5 1.5v2.5a1.5 1.5 0 0 1-1.5 1.5H4.75a1.5 1.5 0 0 1-1.5-1.5v-2.5a1.5 1.5 0 0 1 1.5-1.5ZM4.75 11.25h10.5a1.5 1.5 0 0 1 1.5 1.5v2.5a1.5 1.5 0 0 1-1.5 1.5H4.75a1.5 1.5 0 0 1-1.5-1.5v-2.5a1.5 1.5 0 0 1 1.5-1.5ZM6 6h.01M6 14h.01M9 6h4.5M9 14h4.5')
-export const ArrowRightIcon = icon('M4.25 10h11.5m0 0-4-4m4 4-4 4')
-export const DownloadIcon = icon('M10 3.25v9.5m0 0-3.5-3.5M10 12.75l3.5-3.5M3.75 13.25v1.5a1.5 1.5 0 0 0 1.5 1.5h9.5a1.5 1.5 0 0 0 1.5-1.5v-1.5')
 
 // The shopper's journey, from the Pay by Bank one-pager
 export const PAY_BY_BANK_JOURNEY = [
@@ -91,6 +91,22 @@ export function SpecGrid({ items }) {
 }
 
 // Numbered steps down a line, like Tailwind Plus's vertical progress steps
+// The top of the Integration page: what the shopper does, in an off-white panel
+export function HowItWorks() {
+  return (
+    <section className="my-10 rounded-3xl bg-zinc-50 px-6 py-8 ring-1 ring-zinc-900/5 *:first:mt-0 *:last:mb-0 sm:px-10 sm:py-10 xl:max-w-none dark:bg-white/2.5 dark:ring-white/10">
+      <Heading level={2} id="how-it-works">
+        How it works
+      </Heading>
+      <p className="max-w-3xl">
+        Pay by Bank is our Payment Initiation Service (PIS), powered by Open Banking and delivered with our partner Token.io. Each payment is a
+        one-off payment the shopper approves with their own bank, in three steps:
+      </p>
+      <JourneySteps steps={PAY_BY_BANK_JOURNEY} className="mb-0" />
+    </section>
+  )
+}
+
 export function TickList({ items }) {
   return (
     <ul className="mt-1 space-y-1">
@@ -101,43 +117,6 @@ export function TickList({ items }) {
         </li>
       ))}
     </ul>
-  )
-}
-
-export function StepList({ steps }) {
-  return (
-    <ol className="not-prose my-8">
-      {steps.map((s, i) => (
-        <li key={i} className="relative flex gap-4 pb-8 last:pb-0">
-          {i < steps.length - 1 && <span aria-hidden="true" className="absolute top-9 bottom-1 left-4 w-px bg-zinc-900/10 dark:bg-white/10" />}
-          <span className="flex size-8 flex-none items-center justify-center rounded-full bg-white text-sm font-semibold text-emerald-600 ring-1 ring-emerald-500/30 dark:bg-zinc-900 dark:text-emerald-400 dark:ring-emerald-400/30">
-            {i + 1}
-          </span>
-          <div className="min-w-0 pt-1">
-            <p className="text-sm font-semibold text-zinc-900 dark:text-white">{s.title}</p>
-            {s.text && <div className="mt-1 text-sm/6 text-zinc-600 dark:text-zinc-400 [&_a]:font-medium [&_a]:text-emerald-600 dark:[&_a]:text-emerald-400 [&_code]:font-mono [&_code]:text-[0.8125rem] [&_code]:text-zinc-900 dark:[&_code]:text-white">{s.text}</div>}
-            {s.action && <div className="mt-4">{s.action}</div>}
-          </div>
-        </li>
-      ))}
-    </ol>
-  )
-}
-
-// The next page, as one compact row (after Compass's "up next" link)
-export function UpNext({ href, title, text }) {
-  return (
-    <Link
-      href={href}
-      className="not-prose group my-8 flex items-center gap-4 rounded-2xl px-5 py-4 ring-1 ring-zinc-900/7.5 transition hover:bg-zinc-50 hover:ring-emerald-500/40 dark:ring-white/10 dark:hover:bg-white/2.5 dark:hover:ring-emerald-400/40"
-    >
-      <div className="min-w-0 flex-auto">
-        <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">Up next</p>
-        <p className="mt-0.5 text-sm font-semibold text-zinc-900 dark:text-white">{title}</p>
-        <p className="mt-0.5 text-sm/6 text-zinc-600 dark:text-zinc-400">{text}</p>
-      </div>
-      <ArrowRightIcon className="size-5 flex-none stroke-zinc-400 transition group-hover:translate-x-0.5 group-hover:stroke-emerald-500" />
-    </Link>
   )
 }
 
@@ -190,21 +169,6 @@ export function ConfirmationChart({ rows, source }) {
       </dl>
       {source && <p className="mt-5 text-xs/5 text-zinc-400 dark:text-zinc-500">{source}</p>}
     </figure>
-  )
-}
-
-// A single raised pill that downloads a file (the settings form, say)
-export function DownloadPill({ href, label, title }) {
-  return (
-    <a
-      href={href}
-      download
-      title={title}
-      className="group inline-flex items-center gap-2 rounded-full bg-linear-to-b from-white to-zinc-50 py-1.5 pr-3.5 pl-4 text-sm font-semibold text-zinc-900 shadow-[0_1px_2px_rgb(23_33_71/0.08),0_2px_6px_rgb(23_33_71/0.06)] ring-1 ring-zinc-900/7.5 transition hover:to-white dark:from-zinc-700 dark:to-zinc-800 dark:text-white dark:ring-white/10 dark:hover:to-zinc-700"
-    >
-      {label}
-      <DownloadIcon className="size-4 flex-none stroke-current transition group-hover:translate-y-0.5" />
-    </a>
   )
 }
 

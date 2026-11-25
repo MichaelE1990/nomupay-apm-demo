@@ -59,14 +59,14 @@ export const allSections = {
     { id: 'manage-the-payment', step: 4, title: 'Manage the payment', tag: 'POST' },
   ],
   '/open-banking': [
-    { id: 'how-it-works', title: 'How it works' },
     { id: 'features', title: 'Features' },
     { id: 'account-setup', title: 'Account setup' },
   ],
   // The steps only show for the API; OpenBankingFlow updates this list
   '/open-banking/integration': [
-    { id: 'choose-your-integration', title: 'Choose your integration' },
+    { id: 'how-it-works', title: 'How it works' },
     { id: 'payment-workflow-model', title: 'Payment workflow model' },
+    { id: 'choose-your-integration', title: 'Choose your integration' },
     { id: 'brand-customisations', title: 'Brand customisations' },
     { id: 'send-the-payment', step: 1, title: 'Send the payment', tag: 'POST' },
     { id: 'send-the-shopper-to-their-bank', step: 2, title: 'Send the shopper to their bank' },

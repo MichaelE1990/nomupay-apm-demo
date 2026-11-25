@@ -9,8 +9,6 @@ export const COVERAGE_URL = 'https://token.io/coverage'
 export const SALES_EMAIL = 'sales@nomupay.com'
 export const SUPPORT_EMAIL = 'support@nomupay.com'
 
-// The settings form linked from Account setup (public/downloads)
-export const SETTINGS_FORM_URL = '/downloads/pay-by-bank-settings-form.docx'
 
 export const OB_BRAND = 'ACI_INSTANTPAY'
 export const OB_CURRENCIES = ['GBP', 'EUR']

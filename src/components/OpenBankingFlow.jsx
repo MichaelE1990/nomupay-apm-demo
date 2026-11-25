@@ -20,6 +20,7 @@ import { CHECKOUT_SECTION, PayByBankCheckout } from "@/components/PayByBankCheck
 import {
   Callout,
   ConfirmationChart,
+  HowItWorks,
   LinkIcon,
   ServerIcon,
 } from "@/components/openBanking";
@@ -105,8 +106,8 @@ function ResponseGroup({ docs, response }) {
   );
 }
 
-// The two ways to take Pay by Bank. No code goes to the Help Centre's Pay by Links guide; API goes
-// down to the payment workflow model
+// The two ways to take Pay by Bank. No code goes to the Help Centre's Pay by Links guide; API carries
+// on below, from Brand customisations
 const MODEL = { id: "payment-workflow-model", title: "Payment workflow model" };
 const INTEGRATIONS = [
   {
@@ -151,12 +152,12 @@ function IntegrationCards() {
           <LinkCard
             key={m.value}
             mode={m}
-            href={`#${MODEL.id}`}
+            href={`#${CHECKOUT_SECTION.id}`}
             cue={m.cue}
             onClick={(e) => {
               e.preventDefault();
-              document.getElementById(MODEL.id)?.scrollIntoView({ behavior: "smooth", block: "start" });
-              history.replaceState(null, "", `#${MODEL.id}`);
+              document.getElementById(CHECKOUT_SECTION.id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+              history.replaceState(null, "", `#${CHECKOUT_SECTION.id}`);
             }}
           />
         ),
@@ -255,8 +256,9 @@ export function OpenBankingFlow({ mode = "start" }) {
   // The page is the API path: No code leaves for the Help Centre's Pay by Links guide
   let api = true;
   useSyncSections([
-    { id: "choose-your-integration", title: "Choose your integration" },
+    { id: "how-it-works", title: "How it works" },
     MODEL,
+    { id: "choose-your-integration", title: "Choose your integration" },
     ...(api ? [CHECKOUT_SECTION] : []),
     ...(api
       ? STEPS.map((x) => ({
@@ -452,16 +454,9 @@ export function OpenBankingFlow({ mode = "start" }) {
 
   return (
     <>
-      {/* Choose: No code goes to the Help Centre; API carries on to the model and the steps */}
-      <Heading level={2} id="choose-your-integration">
-        Choose your integration
-      </Heading>
-      <p>
-        Choose how you’ll take Pay by Bank payments.
-      </p>
-      <IntegrationCards />
+      {/* How it works for the shopper, then the requests behind it, then the choice of integration */}
+      <HowItWorks />
 
-      <hr />
       <Heading level={2} id={MODEL.id}>
         {MODEL.title}
       </Heading>
@@ -477,6 +472,13 @@ export function OpenBankingFlow({ mode = "start" }) {
         Banking channel, with Token.io’s sandbox. Set the amount, currency and
         bank country in the {link()}.
       </p>
+
+      <hr />
+      <Heading level={2} id="choose-your-integration">
+        Choose your integration
+      </Heading>
+      <p>Choose how you’ll take Pay by Bank payments.</p>
+      <IntegrationCards />
 
       {api && <PayByBankCheckout />}
 
