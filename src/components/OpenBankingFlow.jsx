@@ -182,7 +182,7 @@ function OpenBankingPlayground({
   );
 }
 
-export function OpenBankingFlow({ mode = "start" }) {
+export function OpenBankingFlow({ mode = "start", sections = [] }) {
   let config = useConfig();
   let search = useSearchParams();
   let [state, setState, ready] = usePersistentState(KEY, INITIAL);
@@ -194,6 +194,7 @@ export function OpenBankingFlow({ mode = "start" }) {
   // The page is the API path: Pay by links have their own guide in the Help Centre
   let api = true;
   useSyncSections([
+    ...sections,
     MODEL,
     START,
     ...(api

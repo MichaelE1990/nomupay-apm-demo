@@ -14,7 +14,7 @@ export async function POST(request) {
   let error = validatePayment(input)
   if (error) return Response.json({ error }, { status: 400 })
 
-  let params = buildPaymentParams(input, { entityId: creds.id, shopperResultUrl: `${publicBase(request)}/open-banking/integration/return` })
+  let params = buildPaymentParams(input, { entityId: creds.id, shopperResultUrl: `${publicBase(request)}/open-banking/return` })
   try {
     let { httpStatus, data, status } = await gateway('POST', '/v1/payments', params, creds)
     return Response.json({ request: { method: 'POST', path: '/v1/payments', params: masked(params) }, httpStatus, status, response: data })

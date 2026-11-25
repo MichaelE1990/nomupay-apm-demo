@@ -1,11 +1,8 @@
-import { Suspense } from 'react'
-
-import { Article } from '@/components/Article'
-import { OpenBankingFlow } from '@/components/OpenBankingFlow'
+import { PayByBankArticle } from '@/components/PayByBankArticle'
 import { ReturnBridge } from '@/components/ReturnBridge'
 
 export const metadata = {
-  title: 'Pay by Bank integration',
+  title: 'Pay by Bank',
   robots: { index: false },
 }
 
@@ -14,16 +11,11 @@ export const metadata = {
 const EMBED_SCRIPT = `try{if(window.self!==window.top||(window.opener&&window.opener!==window))document.documentElement.setAttribute('data-embedded','')}catch(e){document.documentElement.setAttribute('data-embedded','')}`
 
 // The shopperResultUrl: Token.io sends the shopper here with ?id&resourcePath
-export default function OpenBankingReturnPage() {
+export default function PayByBankReturnPage() {
   return (
-    <Article>
+    <PayByBankArticle mode="return">
       <script dangerouslySetInnerHTML={{ __html: EMBED_SCRIPT }} />
       <ReturnBridge />
-      <h1>Integration</h1>
-      <p className="lead">The shopper is back from their bank. Get the payment status with the payment ID the gateway added to this address.</p>
-      <Suspense>
-        <OpenBankingFlow mode="return" />
-      </Suspense>
-    </Article>
+    </PayByBankArticle>
   )
 }
