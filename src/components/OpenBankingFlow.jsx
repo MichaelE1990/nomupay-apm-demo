@@ -17,6 +17,7 @@ import { Col, Note, Row } from "@/components/content";
 import { Heading } from "@/components/Heading";
 import { OpenBankingTransactionFlow } from "@/components/OpenBankingTransactionFlow";
 import { PayByBankCheckout } from "@/components/PayByBankCheckout";
+import { PayByBankOptions } from "@/components/PayByBankOptions";
 import {
   ConfirmationChart,
   JourneySteps,
@@ -103,7 +104,7 @@ function OpenBankingPlayground({
     <PlaygroundShell open={open} onClose={onClose} onReset={onReset}>
       <div className="px-5 py-4">
         <Banner>
-          Requests go to our test environment and Token.io’s sandbox banks.
+          Requests go to our test environment and its sandbox banks.
         </Banner>
       </div>
       <Section
@@ -142,7 +143,7 @@ function OpenBankingPlayground({
       <Section
         id="pg-bank"
         title="Shopper’s bank"
-        description="Token.io lists the banks for this country first. Choosing a country sets its currency."
+        description="The shopper’s bank list opens on this country. Choosing a country sets its currency."
       >
         <PgRow label="Country" htmlFor="pg-country" hint="bankAccount.country">
           <SelectMenu
@@ -174,6 +175,7 @@ export function OpenBankingFlow({
   sections = [],
   setup = null,
   setupSection = null,
+  after = [],
 }) {
   let config = useConfig();
   let search = useSearchParams();
@@ -183,14 +185,57 @@ export function OpenBankingFlow({
   let [playground, setPlayground] = useState(false);
   let autoScrolled = useRef(false);
 
-  // The page is the API path: Pay by links have their own guide in the Help Centre
-  let api = true;
+  // The API steps stay hidden until the merchant picks the API card or follows a link to a step,
+  // or the shopper comes back from their bank
+  let [api, setApi] = useState(mode === "return");
+  let [scrollTo, setScrollTo] = useState("");
+  useEffect(() => {
+    function fromHash() {
+      let id = window.location.hash.slice(1);
+      if (STEPS.some((x) => x.id === id)) {
+        setApi(true);
+        setScrollTo(id);
+      }
+    }
+    // Next.js links change the hash without a hashchange event, so catch clicks on links to a step
+    // too (the diagram's numbered requests)
+    function onClick(e) {
+      let link = e.target.closest?.("a[href*='#']");
+      let id = link && new URL(link.href, window.location.href).hash.slice(1);
+      if (id && STEPS.some((x) => x.id === id)) {
+        setApi(true);
+        setScrollTo(id);
+      }
+    }
+    fromHash();
+    window.addEventListener("hashchange", fromHash);
+    document.addEventListener("click", onClick, true);
+    return () => {
+      window.removeEventListener("hashchange", fromHash);
+      document.removeEventListener("click", onClick, true);
+    };
+  }, []);
+  useEffect(() => {
+    if (!api || !scrollTo) return;
+    let frame = requestAnimationFrame(() => {
+      document
+        .getElementById(scrollTo)
+        ?.scrollIntoView({ behavior: "smooth", block: "start" });
+      setScrollTo("");
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [api, scrollTo]);
+  let showSteps = () => {
+    setApi(true);
+    setScrollTo(STEPS[0].id);
+  };
   // The sidebar lists the chapters only: the steps are part of Integrate Pay by Bank
   useSyncSections([
     ...sections,
     MODEL,
     ...(setupSection ? [setupSection] : []),
     START,
+    ...after,
   ]);
 
   let form = { ...INITIAL.form, ...state.form };
@@ -358,12 +403,9 @@ export function OpenBankingFlow({
       </Heading>
       <JourneySteps steps={PAY_BY_BANK_JOURNEY} />
       <p>
-        Pay by Bank runs on Open Banking, with our partner Token.io. At checkout,
-        the shopper approves the payment with their own bank, in three steps.
-      </p>
-      <p>
-        The diagram below shows the requests behind each payment, between the
-        shopper, your server, our gateway and Token.io.
+        At checkout, the shopper approves each payment with their own bank, in
+        the three steps above. The diagram below details the API model for Pay
+        by Bank payments.
       </p>
       <OpenBankingTransactionFlow />
 
@@ -373,26 +415,9 @@ export function OpenBankingFlow({
         {START.title}
       </Heading>
       <p>
-        Follow the steps below to add Pay by Bank to your checkout and take
-        payments with our API.
+        Start integrating by choosing how you’ll take Pay by Bank payments.
       </p>
-      <p>
-        Prefer a no-code integration? Check out our{" "}
-        <a href={PAY_BY_LINKS_URL} target="_blank" rel="noreferrer">
-          Pay by Links guide
-        </a>
-        .
-      </p>
-      <p>
-        Your server sends the payment to our gateway, and the shopper approves
-        it with Token.io. The bank confirms it afterwards, sometimes once the
-        shopper is back on your site, so get the final status before you confirm
-        the order. Each step has a sample request; for every parameter, see our{" "}
-        <a href={PARAMETERS_URL} target="_blank" rel="noreferrer">
-          parameter reference
-        </a>
-        .
-      </p>
+      <PayByBankOptions onApi={showSteps} apiShown={api} />
 
       {api && <PayByBankCheckout />}
 
@@ -412,7 +437,12 @@ export function OpenBankingFlow({
               </p>
               <p>
                 You can send it to our test environment from this page. Set the
-                amount, currency and bank country in the {link()}.
+                amount, currency and bank country in the {link()}. For every
+                parameter, see our{" "}
+                <a href={PARAMETERS_URL} target="_blank" rel="noreferrer">
+                  parameter reference
+                </a>
+                .
               </p>
               <h4>Properties</h4>
               <RequestProperties
@@ -494,13 +524,13 @@ export function OpenBankingFlow({
                     {/^900\.100\.2/.test(
                       payment.response?.result?.code || "",
                     ) &&
-                      " The connection to Token.io’s sandbox failed. Send the payment again."}
+                      " The connection to the sandbox banks failed. Send the payment again."}
                   </StepNote>
                 ))}
             </Col>
           </Row>
 
-          {/* 2. Token.io and the bank */}
+          {/* 3. The shopper and their bank */}
           <Heading level={3} id={REDIRECT.id} step={REDIRECT.step}>
             {REDIRECT.title}
           </Heading>
@@ -508,8 +538,8 @@ export function OpenBankingFlow({
             <Col>
               <p>
                 Use the <code>redirect.url</code> from step {PAYMENT.step}’s
-                response to send the shopper to Token.io in a new window. They
-                then choose their bank and confirm the payment.
+                response to redirect the shopper in a new window. They then
+                choose their bank and confirm the payment.
               </p>
             </Col>
             <Col sticky>
@@ -570,7 +600,7 @@ export function OpenBankingFlow({
               />
               <ConfirmationChart
                 rows={CONFIRMATION_TIMES}
-                source="Source: Nomupay, Open Banking API guide."
+                source="Source: Nomupay."
               />
             </Col>
             <Col sticky>

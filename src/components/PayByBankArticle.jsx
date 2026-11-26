@@ -7,6 +7,7 @@ import { Heading } from '@/components/Heading'
 import { OpenBankingFlow } from '@/components/OpenBankingFlow'
 import { PayByBankHero, SpecGrid, TickList } from '@/components/openBanking'
 import { PayByBankResources } from '@/components/PayByBankCheckout'
+import { PayByBankFaqs } from '@/components/PayByBankFaqs'
 import { PayByBankSettings } from '@/components/PayByBankSettings'
 import { COVERAGE_URL, PAY_BY_LINKS_URL, SALES_EMAIL } from '@/lib/openBanking'
 
@@ -67,6 +68,9 @@ const SECTIONS = [{ id: 'features', title: 'Features' }]
 // by sales) covers the business details and logo, so the page only mentions the preferences
 const SETUP_SECTION = { id: 'getting-started', title: 'Getting started' }
 
+// Shoppers' questions, last
+const FAQ_SECTION = { id: 'faqs', title: 'FAQs' }
+
 function GettingStarted() {
   return (
     <>
@@ -102,8 +106,13 @@ export function PayByBankArticle({ mode = 'start', children }) {
       <SpecGrid items={FEATURES} />
 
       <Suspense>
-        <OpenBankingFlow mode={mode} sections={SECTIONS} setup={<GettingStarted />} setupSection={SETUP_SECTION} />
+        <OpenBankingFlow mode={mode} sections={SECTIONS} setup={<GettingStarted />} setupSection={SETUP_SECTION} after={[FAQ_SECTION]} />
       </Suspense>
+
+      <Heading level={2} id={FAQ_SECTION.id}>
+        {FAQ_SECTION.title}
+      </Heading>
+      <PayByBankFaqs />
     </Article>
   )
 }

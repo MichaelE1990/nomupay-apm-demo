@@ -43,11 +43,12 @@ function StepCheck(props) {
 export function JourneySteps({ steps, vertical = false, className }) {
   let across = !vertical
   return (
-    <ol className={clsx('not-prose grid grid-cols-1 gap-6', across && 'my-8 sm:grid-cols-3 sm:gap-0', className)}>
+    // Across, the last step's column fits its text, so the line runs the full width
+    <ol className={clsx('not-prose grid grid-cols-1 gap-6', across && 'my-8 sm:grid-cols-[1fr_1fr_auto] sm:gap-0 xl:max-w-none', className)}>
       {steps.map((s, i) => {
         let last = i === steps.length - 1
         return (
-          <li key={s.title} className={clsx('relative flex gap-4', across && 'sm:block sm:pr-8')}>
+          <li key={s.title} className={clsx('relative flex gap-4', across && (last ? 'sm:block sm:max-w-52' : 'sm:block sm:pr-8'))}>
             {!last && (
               <span
                 aria-hidden="true"

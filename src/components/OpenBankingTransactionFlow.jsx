@@ -14,7 +14,7 @@ const LANES = [
   { id: 'shopper', label: 'Shopper', bar: 'bg-emerald-500 dark:bg-emerald-400' },
   { id: 'server', label: 'Merchant server', bar: 'bg-amber-500 dark:bg-amber-400' },
   { id: 'gateway', label: 'Payment gateway', bar: 'bg-sky-500 dark:bg-sky-400' },
-  { id: 'bank', label: 'Token.io and bank', bar: 'bg-violet-500 dark:bg-violet-400' },
+  { id: 'bank', label: 'Shopper’s bank', bar: 'bg-violet-500 dark:bg-violet-400' },
 ]
 
 const [CHECKOUT, PAYMENT, REDIRECT, STATUS] = OB_STEPS
@@ -32,7 +32,7 @@ const SERVER_TO_SERVER = [
   { from: 'server', to: 'shopper', ...linked(CHECKOUT, 'Pay by Bank option') },
   { from: 'shopper', to: 'server', label: 'Chooses Pay by Bank' },
   { from: 'server', to: 'gateway', ...linked(PAYMENT, 'POST /v1/payments · ACI_INSTANTPAY · DB') },
-  { from: 'gateway', to: 'server', kind: 'response', label: 'Pending, with a redirect to Token.io' },
+  { from: 'gateway', to: 'server', kind: 'response', label: 'Pending, with a redirect URL' },
   { from: 'server', to: 'bank', ...linked(REDIRECT, 'redirect.url') },
   ...BANK_AND_RESULT,
   { from: 'server', to: 'gateway', ...linked(STATUS, 'GET /v1/payments/{id}') },
@@ -47,7 +47,7 @@ const COPY_AND_PAY = [
   { from: 'gateway', to: 'server', kind: 'response', label: 'Checkout ID' },
   { from: 'server', to: 'shopper', step: 2, label: 'Show the payment form', detail: 'paymentWidgets.js · ACI_INSTANTPAY' },
   { from: 'shopper', to: 'gateway', label: 'Chooses Pay by Bank and submits the form' },
-  { from: 'gateway', to: 'bank', kind: 'response', label: 'The widget sends the shopper to Token.io' },
+  { from: 'gateway', to: 'bank', kind: 'response', label: 'The widget sends the shopper to their bank' },
   ...BANK_AND_RESULT,
   { from: 'server', to: 'gateway', step: 3, label: 'Get the payment status', detail: 'GET /v1/checkouts/{id}/payment' },
   { from: 'gateway', to: 'server', kind: 'response', label: 'Approved, declined or still pending' },

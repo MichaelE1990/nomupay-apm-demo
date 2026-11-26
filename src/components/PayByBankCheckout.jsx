@@ -115,7 +115,7 @@ const THEMES = [
     id: 'apps',
     label: 'App icon mark',
     text: 'Your market’s top three banks’ app icons and a plus sign, so shoppers spot their own bank.',
-    warning: 'Token.io’s permission doesn’t cover banks’ app icons. Check with your legal team before you use them.',
+    warning: 'Permission to use the Pay by Bank assets doesn’t cover banks’ app icons. Check with your legal team before you use them.',
     image: '/images/pay-by-bank/theme-apps.png',
   },
 ]
@@ -165,7 +165,7 @@ function optionCode(s) {
     '  }',
     '  .pay-by-bank-option:has(input:checked) { border-color: #000000; }',
     '  .pay-by-bank-label { flex: 1; min-width: 0; font-family: Inter, system-ui, sans-serif; }',
-    '  /* Token.io’s spec: “Pay by” regular, “Bank” bold, −3% letter spacing */',
+    '  /* Pay by Bank spec: “Pay by” regular, “Bank” bold, −3% letter spacing */',
     '  .pay-by-bank-name { font-weight: 400; letter-spacing: -0.03em; }',
     '  .pay-by-bank-name strong { font-weight: 700; }',
     ...(s.badge
@@ -511,7 +511,7 @@ function AssetsDialog({ open, onClose }) {
           <div className="flex items-start justify-between gap-4">
             <div>
               <DialogTitle className="text-base font-semibold text-zinc-900 dark:text-white">Reference and assets</DialogTitle>
-              <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">Token.io’s Pay by Bank files, free to use with Pay by Bank.</p>
+              <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">Pay by Bank files, free to use with Pay by Bank.</p>
             </div>
             <CloseButton
               aria-label="Close"

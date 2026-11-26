@@ -61,6 +61,7 @@ export const allSections = {
     { id: 'payment-workflow', title: 'Payment workflow' },
     { id: 'getting-started', title: 'Getting started' },
     { id: 'integrate-pay-by-bank', title: 'Integrate Pay by Bank' },
+    { id: 'faqs', title: 'FAQs' },
   ],
   '/recurring-payments': [
     { id: 'recurring-workflow', title: 'Recurring workflow' },
