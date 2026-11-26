@@ -24,18 +24,21 @@ export const OB_STEPS = [
 ]
 
 // The shopper's bank country (bankAccount.country), with the currency that goes with it
+// The countries the ACI_INSTANTPAY connector supports, from ACI's Pay by Bank (EU/UK) Integration
+// Sheet (Payment Services Knowledge Base): the UK in GBP, the rest in EUR
 export const OB_COUNTRIES = [
   { code: 'GB', name: 'United Kingdom', currency: 'GBP' },
-  { code: 'IE', name: 'Ireland', currency: 'EUR' },
-  { code: 'DE', name: 'Germany', currency: 'EUR' },
-  { code: 'FR', name: 'France', currency: 'EUR' },
-  { code: 'ES', name: 'Spain', currency: 'EUR' },
-  { code: 'IT', name: 'Italy', currency: 'EUR' },
-  { code: 'NL', name: 'Netherlands', currency: 'EUR' },
-  { code: 'BE', name: 'Belgium', currency: 'EUR' },
   { code: 'AT', name: 'Austria', currency: 'EUR' },
+  { code: 'BE', name: 'Belgium', currency: 'EUR' },
+  { code: 'EE', name: 'Estonia', currency: 'EUR' },
+  { code: 'FR', name: 'France', currency: 'EUR' },
+  { code: 'DE', name: 'Germany', currency: 'EUR' },
+  { code: 'IT', name: 'Italy', currency: 'EUR' },
+  { code: 'LV', name: 'Latvia', currency: 'EUR' },
+  { code: 'LT', name: 'Lithuania', currency: 'EUR' },
+  { code: 'NL', name: 'Netherlands', currency: 'EUR' },
   { code: 'PT', name: 'Portugal', currency: 'EUR' },
-  { code: 'FI', name: 'Finland', currency: 'EUR' },
+  { code: 'ES', name: 'Spain', currency: 'EUR' },
 ]
 
 export const currencyFor = (country) => OB_COUNTRIES.find((c) => c.code === country)?.currency || 'EUR'

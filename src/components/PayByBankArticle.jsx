@@ -21,7 +21,7 @@ const FEATURES = [
     term: 'Countries',
     details: (
       <>
-        UK and Europe.{' '}
+        UK, Austria, Belgium, Estonia, France, Germany, Italy, Latvia, Lithuania, Netherlands, Portugal and Spain.{' '}
         <a href={COVERAGE_URL} target="_blank" rel="noreferrer">
           Bank coverage
         </a>
@@ -50,6 +50,7 @@ const FEATURES = [
       <TickList
         items={[
           ['Refunds', true],
+          ['Partial refunds', false],
           ['Chargebacks', false],
           ['3D Secure', false],
         ]}

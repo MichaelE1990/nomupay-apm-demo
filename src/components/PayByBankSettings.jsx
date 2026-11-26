@@ -13,6 +13,10 @@ const PREFERENCES = [
   { term: 'Pay by link payment methods', details: 'Pay by Bank only, or Pay by Bank and cards.' },
   { term: 'Default country', details: 'The country already selected when the shopper starts paying.' },
   { term: 'Destination countries', details: 'The countries shoppers can pay from.' },
+  {
+    term: 'Your own reference',
+    details: 'Send your merchantTransactionId (up to 18 letters and numbers) to the bank as the payment reference, instead of ours.',
+  },
 ]
 
 function XIcon(props) {

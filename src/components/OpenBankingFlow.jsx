@@ -564,11 +564,11 @@ export function OpenBankingFlow({
                 status. You can check each payment twice a minute.
               </p>
               <p>
-                Some banks take longer to confirm. A result code of{" "}
+                <code>000.000.000</code> means the payment succeeded.{" "}
                 <code>000.200.000</code> or <code>000.200.001</code> means it’s
-                still pending: check again or wait for the webhook. Meanwhile,
-                tell the shopper you’ll email them once it’s confirmed, so they
-                don’t pay twice.
+                still pending: the bank can take up to 4 hours to confirm, so
+                check again or wait for the webhook. Meanwhile, tell the shopper
+                you’ll email them once it’s confirmed, so they don’t pay twice.
               </p>
               <h4>Properties</h4>
               <RequestProperties
