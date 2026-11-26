@@ -88,13 +88,13 @@ function Card({ keys, badge, title, text, action, selected }) {
 
 // A white pill with a ring: the label, then a slim arrow
 const PILL =
-  'group inline-flex items-center gap-2 rounded-full bg-white py-1.5 pr-3.5 pl-4 text-sm font-medium text-zinc-700 shadow-xs ring-1 ring-zinc-900/10 transition hover:text-zinc-900 hover:ring-zinc-900/20 dark:bg-white/5 dark:text-zinc-300 dark:ring-white/10 dark:hover:text-white dark:hover:ring-white/20'
+  'group inline-flex items-center gap-1.5 rounded-full bg-white py-1 pr-2.5 pl-3 text-xs font-medium text-zinc-700 shadow-xs ring-1 ring-zinc-900/10 transition hover:text-zinc-900 hover:ring-zinc-900/20 dark:bg-white/5 dark:text-zinc-300 dark:ring-white/10 dark:hover:text-white dark:hover:ring-white/20'
 
 function PillContent({ label }) {
   return (
     <>
       {label}
-      <ArrowRightIcon className="h-3.5 w-[1.1rem] transition group-hover:translate-x-0.5" />
+      <ArrowRightIcon className="h-3 w-4 transition group-hover:translate-x-0.5" />
     </>
   )
 }
