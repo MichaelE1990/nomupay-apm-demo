@@ -2,6 +2,7 @@
 
 import clsx from 'clsx'
 
+import { PILL_BUTTON as PILL } from '@/components/openBanking'
 import { PAY_BY_LINKS_URL } from '@/lib/openBanking'
 
 // The two ways to integrate Pay by Bank, as cards: a pair of keycaps over soft rings, a badge, a title,
@@ -86,9 +87,6 @@ function Card({ keys, badge, title, text, action, selected }) {
   )
 }
 
-// A white pill with a ring: the label, then a slim arrow
-const PILL =
-  'group inline-flex items-center gap-1.5 rounded-full bg-white py-1 pr-2.5 pl-3 text-xs font-medium text-zinc-700 shadow-xs ring-1 ring-zinc-900/10 transition hover:text-zinc-900 hover:ring-zinc-900/20 dark:bg-white/5 dark:text-zinc-300 dark:ring-white/10 dark:hover:text-white dark:hover:ring-white/20'
 
 function PillContent({ label }) {
   return (

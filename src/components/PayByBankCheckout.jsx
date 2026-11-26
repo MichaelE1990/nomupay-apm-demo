@@ -33,6 +33,7 @@ import { Col, Row } from '@/components/content'
 import { Heading } from '@/components/Heading'
 import { highlightHtml } from '@/lib/highlight'
 import { OB_STEPS } from '@/lib/openBanking'
+import { PILL_BUTTON } from '@/components/openBanking'
 
 // Step 1 of the API integration: the Pay by Bank option on the merchant's checkout
 export const [CHECKOUT_SECTION] = OB_STEPS
@@ -537,10 +538,10 @@ export function PayByBankResources() {
         type="button"
         aria-haspopup="dialog"
         onClick={() => setOpen(true)}
-        className="mt-1 inline-flex items-center gap-1.5 rounded-lg bg-white px-2.5 py-1 text-sm font-medium text-zinc-900 shadow-xs ring-1 ring-zinc-900/10 transition hover:bg-zinc-50 dark:bg-white/5 dark:text-white dark:ring-white/10 dark:hover:bg-white/10"
+        className={clsx(PILL_BUTTON, 'mt-1')}
       >
         Reference and assets
-        <FolderIcon className="size-4 text-emerald-500 dark:text-emerald-400" />
+        <FolderIcon className="size-3.5 text-emerald-500 dark:text-emerald-400" />
       </button>
       <AssetsDialog open={open} onClose={() => setOpen(false)} />
     </>

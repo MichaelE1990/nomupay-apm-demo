@@ -2,10 +2,11 @@
 
 import { Disclosure, DisclosureButton, DisclosurePanel } from '@headlessui/react'
 
+import { PILL_BUTTON } from '@/components/openBanking'
 import { SUPPORT_EMAIL } from '@/lib/openBanking'
 
-// Shoppers' questions, from Token.io's sample FAQs for merchants to add to their own help pages
-// (the account and registration one left out)
+// Shoppers' questions, from Token.io's sample FAQs (the account and registration one left out),
+// with our own intro
 const FAQS = [
   {
     q: 'What is Pay by Bank?',
@@ -38,14 +39,10 @@ export function PayByBankFaqs() {
   return (
     <div className="not-prose my-8 grid grid-cols-1 gap-x-16 gap-y-8 lg:grid-cols-5 xl:max-w-none">
       <div className="lg:col-span-2">
-        <p className="text-base/7 text-zinc-700 dark:text-zinc-300">
-          Questions shoppers often ask about Pay by Bank. Add them to your own help pages, and change the answers to suit your checkout.
+        <p className="text-sm/7 text-zinc-700 dark:text-zinc-400">
+          Answers to the questions shoppers ask most about Pay by Bank. Can’t find what you’re looking for? Our team is happy to help.
         </p>
-        <p className="mt-4 text-base/7 text-zinc-700 dark:text-zinc-300">Have a question that isn’t here? Get in touch.</p>
-        <a
-          href={`mailto:${SUPPORT_EMAIL}`}
-          className="mt-6 inline-flex items-center rounded-full px-5 py-2 text-sm font-medium text-zinc-900 ring-1 ring-zinc-900/15 transition hover:bg-zinc-50 dark:text-white dark:ring-white/20 dark:hover:bg-white/5"
-        >
+        <a href={`mailto:${SUPPORT_EMAIL}`} className={PILL_BUTTON + ' mt-4'}>
           Contact us
         </a>
       </div>

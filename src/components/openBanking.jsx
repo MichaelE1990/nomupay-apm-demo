@@ -177,6 +177,11 @@ export function ConfirmationChart({ rows, source }) {
   )
 }
 
+// The small white pill buttons on the Pay by Bank page: the integration cards, Resources and the FAQs'
+// Contact us
+export const PILL_BUTTON =
+  'group inline-flex items-center gap-1.5 rounded-full bg-white py-1 pr-2.5 pl-3 text-xs font-medium text-zinc-700 shadow-xs ring-1 ring-zinc-900/10 transition hover:text-zinc-900 hover:ring-zinc-900/20 dark:bg-white/5 dark:text-zinc-300 dark:ring-white/10 dark:hover:text-white dark:hover:ring-white/20'
+
 const INTER = "'Inter Variable', Inter, system-ui, sans-serif"
 const PBB = '/images/pay-by-bank'
 
