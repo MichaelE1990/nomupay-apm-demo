@@ -55,16 +55,12 @@ export const allSections = {
     { id: 'get-the-payment-status', step: 3, title: 'Get the payment status', tag: 'GET' },
     { id: 'manage-the-payment', step: 4, title: 'Manage the payment', tag: 'POST' },
   ],
-  // OpenBankingFlow updates this list
+  // OpenBankingFlow updates this list: the chapters only, not the steps inside Integrate Pay by Bank
   '/open-banking': [
     { id: 'features', title: 'Features' },
     { id: 'payment-workflow', title: 'Payment workflow' },
     { id: 'getting-started', title: 'Getting started' },
     { id: 'integrate-pay-by-bank', title: 'Integrate Pay by Bank' },
-    { id: 'add-pay-by-bank-to-checkout', step: 1, title: 'Add Pay by Bank to checkout', nested: true },
-    { id: 'send-the-payment', step: 2, title: 'Send the payment', tag: 'POST', nested: true },
-    { id: 'send-the-shopper-to-their-bank', step: 3, title: 'Send the shopper to their bank', nested: true },
-    { id: 'get-the-payment-status', step: 4, title: 'Get the payment status', tag: 'GET', nested: true },
   ],
   '/recurring-payments': [
     { id: 'recurring-workflow', title: 'Recurring workflow' },

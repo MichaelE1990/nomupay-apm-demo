@@ -185,20 +185,12 @@ export function OpenBankingFlow({
 
   // The page is the API path: Pay by links have their own guide in the Help Centre
   let api = true;
+  // The sidebar lists the chapters only: the steps are part of Integrate Pay by Bank
   useSyncSections([
     ...sections,
     MODEL,
     ...(setupSection ? [setupSection] : []),
     START,
-    ...(api
-      ? STEPS.map((x) => ({
-          id: x.id,
-          step: x.step,
-          title: x.title,
-          tag: x.tag,
-          nested: true,
-        }))
-      : []),
   ]);
 
   let form = { ...INITIAL.form, ...state.form };
@@ -364,11 +356,11 @@ export function OpenBankingFlow({
       <Heading level={2} id={MODEL.id}>
         {MODEL.title}
       </Heading>
+      <JourneySteps steps={PAY_BY_BANK_JOURNEY} />
       <p>
         Pay by Bank runs on Open Banking, with our partner Token.io. At checkout,
         the shopper approves the payment with their own bank, in three steps.
       </p>
-      <JourneySteps steps={PAY_BY_BANK_JOURNEY} />
       <p>
         The diagram below shows the requests behind each payment, between the
         shopper, your server, our gateway and Token.io.
@@ -408,7 +400,7 @@ export function OpenBankingFlow({
         <>
 
           {/* 1. The payment */}
-          <Heading level={3} id={PAYMENT.id} step={PAYMENT.step} tag="POST">
+          <Heading level={3} id={PAYMENT.id} step={PAYMENT.step}>
             {PAYMENT.title}
           </Heading>
           <Row>
@@ -553,7 +545,7 @@ export function OpenBankingFlow({
           </Row>
 
           {/* 3. Status, and what to do while it's pending */}
-          <Heading level={3} id={STATUS.id} step={STATUS.step} tag="GET">
+          <Heading level={3} id={STATUS.id} step={STATUS.step}>
             {STATUS.title}
           </Heading>
           <Row>

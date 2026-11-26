@@ -45,7 +45,7 @@ function ArticleLink({ href, active, children }) {
   )
 }
 
-function ChapterLink({ href, current, step, tag, nested, children }) {
+function ChapterLink({ href, current, step, tag, children }) {
   return (
     <CloseButton
       as={Link}
@@ -53,15 +53,13 @@ function ChapterLink({ href, current, step, tag, nested, children }) {
       aria-current={current ? 'location' : undefined}
       className={clsx(
         'flex items-center justify-between gap-2 rounded-md py-1 pr-2 pl-3 text-[0.8125rem] transition',
-        nested && 'ml-3',
         current
           ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-400/10 dark:text-emerald-300'
           : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white',
       )}
     >
-      {/* Nested steps wrap instead of cutting off: the indent leaves them less room */}
-      <span className={nested ? 'flex min-w-0' : 'truncate'}>
-        {step && <span className="mr-2 flex-none font-mono text-xs/5 tabular-nums opacity-70">{step}</span>}
+      <span className="truncate">
+        {step && <span className="mr-2 font-mono text-xs tabular-nums opacity-70">{step}</span>}
         {children}
       </span>
       {tag && (
@@ -106,7 +104,7 @@ function NavSection({ section, pathname, chapters, current }) {
                     >
                       {chapters.map((chapter) => (
                         <li key={chapter.id}>
-                          <ChapterLink href={`${link.href}#${chapter.id}`} current={chapter.id === current} step={chapter.step} tag={chapter.tag} nested={chapter.nested}>
+                          <ChapterLink href={`${link.href}#${chapter.id}`} current={chapter.id === current} step={chapter.step} tag={chapter.tag}>
                             {chapter.title}
                           </ChapterLink>
                         </li>

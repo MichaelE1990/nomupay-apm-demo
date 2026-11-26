@@ -21,7 +21,7 @@ const FEATURES = [
     term: 'Countries',
     details: (
       <>
-        UK, Austria, Belgium, Estonia, France, Germany, Italy, Latvia, Lithuania, Netherlands, Portugal and Spain.{' '}
+        UK and Europe.{' '}
         <a href={COVERAGE_URL} target="_blank" rel="noreferrer">
           Bank coverage
         </a>
@@ -30,7 +30,7 @@ const FEATURES = [
   },
   { term: 'Currencies', details: 'GBP, EUR' },
   {
-    term: 'Integration method',
+    term: 'Supported integrations',
     details: (
       <ul className="space-y-1">
         <li>
