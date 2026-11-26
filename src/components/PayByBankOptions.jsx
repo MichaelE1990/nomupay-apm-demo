@@ -5,7 +5,7 @@ import clsx from 'clsx'
 import { PAY_BY_LINKS_URL } from '@/lib/openBanking'
 
 // The two ways to integrate Pay by Bank, as cards: a pair of keycaps over soft rings, a badge, a title,
-// a line and a pill button. Pay by link opens the Help Centre guide; the API shows the steps below
+// a line and a pill button. Pay by Link opens the Help Centre guide; the API shows the steps below
 
 function CodeIcon(props) {
   return (
@@ -23,10 +23,20 @@ function LinkIcon(props) {
   )
 }
 
-function ChevronRightIcon(props) {
+// The card icon the Dashboard shows beside Pay by Link
+function CardIcon(props) {
   return (
-    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" {...props}>
-      <path d="m6.5 4 4 4-4 4" />
+    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" {...props}>
+      <rect x="2.5" y="4.25" width="15" height="11.5" rx="2" />
+      <path d="M2.5 8.25h15M5.5 12.5h3.5" />
+    </svg>
+  )
+}
+
+function ArrowRightIcon(props) {
+  return (
+    <svg viewBox="0 0 20 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" {...props}>
+      <path d="M2 8h15m-4.5-4.5L17 8l-4.5 4.5" />
     </svg>
   )
 }
@@ -66,7 +76,7 @@ function Card({ keys, badge, title, text, action, selected }) {
       )}
     >
       <Visual keys={keys} />
-      <span className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1 text-xs font-medium text-zinc-700 shadow-xs ring-1 ring-zinc-900/10 dark:bg-white/5 dark:text-zinc-300 dark:ring-white/10">
+      <span className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-zinc-900/5 px-3 py-1 text-xs font-medium text-zinc-600 dark:bg-white/5 dark:text-zinc-300">
         {badge}
       </span>
       <h3 className="mt-4 text-base font-semibold text-zinc-900 dark:text-white">{title}</h3>
@@ -76,19 +86,15 @@ function Card({ keys, badge, title, text, action, selected }) {
   )
 }
 
-// A pill with a label, a rule, then the action in bold
+// A white pill with a ring: the label, then a slim arrow
 const PILL =
-  'inline-flex items-center gap-3 rounded-full bg-zinc-900/5 py-2 pr-3 pl-4 text-sm text-zinc-600 transition hover:bg-zinc-900/10 dark:bg-white/5 dark:text-zinc-300 dark:hover:bg-white/10'
+  'group inline-flex items-center gap-2 rounded-full bg-white py-1.5 pr-3.5 pl-4 text-sm font-medium text-zinc-700 shadow-xs ring-1 ring-zinc-900/10 transition hover:text-zinc-900 hover:ring-zinc-900/20 dark:bg-white/5 dark:text-zinc-300 dark:ring-white/10 dark:hover:text-white dark:hover:ring-white/20'
 
-function PillContent({ label, action }) {
+function PillContent({ label }) {
   return (
     <>
       {label}
-      <span aria-hidden="true" className="h-4 w-px bg-zinc-900/15 dark:bg-white/15" />
-      <span className="inline-flex items-center gap-0.5 font-semibold text-zinc-900 dark:text-white">
-        {action}
-        <ChevronRightIcon className="size-4" />
-      </span>
+      <ArrowRightIcon className="h-3.5 w-[1.1rem] transition group-hover:translate-x-0.5" />
     </>
   )
 }
@@ -109,23 +115,23 @@ export function PayByBankOptions({ onApi, apiShown }) {
         selected={apiShown}
         action={
           <button type="button" onClick={onApi} className={PILL}>
-            <PillContent label="Steps 1 to 4" action={apiShown ? 'Shown below' : 'Start'} />
+            <PillContent label="API Development" />
           </button>
         }
       />
       <Card
-        keys={[<LinkIcon key="l" className="size-5" />, '£']}
+        keys={[<LinkIcon key="l" className="size-5" />, <CardIcon key="c" className="size-5" />]}
         badge={
           <>
             <LinkIcon className="size-3.5 text-emerald-500" />
-            Pay by link
+            Pay by Link
           </>
         }
         title="Send a link to pay"
         text="Create Pay by links in your Dashboard and send them to shoppers, with nothing to build."
         action={
           <a href={PAY_BY_LINKS_URL} target="_blank" rel="noreferrer" className={PILL}>
-            <PillContent label="Pay by Links guide" action="Learn more" />
+            <PillContent label="Pay by Link" />
           </a>
         }
       />
