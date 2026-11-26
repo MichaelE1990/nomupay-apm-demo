@@ -369,6 +369,11 @@ export function OpenBankingFlow({
         the shopper approves the payment with their own bank, in three steps.
       </p>
       <JourneySteps steps={PAY_BY_BANK_JOURNEY} />
+      <p>
+        The diagram below shows the requests behind each payment, between the
+        shopper, your server, our gateway and Token.io.
+      </p>
+      <OpenBankingTransactionFlow />
 
       {setup}
 
@@ -396,7 +401,6 @@ export function OpenBankingFlow({
         </a>
         .
       </p>
-      <OpenBankingTransactionFlow />
 
       {api && <PayByBankCheckout />}
 
